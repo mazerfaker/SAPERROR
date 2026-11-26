@@ -26,3 +26,5 @@ Private repository created by owner. Core CI status pending; earlier repository-
 - Windows release export and headless smoke passed; manual GUI QA not performed.
 - Packaging exited with code 1 without a more specific visible diagnostic. Likely cause: git describe returned failure for absent prior tag and PowerShell propagated the exit status.
 - Fix: enumerate reachable release tags successfully even when none exist; verify portable/source ZIP required entries and SHA-256 hashes before publication. Retest pending.
+
+- Run 45842898342 failed before job creation: malformed workflow introduced by replacement-string interpolation. Repaired regex line and removed duplicated tail; retest pending.

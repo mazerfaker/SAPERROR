@@ -82,7 +82,8 @@ jobs:
           # Query reachable tags without treating an absent tag as a native-command failure.
           $tags = @(git tag --merged HEAD^ --sort=-version:refname --list 'v[0-9]*')
           if ($LASTEXITCODE -ne 0) { throw 'Tag enumeration failed' }
-          $base = $tags | Where-Object { $_ -match '^v\d+\.\d+\.\d+
+          $base = $tags | Where-Object { $_ -match '^v\d+\.\d+\.\d+$' } | Select-Object -First 1
+          if ($base) {
             git diff --binary --output=build/dist/changes.patch $base HEAD
             if ($LASTEXITCODE -ne 0) { throw 'Patch creation failed' }
             "Base: $base" | Out-File build/dist/patch-base.txt
@@ -106,25 +107,6 @@ jobs:
             } finally { $zip.Dispose() }
             Get-FileHash $path | Out-File -Append build/logs/artifact-hashes.txt
           }
-      - uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: SAPERROR-packages
-          path: build/dist/*.zip
-          if-no-files-found: error
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: SAPERROR-QA-logs
-          path: build/logs/
-          if-no-files-found: warn
- } | Select-Object -First 1
-          if ($base) {
-            git diff --binary --output=build/dist/changes.patch $base HEAD
-            if ($LASTEXITCODE -ne 0) { throw 'Patch creation failed' }
-            "Base: $base" | Out-File build/dist/patch-base.txt
-            Compress-Archive -Path build/dist/changes.patch,build/dist/patch-base.txt -DestinationPath "build/dist/SAPERROR_v${env:GAME_VERSION}_Patch.zip"
-          } else { 'Initial version: no preceding stable tag; source archive is baseline.' | Out-File build/logs/patch-status.txt }
       - uses: actions/upload-artifact@v4
         if: success()
         with:
