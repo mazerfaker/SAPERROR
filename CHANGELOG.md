@@ -1,4 +1,9 @@
 # Changelog
+## 0.2.1-alpha — Visual Refinement candidate
+- Screenshot-driven larger grid, clearer cells and labels, live recovery meter, real control hints and seed preservation.
+- CRT edge feather, ordered dither, subtle phosphor halo and reduced-motion-aware cell flash. Approved artwork and core unchanged.
+- Geometry regression checks; new Windows CI and manual screenshot pending.
+
 ## 0.2.0-alpha — Visual Foundation candidate
 - Immutable approved original PNG, masked live CRT SubViewport, native aspect letterboxing, shared shader/input transform.
 - Custom terminal controls, menu, instructions, settings, live 8×8 certified CLASSIC board and HUD, UA/EN. CRT and optional whole-scene filter foundation.

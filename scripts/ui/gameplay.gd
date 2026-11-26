@@ -11,7 +11,7 @@ var crt_material: ShaderMaterial
 var grade_material: ShaderMaterial
 var ui: Control
 var curvature: float = 0.025
-var effects: float = 0.45
+var effects: float = 0.6
 var reduced_motion: bool = false
 var flicker_enabled: bool = false
 var curve_enabled: bool = true

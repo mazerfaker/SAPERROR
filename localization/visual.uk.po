@@ -85,3 +85,9 @@ msgstr "РЕСУРСИ"
 
 msgid "VIS_FLAGS"
 msgstr "Прапорці"
+
+msgid "VIS_CONTROL_HEADER"
+msgstr "КЕРУВАННЯ"
+
+msgid "VIS_CONTROL_SHORT"
+msgstr "ЛКМ: відкрити\nПКМ / F: прапор\nСКМ / пробіл:\nсусідні клітинки"

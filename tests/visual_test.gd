@@ -27,9 +27,15 @@ func run() -> void:
 				var recovered: Vector2 = (physical-rect.position)*Geometry.CANVAS/rect.size-Geometry.SCREEN.position
 				check(Geometry.to_raster(recovered,curve).distance_to(Geometry.to_raster(local,curve))<0.01,"window to CRT hit mapping")
 	for n in [6,8,10,14,18]:
-		var area := Vector2(610,552)
+		var area := Geometry.GAME_GRID_AREA
 		var cell: Vector2 = Geometry.grid_metrics(area,n,n,4.0)
 		check(cell.x==cell.y and cell.x>0 and cell.x*n+4*(n-1)<=area.x and cell.y*n+4*(n-1)<=area.y,"square grid fit")
+	var game_cell: Vector2 = Geometry.grid_metrics(Geometry.GAME_GRID_AREA,8,8,float(Geometry.GAME_CELL_GAP))
+	var game_extent := game_cell*8.0+Vector2.ONE*7.0*float(Geometry.GAME_CELL_GAP)
+	var game_rect := Rect2(Geometry.GAME_GRID_CENTER-game_extent*0.5,game_extent)
+	check(game_cell.x>=72.0,"refined cell size")
+	check(game_rect.position.x>=364.0 and game_rect.end.x<=1062.0,"grid clear of sidebars")
+	check(game_rect.position.y>=180.0 and game_rect.end.y<=788.0,"grid clear of header and footer")
 	for lang in ["uk","en"]:
 		TranslationServer.set_locale(lang)
 		check(TranslationServer.translate("VIS_SETTINGS") != "VIS_SETTINGS","visual locale loaded")

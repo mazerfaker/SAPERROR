@@ -85,3 +85,9 @@ msgstr "RESOURCES"
 
 msgid "VIS_FLAGS"
 msgstr "Flags"
+
+msgid "VIS_CONTROL_HEADER"
+msgstr "CONTROLS"
+
+msgid "VIS_CONTROL_SHORT"
+msgstr "LMB: reveal\nRMB / F: flag\nMMB / Space:\nopen neighbors"
