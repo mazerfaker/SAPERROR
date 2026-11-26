@@ -45,7 +45,7 @@ static func synth(kind: String) -> AudioStreamWAV:
 				sample = env*(0.32*sin(TAU*(620.0*t-700.0*t*t))+0.13*noise)
 			"flood":
 				var step_id: float = floor(t*30.0)
-				var pulse: float = exp(-5.0*fract(t*30.0))
+				var pulse: float = exp(-5.0*fposmod(t*30.0,1.0))
 				sample = env*pulse*(0.32*sin(TAU*(380.0+step_id*90.0)*t)+0.08*lp)
 			"flag","unflag":
 				var freq: float = 780.0 if kind == "flag" else 420.0
@@ -55,7 +55,7 @@ static func synth(kind: String) -> AudioStreamWAV:
 			"win","loss":
 				var notes: Array[float] = [440.0,554.0,659.0,880.0] if kind == "win" else [330.0,247.0,165.0,110.0]
 				var n: int = mini(3,int(x*4.0))
-				var local: float = fract(x*4.0)
+				var local: float = fposmod(x*4.0,1.0)
 				var note_env: float = minf(1.0,local*20.0)*pow(1.0-local,0.9)
 				sample = note_env*0.27*(sin(TAU*notes[n]*t)+0.15*sin(TAU*notes[n]*2.0*t))
 			"invalid":
