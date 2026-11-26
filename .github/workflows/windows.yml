@@ -13,7 +13,7 @@ jobs:
       contents: write
     env:
       GODOT_VERSION: '4.7.2-stable'
-      GAME_VERSION: '0.3.0-alpha.1'
+      GAME_VERSION: '0.3.0-alpha.1-crt.1'
     steps:
       - uses: actions/checkout@v4
         with:

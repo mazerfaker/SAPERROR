@@ -1,7 +1,7 @@
 shader_type canvas_item;
 render_mode unshaded;
 uniform vec2 contour[21];
-uniform float curvature : hint_range(0.0, 0.06) = 0.025;
+uniform float curvature : hint_range(0.0, 0.18) = 0.096;
 uniform float strength : hint_range(0.0, 1.0) = 0.6;
 uniform float fault : hint_range(0.0, 1.0) = 0.0;
 uniform float motion = 1.0;
@@ -23,41 +23,74 @@ float edge_mask(vec2 p) {
 	}
 	return inside ? smoothstep(0.0,0.0032,distance_to_edge) : 0.0;
 }
-float ordered_dither(vec2 pixel) {
-	vec2 k = mod(floor(pixel),2.0);
-	return (k.x*2.0+k.y*3.0-4.0*k.x*k.y)/4.0-0.375;
+// The primary sample is identical to Geometry.warp(). Never displace hit targets.
+float bayer4(vec2 pixel) {
+	vec2 p = mod(floor(pixel),4.0);
+	vec2 low = mod(p,2.0);
+	vec2 high = floor(p*0.5);
+	float a = low.x*2.0+low.y*3.0-4.0*low.x*low.y;
+	float b = high.x*2.0+high.y*3.0-4.0*high.x*high.y;
+	return (4.0*a+b+0.5)/16.0-0.5;
+}
+float periodic_mask(float coord, float period) {
+	float phase = coord/period;
+	float width = max(fwidth(phase),0.0001);
+	float resolved = 1.0-smoothstep(0.32,0.70,width);
+	return cos(phase*6.2831853)*resolved;
+}
+vec3 phosphor_sample(sampler2D tex, vec2 uv) {
+	return texture(tex,clamp(uv,vec2(0.0),vec2(1.0))).rgb;
 }
 void fragment() {
 	vec2 p = UV*2.0-1.0;
-	vec2 uv = (p*(1.0+curvature*dot(p,p))+1.0)*0.5;
-	float inside = step(0.0,uv.x)*step(uv.x,1.0)*step(0.0,uv.y)*step(uv.y,1.0);
+	float r2 = dot(p,p);
+	// Normalized barrel transform stays inside the source rectangle.
+	vec2 uv = (p*(1.0+curvature*r2)/(1.0+2.0*curvature)+1.0)*0.5;
 	vec2 q = clamp(uv,vec2(0.0),vec2(1.0));
 	vec3 base = texture(TEXTURE,q).rgb;
+	vec3 rgb = base;
+	vec2 pixel = UV*vec2(713.0,481.0);
 	float t = TIME*motion;
-	float split = 0.0012*strength;
-	vec3 halo = texture(TEXTURE,clamp(q+vec2(split,0.0),vec2(0.0),vec2(1.0))).rgb;
-	vec3 ghost = texture(TEXTURE,clamp(q-vec2(split*2.0,0.0),vec2(0.0),vec2(1.0))).rgb;
-	vec2 dy = vec2(0.0,2.0/962.0);
-	vec3 vertical_halo = texture(TEXTURE,clamp(q+dy,vec2(0.0),vec2(1.0))).rgb + texture(TEXTURE,clamp(q-dy,vec2(0.0),vec2(1.0))).rgb;
-	vec3 bloom = max((halo+ghost+vertical_halo)*0.25-base,vec3(0.0));
-	vec3 rgb = base + bloom*0.32*strength + base*0.035*strength;
-	rgb += vec3(halo.r-base.r,0.0,ghost.b-base.b)*0.18*strength;
-	float scan = 0.92+0.08*cos(UV.y*481.0*3.14159265);
-	rgb *= mix(1.0,scan,strength);
-	float noise = hash(floor(UV*vec2(713.0,481.0))+floor(t*24.0))-0.5;
-	float tear = step(0.985,hash(vec2(floor(UV.y*35.0),floor(t*7.0))))*fault*motion;
-	// Tearing/glitch is additive: never displaces the clickable primary image.
-	rgb += vec3(0.01,0.08,0.035)*tear*strength;
-	float dither = ordered_dither(UV*vec2(713.0,481.0));
-	rgb += (noise*0.015+dither*0.012)*strength + vec3(0.045,0.006,0.004)*fault*strength;
-	rgb *= 1.0-strength*0.12*dot(p,p)*0.5;
-	rgb *= 1.0-flicker*motion*strength*0.018*(0.5+0.5*sin(t*13.0));
-	rgb += vec3(0.006,0.016,0.009)*strength*max(0.0,1.0-dot(p,p)*0.45);
-	vec3 outcome_tint = outcome > 0.0 ? vec3(0.015,0.07,0.025) : vec3(0.09,0.015,0.008);
-	rgb += outcome_tint*abs(outcome)*strength;
-	float beam_mask = 1.0-smoothstep(max(0.0,beam-0.012),beam+0.012,abs(p.y));
+	if (strength > 0.0001) {
+		vec2 px = vec2(1.0/1426.0,1.0/962.0);
+		vec3 near_halo = (
+			phosphor_sample(TEXTURE,q+vec2(px.x*2.0,0.0))+
+			phosphor_sample(TEXTURE,q-vec2(px.x*2.0,0.0))+
+			phosphor_sample(TEXTURE,q+vec2(0.0,px.y*2.0))+
+			phosphor_sample(TEXTURE,q-vec2(0.0,px.y*2.0)))*0.25;
+		vec3 far_halo = (
+			phosphor_sample(TEXTURE,q+px*vec2(5.0,4.0))+
+			phosphor_sample(TEXTURE,q+px*vec2(-5.0,4.0))+
+			phosphor_sample(TEXTURE,q+px*vec2(5.0,-4.0))+
+			phosphor_sample(TEXTURE,q-px*vec2(5.0,4.0)))*0.25;
+		// Color-preserving bloom; red and amber warnings remain distinct.
+		vec3 glow = max(near_halo-base,vec3(0.0))*0.48 + max(far_halo-base,vec3(0.0))*0.26;
+		vec3 graded = base*1.08+glow;
+		float scan = 0.84+0.16*periodic_mask(pixel.y,3.0);
+		float grille = 0.97+0.03*periodic_mask(pixel.x,3.0);
+		graded *= scan*grille;
+		float vignette = 1.0-0.30*smoothstep(0.12,1.8,r2);
+		graded *= vignette;
+		// Coarse phosphor quantization / ordered dither, not animated white noise.
+		float dither = bayer4(pixel);
+		graded = floor(clamp(graded+dither/64.0,0.0,1.0)*64.0+0.5)/64.0;
+		float grain = hash(floor(pixel)+floor(t*18.0))-0.5;
+		graded += grain*0.012;
+		// Soft glass reflection and black-level lift; no changes to approved art.
+		float reflection = exp(-pow((p.x+0.48)*0.85,2.0)-pow((p.y+0.72)*2.5,2.0));
+		graded += vec3(0.009,0.025,0.015)*reflection;
+		graded += vec3(0.004,0.013,0.008)*(1.0-0.45*clamp(r2,0.0,1.0));
+		float tear = step(0.96,hash(vec2(floor(pixel.y/4.0),floor(t*8.0))))*fault*motion;
+		graded += vec3(0.07,0.025,0.012)*tear;
+		graded += vec3(0.07,0.008,0.004)*fault;
+		vec3 tint = outcome > 0.0 ? vec3(0.015,0.07,0.025) : vec3(0.09,0.015,0.008);
+		graded += tint*abs(outcome);
+		graded *= 1.0-flicker*motion*0.025*(0.5+0.5*sin(t*13.0));
+		rgb = mix(base,graded,strength);
+	}
+	float beam_mask = beam>=0.999 ? 1.0 : 1.0-smoothstep(max(0.0,beam-0.012),beam+0.012,abs(p.y));
 	float line_glow = exp(-abs(p.y)*90.0)*(1.0-beam)*power;
-	rgb = mix(vec3(0.012,0.025,0.017),rgb,inside*power*beam_mask);
+	rgb = mix(vec3(0.012,0.025,0.017),rgb,power*beam_mask);
 	rgb += vec3(0.15,0.38,0.17)*line_glow;
-	COLOR = vec4(rgb,edge_mask(UV));
+	COLOR = vec4(clamp(rgb,0.0,1.0),edge_mask(UV));
 }

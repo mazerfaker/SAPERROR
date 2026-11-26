@@ -11,7 +11,7 @@ var raster: SubViewport
 var crt_material: ShaderMaterial
 var grade_material: ShaderMaterial
 var ui: TerminalUI
-var curvature: float = 0.025
+var curvature: float = 0.096
 var effects: float = 0.6
 var reduced_motion: bool = false
 var flicker_enabled: bool = false
@@ -45,6 +45,7 @@ func _ready() -> void:
 	raster.size = Geometry.RASTER
 	raster.transparent_bg = false
 	raster.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	raster.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_LINEAR
 	add_child(raster)
 	ui = TerminalUI.new()
 	ui.size = Vector2(Geometry.RASTER)
@@ -90,7 +91,7 @@ func _set_effects(amount: float, curve: bool, reduced: bool, flicker: bool, glob
 	reduced_motion = reduced
 	flicker_enabled = flicker
 	scene_effects = global_amount
-	curvature = 0.025 if curve and amount > 0.0 else 0.0
+	curvature = Geometry.curvature_for(amount,curve)
 	crt_material.set_shader_parameter("curvature",curvature)
 	crt_material.set_shader_parameter("strength",effects)
 	crt_material.set_shader_parameter("motion",0.0 if reduced_motion else 1.0)
@@ -112,7 +113,7 @@ func _finish_boot() -> void:
 func _shutdown() -> void:
 	if not lifecycle.accepts_input(): return
 	pointer_captured = false
-	if reduced_motion or DisplayServer.get_name() == "headless":
+	if reduced_motion or effects <= 0.0 or DisplayServer.get_name() == "headless":
 		get_tree().quit()
 		return
 	lifecycle.begin_shutdown()

@@ -140,7 +140,7 @@ func _show(next: String) -> void:
 	add_child(page)
 	buttons.clear()
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.3.0-alpha.1",Rect2(946,82,390,48),page,27,DIM)
+	var version := _label("MINE // 0.3.0-alpha.1-crt.1",Rect2(946,82,390,48),page,27,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -299,7 +299,17 @@ func _settings() -> void:
 	_label(tr("VIS_SETTINGS"),Rect2(124,212,1150,60),page,41)
 	_button("EN" if is_uk else "UA",Rect2(124,305,300,62),page,_language)
 	_button(tr("VIS_FULLSCREEN"),Rect2(444,305,720,62),page,func(): fullscreen_requested.emit())
-	_button(tr("VIS_CRT")+": "+str(roundi(amount*100))+"%",Rect2(124,389,1040,62),page,func(): amount = 0.0 if amount >= 0.9 else amount+0.15; _apply(); _show("settings"))
+	var crt_readout := _label(tr("VIS_CRT")+": "+str(roundi(amount*100))+"%",Rect2(124,382,1040,35),page,28)
+	var crt_slider := HSlider.new()
+	crt_slider.min_value = 0.0
+	crt_slider.max_value = 1.0
+	crt_slider.step = 0.05
+	crt_slider.value = amount
+	_place(crt_slider,Rect2(124,421,1040,28),page)
+	crt_slider.value_changed.connect(func(v: float):
+		amount = v
+		crt_readout.text = tr("VIS_CRT")+": "+str(roundi(v*100))+"%"
+		_apply())
 	_button(tr("VIS_CURVE")+": "+_on_off(curve),Rect2(124,471,1040,62),page,func(): curve = not curve; _apply(); _show("settings"))
 	_button(tr("VIS_MOTION")+": "+_on_off(reduced),Rect2(124,553,1040,62),page,func(): reduced = not reduced; _apply(); _show("settings"))
 	_button(tr("VIS_FLICKER")+": "+_on_off(flicker),Rect2(124,635,1040,62),page,func(): flicker = not flicker; _apply(); _show("settings"))

@@ -1,4 +1,8 @@
 # Changelog
+## 0.3.0-alpha.1-crt.1 — screenshot-driven CRT correction
+- Normalized strength-dependent barrel warp with shared input mapping; no out-of-range sample strip. Stronger antialiased scanlines, subtle phosphor grille, two-radius halo, ordered 4x4 dither, vignette and soft glass reflection. Exact zero-strength bypass in ready state.
+- Live 0–100% CRT slider, power-off animation bypass when CRT disabled, increased geometry and material-binding checks. Original PNG untouched. Windows graphical acceptance still pending; headless cannot certify shader appearance.
+
 ## 0.3.0-alpha.1 — Onboarding Foundation candidate
 - Four certified CLASSIC difficulty profiles, local active-sector resume, persistent graphics/audio/language, session statistics and first five guided exercises. Original PNG and core BoardState unchanged.
 - Profile generator retains legacy Standard and independently certifies every new profile; fail closed. Save validates mask, cell states, HP and certificate. No campaign checkpoints, hints, rewind, modules or anomaly tutorial yet.
