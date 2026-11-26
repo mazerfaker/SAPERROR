@@ -106,3 +106,24 @@ msgstr "Terminal hum"
 
 msgid "VIS_AUDIO_TEST"
 msgstr "Test sound"
+
+msgid "VIS_SKIP_BOOT"
+msgstr "ESC / ENTER / SPACE — skip"
+
+msgid "VIS_BOOT_CRT"
+msgstr "Initializing CRT"
+
+msgid "VIS_BOOT_CORE"
+msgstr "Loading mine core"
+
+msgid "VIS_BOOT_AUDIO"
+msgstr "Initializing audio"
+
+msgid "VIS_BOOT_READY"
+msgstr "Terminal ready"
+
+msgid "VIS_WIN_BANNER"
+msgstr "SECTOR CLEARED"
+
+msgid "VIS_LOSS_BANNER"
+msgstr "CRITICAL FAILURE"

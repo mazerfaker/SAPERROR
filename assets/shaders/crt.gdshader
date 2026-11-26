@@ -7,6 +7,8 @@ uniform float fault : hint_range(0.0, 1.0) = 0.0;
 uniform float motion = 1.0;
 uniform float flicker = 0.0;
 uniform float power = 1.0;
+uniform float beam = 1.0;
+uniform float outcome = 0.0;
 float hash(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
 float edge_mask(vec2 p) {
 	float distance_to_edge = 1.0;
@@ -51,6 +53,11 @@ void fragment() {
 	rgb *= 1.0-strength*0.12*dot(p,p)*0.5;
 	rgb *= 1.0-flicker*motion*strength*0.018*(0.5+0.5*sin(t*13.0));
 	rgb += vec3(0.006,0.016,0.009)*strength*max(0.0,1.0-dot(p,p)*0.45);
-	rgb = mix(vec3(0.021,0.039,0.026),rgb,inside*power);
+	vec3 outcome_tint = outcome > 0.0 ? vec3(0.015,0.07,0.025) : vec3(0.09,0.015,0.008);
+	rgb += outcome_tint*abs(outcome)*strength;
+	float beam_mask = 1.0-smoothstep(max(0.0,beam-0.012),beam+0.012,abs(p.y));
+	float line_glow = exp(-abs(p.y)*90.0)*(1.0-beam)*power;
+	rgb = mix(vec3(0.012,0.025,0.017),rgb,inside*power*beam_mask);
+	rgb += vec3(0.15,0.38,0.17)*line_glow;
 	COLOR = vec4(rgb,edge_mask(UV));
 }

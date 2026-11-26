@@ -6,10 +6,17 @@ const TerminalAudio = preload("res://scripts/audio/terminal_audio.gd")
 signal effects_changed(amount: float, curve: bool, reduced: bool, flicker: bool, global_amount: float)
 signal fault_triggered
 signal fullscreen_requested
+signal shutdown_requested
+signal outcome_triggered(won: bool)
 const GREEN := Color("b6edb1")
 const DIM := Color("729b79")
 const AMBER := Color("f0c37b")
 const RED := Color("f18b7d")
+var boot_overlay: Control
+var boot_log: Label
+var boot_meter: ColorRect
+var boot_percent: Label
+var outcome_banner: Control
 var audio: TerminalAudio
 var board: Board
 var certificate: Dictionary = {}
@@ -118,7 +125,7 @@ func _show(next: String) -> void:
 	add_child(page)
 	buttons.clear()
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.2.2-alpha",Rect2(946,82,390,48),page,27,DIM)
+	var version := _label("MINE // 0.2.3-alpha",Rect2(946,82,390,48),page,27,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -135,9 +142,58 @@ func _menu() -> void:
 	_button(tr("VIS_CONTINUE") if board != null and not board.finished() else tr("VIS_START"),Rect2(124,407,640,74),page,func(): _show("game"))
 	_button(tr("VIS_HELP"),Rect2(124,500,640,74),page,func(): _show("help"))
 	_button(tr("VIS_SETTINGS"),Rect2(124,593,640,74),page,func(): _show("settings"))
-	_button(tr("VIS_EXIT"),Rect2(124,686,640,74),page,func(): get_tree().quit())
+	_button(tr("VIS_EXIT"),Rect2(124,686,640,74),page,func(): shutdown_requested.emit())
 	_label(tr("VIS_CORE_ONLY"),Rect2(840,415,470,170),page,29,AMBER)
 	_button("EN" if is_uk else "UA",Rect2(1100,744,210,60),page,_language)
+func begin_boot() -> void:
+	boot_overlay = ColorRect.new()
+	(boot_overlay as ColorRect).color = Color("081710")
+	boot_overlay.size = size
+	add_child(boot_overlay)
+	_label("SAPERROR // BIOS",Rect2(110,110,1206,100),boot_overlay,64)
+	boot_log = _label("",Rect2(110,270,1206,350),boot_overlay,36)
+	var track := ColorRect.new()
+	track.color = Color("193b24")
+	_place(track,Rect2(110,680,1206,18),boot_overlay)
+	boot_meter = ColorRect.new()
+	boot_meter.color = GREEN
+	_place(boot_meter,Rect2(0,0,0,18),track)
+	boot_percent = _label("00%",Rect2(110,715,1206,64),boot_overlay,38)
+	_label(tr("VIS_SKIP_BOOT"),Rect2(110,805,1206,60),boot_overlay,28,DIM)
+	update_boot(0.0)
+func update_boot(progress: float) -> void:
+	if not is_instance_valid(boot_overlay): return
+	var lines: String = "> "+tr("VIS_BOOT_CRT")
+	if progress >= 0.25: lines += "\n> "+tr("VIS_BOOT_CORE")
+	if progress >= 0.55: lines += "\n> "+tr("VIS_BOOT_AUDIO")
+	if progress >= 0.80: lines += "\n> "+tr("VIS_BOOT_READY")
+	boot_log.text = lines
+	boot_meter.size.x = 1206.0*progress
+	boot_percent.text = "%02d%%" % roundi(progress*100.0)
+func end_boot() -> void:
+	if is_instance_valid(boot_overlay):
+		remove_child(boot_overlay)
+		boot_overlay.queue_free()
+		boot_overlay = null
+func _show_outcome(won: bool) -> void:
+	if is_instance_valid(outcome_banner):
+		outcome_banner.queue_free()
+	var banner := Panel.new()
+	outcome_banner = banner
+	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var tint: Color = GREEN if won else RED
+	banner.add_theme_stylebox_override("panel",_style(Color("0b2115") if won else Color("341b17"),tint,3))
+	_place(banner,Rect2(376,399,674,170),page)
+	var headline := _label(tr("VIS_WIN_BANNER" if won else "VIS_LOSS_BANNER"),Rect2(12,16,650,76),banner,40,tint)
+	headline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	headline.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var hint := _label(tr("CORE_WIN" if won else "CORE_LOSS"),Rect2(12,94,650,60),banner,30,tint)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var tween := banner.create_tween()
+	tween.tween_interval(1.1)
+	if not reduced: tween.tween_property(banner,"modulate:a",0.0,0.35)
+	tween.tween_callback(banner.queue_free)
 func _language() -> void:
 	is_uk = not is_uk
 	TranslationServer.set_locale("uk" if is_uk else "en")
@@ -230,6 +286,7 @@ func _game() -> void:
 	_button(tr("VIS_BACK"),Rect2(914,844,422,60),page,func(): _show("menu"),28)
 	_refresh()
 func _reset() -> void:
+	if is_instance_valid(outcome_banner): outcome_banner.queue_free()
 	board = null
 	certificate.clear()
 	last_hits = 0
@@ -296,6 +353,9 @@ func _after_action(sound: String = "") -> void:
 		sound = "loss"
 	if not sound.is_empty(): audio.play_event(sound)
 	_refresh()
+	if board.finished():
+		outcome_triggered.emit(board.won())
+		_show_outcome(board.won())
 func _refresh() -> void:
 	var hp: int = 3 if board == null else board.hp
 	integrity.text = tr("CORE_HP")+"\n"+"■ ".repeat(hp)+"□ ".repeat(3-hp)

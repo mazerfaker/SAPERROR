@@ -106,3 +106,24 @@ msgstr "Гул термінала"
 
 msgid "VIS_AUDIO_TEST"
 msgstr "Перевірити звук"
+
+msgid "VIS_SKIP_BOOT"
+msgstr "ESC / ENTER / ПРОБІЛ — пропустити"
+
+msgid "VIS_BOOT_CRT"
+msgstr "Ініціалізація CRT"
+
+msgid "VIS_BOOT_CORE"
+msgstr "Завантаження ядра сапера"
+
+msgid "VIS_BOOT_AUDIO"
+msgstr "Ініціалізація аудіосистеми"
+
+msgid "VIS_BOOT_READY"
+msgstr "Термінал готовий"
+
+msgid "VIS_WIN_BANNER"
+msgstr "СЕКТОР ОЧИЩЕНО"
+
+msgid "VIS_LOSS_BANNER"
+msgstr "АВАРІЙНИЙ СТАН"

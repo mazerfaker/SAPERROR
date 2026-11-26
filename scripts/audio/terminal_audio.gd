@@ -1,7 +1,7 @@
 extends Node
 ## Original deterministic procedural PCM, no external audio assets.
 const RATE: int = 22050
-const EVENTS := ["key","reveal","flood","flag","unflag","fault","win","loss","invalid","boot","hum"]
+const EVENTS := ["key","reveal","flood","flag","unflag","fault","win","loss","invalid","boot","shutdown","hum"]
 var sounds: Dictionary = {}
 var ambience: AudioStreamPlayer
 var voices: Array[AudioStreamPlayer] = []
@@ -21,6 +21,7 @@ static func synth(kind: String) -> AudioStreamWAV:
 		"win","loss": duration = 0.72
 		"invalid": duration = 0.18
 		"boot": duration = 0.52
+		"shutdown": duration = 0.60
 		"hum": duration = 2.0
 	var count: int = roundi(duration * RATE)
 	var pcm := PackedByteArray()
@@ -62,6 +63,8 @@ static func synth(kind: String) -> AudioStreamWAV:
 				sample = env*(0.22*sin(TAU*155.0*t)+0.12*sin(TAU*211.0*t))
 			"boot":
 				sample = env*(0.22*sin(TAU*(100.0*t+430.0*t*t))+0.10*lp)
+			"shutdown":
+				sample = env*(0.24*sin(TAU*(520.0*t-350.0*t*t))+0.12*lp)
 		pcm.encode_s16(i*2,roundi(clampf(sample,-0.9,0.9)*32767.0))
 	var stream := AudioStreamWAV.new()
 	stream.format = AudioStreamWAV.FORMAT_16_BITS
@@ -113,3 +116,7 @@ func play_event(kind: String) -> void:
 	voice.stop()
 	voice.stream = sounds[kind]
 	voice.play()
+
+func fade_hum(factor: float) -> void:
+	if is_instance_valid(ambience) and enabled:
+		ambience.volume_db = linear_to_db(maxf(hum_level*clampf(factor,0.0,1.0),0.0001))

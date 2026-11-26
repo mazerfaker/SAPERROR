@@ -1,4 +1,10 @@
 # Changelog
+## 0.2.3-alpha — CRT Immersion candidate
+- Skippable 2.4s CRT power-on and localized boot panel, beam warm-up and power-off collapse with synthetic shutdown sound and hum fade.
+- Transient sector win/loss banner and additive CRT outcome tint; input blocked during boot/shutdown; reduced-motion mode bypasses shutdown and outcome motion. Headless boot skipped.
+- Lifecycle and scene integration QA gate. Original artwork, board core and stable main unchanged. Manual rendered/audio QA pending.
+- Base: successful v0.2.2 CI 45858022124.
+
 ## 0.2.2-alpha — Audio Foundation candidate
 - CI fix: use fposmod instead of fract; explicit packed float note arrays prevent runtime type mismatch; guard null synth output and add audio test watchdog. Previous run 45851679941 passed 4060 core checks / 1000 seeds and 62 visual checks but audio test failed and timed out.
 - Original procedural PCM: mechanical key, reveal, flood, flag/unflag, fault, win/loss, invalid, boot and continuous industrial hum. Six bounded SFX voices.

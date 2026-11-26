@@ -13,7 +13,7 @@ jobs:
       contents: write
     env:
       GODOT_VERSION: '4.7.2-stable'
-      GAME_VERSION: '0.2.2-alpha'
+      GAME_VERSION: '0.2.3-alpha'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -95,6 +95,8 @@ jobs:
           if (-not (Select-String -Path build/logs/visual-tests.txt -Pattern 'VISUAL_QA.*failures=0' -Quiet)) { throw 'Missing visual QA marker' }
           Invoke-Godot 'audio-tests.txt' @('--headless','--path','.','--script','res://tests/audio_test.gd')
           if (-not (Select-String -Path build/logs/audio-tests.txt -Pattern 'AUDIO_QA.*failures=0' -Quiet)) { throw 'Missing audio QA marker' }
+          Invoke-Godot 'lifecycle-tests.txt' @('--headless','--path','.','--script','res://tests/lifecycle_test.gd')
+          if (-not (Select-String -Path build/logs/lifecycle-tests.txt -Pattern 'LIFECYCLE_QA.*failures=0' -Quiet)) { throw 'Missing lifecycle QA marker' }
           Invoke-Godot 'export.txt' @('--headless','--path','.','--export-release','Windows Desktop','build/windows/SAPERROR.exe')
       - name: Verify and headless smoke
         shell: pwsh
