@@ -38,9 +38,7 @@ float periodic_mask(float coord, float period) {
 	float resolved = 1.0-smoothstep(0.32,0.70,width);
 	return cos(phase*6.2831853)*resolved;
 }
-vec3 phosphor_sample(sampler2D tex, vec2 uv) {
-	return texture(tex,clamp(uv,vec2(0.0),vec2(1.0))).rgb;
-}
+
 void fragment() {
 	vec2 p = UV*2.0-1.0;
 	float r2 = dot(p,p);
@@ -54,15 +52,15 @@ void fragment() {
 	if (strength > 0.0001) {
 		vec2 px = vec2(1.0/1426.0,1.0/962.0);
 		vec3 near_halo = (
-			phosphor_sample(TEXTURE,q+vec2(px.x*2.0,0.0))+
-			phosphor_sample(TEXTURE,q-vec2(px.x*2.0,0.0))+
-			phosphor_sample(TEXTURE,q+vec2(0.0,px.y*2.0))+
-			phosphor_sample(TEXTURE,q-vec2(0.0,px.y*2.0)))*0.25;
+			texture(TEXTURE,clamp(q+vec2(px.x*2.0,0.0),vec2(0.0),vec2(1.0))).rgb+
+			texture(TEXTURE,clamp(q-vec2(px.x*2.0,0.0),vec2(0.0),vec2(1.0))).rgb+
+			texture(TEXTURE,clamp(q+vec2(0.0,px.y*2.0),vec2(0.0),vec2(1.0))).rgb+
+			texture(TEXTURE,clamp(q-vec2(0.0,px.y*2.0),vec2(0.0),vec2(1.0))).rgb)*0.25;
 		vec3 far_halo = (
-			phosphor_sample(TEXTURE,q+px*vec2(5.0,4.0))+
-			phosphor_sample(TEXTURE,q+px*vec2(-5.0,4.0))+
-			phosphor_sample(TEXTURE,q+px*vec2(5.0,-4.0))+
-			phosphor_sample(TEXTURE,q-px*vec2(5.0,4.0)))*0.25;
+			texture(TEXTURE,clamp(q+px*vec2(5.0,4.0),vec2(0.0),vec2(1.0))).rgb+
+			texture(TEXTURE,clamp(q+px*vec2(-5.0,4.0),vec2(0.0),vec2(1.0))).rgb+
+			texture(TEXTURE,clamp(q+px*vec2(5.0,-4.0),vec2(0.0),vec2(1.0))).rgb+
+			texture(TEXTURE,clamp(q-px*vec2(5.0,4.0),vec2(0.0),vec2(1.0))).rgb)*0.25;
 		// Color-preserving bloom; red and amber warnings remain distinct.
 		vec3 glow = max(near_halo-base,vec3(0.0))*0.48 + max(far_halo-base,vec3(0.0))*0.26;
 		vec3 graded = base*1.08+glow;
