@@ -5,4 +5,4 @@
 - Public-observation solver with direct and subset deduction, separate truth validator, replayable certificate.
 - Deterministic bounded generation and validated fallback patterns; one supported 8×8/10 profile.
 - Core diagnostic UI, UA/EN live switch, tests and Windows workflow.
-- No verified engine execution, GitHub commit, EXE or production art yet.
+- First GitHub CI attempt reached engine import; blocked by cold-checkout localization. Replaced generated CSV translations with source-controlled PO catalogs and added locale regression checks. No verified EXE or production art yet.

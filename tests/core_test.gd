@@ -14,6 +14,10 @@ func check(condition: bool, description: String) -> void:
 func _initialize() -> void:
 	call_deferred("run")
 func run() -> void:
+	TranslationServer.set_locale("uk")
+	check(TranslationServer.translate("CORE_HP") == "Цілісність", "Ukrainian translation loaded")
+	TranslationServer.set_locale("en")
+	check(TranslationServer.translate("CORE_HP") == "Integrity", "English translation loaded")
 	check(Rules.neighbors(3,3,4).size() == 8, "classic interior")
 	check(Rules.neighbors(3,3,0).size() == 3, "classic corner")
 	check(Rules.neighbors(3,3,4,Rules.Rule.CROSS).size() == 4, "cross")

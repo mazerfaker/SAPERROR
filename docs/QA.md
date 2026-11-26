@@ -14,3 +14,9 @@
 
 ## Repository initialization
 Private repository created by owner. Core CI status pending; earlier repository-access blocker resolved.
+
+## CI run 45834974390 — failed
+- Windows runner and checksum-verified Godot 4.7.2 editor/templates installed successfully.
+- Cold import failed because project.godot referenced CSV-generated translation resources before their creation. No tests or export executed.
+- Fix: use source-controlled gettext PO catalogs; test runtime UA/EN switching. Retain strict import error gate.
+- Retest pending; no Windows package verified.

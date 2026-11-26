@@ -50,9 +50,9 @@ jobs:
         shell: pwsh
         run: |
           function Invoke-Godot([string]$log, [string[]]$params) {
-            & $env:GODOT_EXE @params 2>&1 | Tee-Object -FilePath "build/logs/$log"
+            & $env:GODOT_EXE --no-header @params 2>&1 | Tee-Object -FilePath "build/logs/$log"
             if ($LASTEXITCODE -ne 0) { throw "Godot failed: $log" }
-            if (Select-String -Path "build/logs/$log" -Pattern 'SCRIPT ERROR|Parse Error|^ERROR:' -Quiet) { throw "Godot reported errors: $log" }
+            if (Select-String -Path "build/logs/$log" -Pattern 'SCRIPT ERROR|Parse Error|ERROR:' -Quiet) { throw "Godot reported errors: $log" }
           }
           Invoke-Godot 'version.txt' @('--version')
           if ((Get-Content build/logs/version.txt -Raw) -notmatch '^4\.7\.2\.stable') { throw 'Unexpected Godot version' }
@@ -71,7 +71,7 @@ jobs:
           if (-not $p.WaitForExit(30000)) { $p.Kill(); throw 'Smoke timeout' }
           if ($p.ExitCode -ne 0) { throw "Smoke exit $($p.ExitCode)" }
           if (!(Test-Path build/logs/smoke.txt)) { throw 'Smoke log absent' }
-          if (Select-String -Path build/logs/smoke.txt -Pattern 'SCRIPT ERROR|Parse Error|^ERROR:' -Quiet) { throw 'Smoke errors' }
+          if (Select-String -Path build/logs/smoke.txt -Pattern 'SCRIPT ERROR|Parse Error|ERROR:' -Quiet) { throw 'Smoke errors' }
       - name: Package portable and source
         shell: pwsh
         run: |

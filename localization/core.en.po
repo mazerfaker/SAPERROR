@@ -1,0 +1,57 @@
+msgid ""
+msgstr ""
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "CORE_SUB"
+msgstr "MINE / CORE VALIDATION · 0.1.0-alpha"
+
+msgid "CORE_HINT"
+msgstr "Left: reveal · Right: flag · Middle/Space: chord"
+
+msgid "CORE_NEW"
+msgstr "New sector"
+
+msgid "CORE_SEED"
+msgstr "Seed"
+
+msgid "CORE_HP"
+msgstr "Integrity"
+
+msgid "CORE_OPEN"
+msgstr "Recovered"
+
+msgid "CORE_READY"
+msgstr "Choose first cell"
+
+msgid "CORE_ACTIVE"
+msgstr "CLASSIC / certified"
+
+msgid "CORE_WIN"
+msgstr "Sector cleared"
+
+msgid "CORE_LOSS"
+msgstr "Integrity depleted"
+
+msgid "CORE_FAIL"
+msgstr "No certified board. Try another seed."
+
+msgid "CORE_HIT"
+msgstr "Mine neutralized"
+
+msgid "CORE_SEED_BAD"
+msgstr "Enter a signed integer seed."
+
+msgid "CORE_CELL"
+msgstr "Cell"
+
+msgid "CORE_FLAG"
+msgstr "Flagged"
+
+msgid "CORE_CLOSED"
+msgstr "Closed"
+
+msgid "CORE_NEUTRAL"
+msgstr "Neutralized mine"
