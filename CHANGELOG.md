@@ -1,5 +1,6 @@
 # Changelog
 ## 0.2.2-alpha — Audio Foundation candidate
+- CI fix: use fposmod instead of fract; explicit packed float note arrays prevent runtime type mismatch; guard null synth output and add audio test watchdog. Previous run 45851679941 passed 4060 core checks / 1000 seeds and 62 visual checks but audio test failed and timed out.
 - Original procedural PCM: mechanical key, reveal, flood, flag/unflag, fault, win/loss, invalid, boot and continuous industrial hum. Six bounded SFX voices.
 - Real board-state-driven feedback, separate effects/hum sliders and mute, localized audio page. Settings are session-only for now.
 - Audio PCM regression tests and Windows CI gate. Human listening and new visual review pending. Approved original PNG and board core unchanged.

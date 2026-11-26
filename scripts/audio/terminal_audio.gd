@@ -53,7 +53,7 @@ static func synth(kind: String) -> AudioStreamWAV:
 			"fault":
 				sample = env*(0.35*lp+0.18*noise+0.25*sin(TAU*(95.0*t-42.0*t*t)))
 			"win","loss":
-				var notes: Array[float] = [440.0,554.0,659.0,880.0] if kind == "win" else [330.0,247.0,165.0,110.0]
+				var notes: PackedFloat32Array = PackedFloat32Array([440.0,554.0,659.0,880.0]) if kind == "win" else PackedFloat32Array([330.0,247.0,165.0,110.0])
 				var n: int = mini(3,int(x*4.0))
 				var local: float = fposmod(x*4.0,1.0)
 				var note_env: float = minf(1.0,local*20.0)*pow(1.0-local,0.9)
