@@ -1,7 +1,7 @@
 # QA — 0.1.0-alpha candidate
 - GDD reviewed and copied unchanged.
-- Runtime GDScript/headless import: NOT RUN (Godot unavailable in local environment).
-- Windows CI: NOT RUN (target repo unavailable; connector cannot create repositories).
+- Runtime GDScript/headless import: passed on Windows CI run 45837724510; local Godot unavailable.
+- Windows CI: run 45837724510 passed import/tests/export/headless smoke; overall failed at packaging.
 - Automated suite defined: topology incl. edge cases, INVERT zero, flags/flood, chord/neutralization, HP/win/loss, subset, 1000 seeds and certificate replay, deterministic sample.
 - No claims of verified gameplay, performance, GUI or Windows executable. Manual launch, input, localization, win/loss, visual review pending.
 - Production UI/art, other generation profiles and full campaign are future gates; CLASSIC only in this build. No speculative enablement of other modes.
@@ -20,3 +20,9 @@ Private repository created by owner. Core CI status pending; earlier repository-
 - Cold import failed because project.godot referenced CSV-generated translation resources before their creation. No tests or export executed.
 - Fix: use source-controlled gettext PO catalogs; test runtime UA/EN switching. Retain strict import error gate.
 - Retest pending; no Windows package verified.
+
+## CI run 45837724510
+- CORE_QA checks=4060 failures=0 seeds=1000 fallback=0.
+- Windows release export and headless smoke passed; manual GUI QA not performed.
+- Packaging exited with code 1 without a more specific visible diagnostic. Likely cause: git describe returned failure for absent prior tag and PowerShell propagated the exit status.
+- Fix: enumerate reachable release tags successfully even when none exist; verify portable/source ZIP required entries and SHA-256 hashes before publication. Retest pending.

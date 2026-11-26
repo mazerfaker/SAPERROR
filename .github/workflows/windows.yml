@@ -79,8 +79,47 @@ jobs:
           Compress-Archive -Path build/windows/* -DestinationPath "build/dist/SAPERROR_v${env:GAME_VERSION}_Windows_x64.zip"
           git archive --format=zip -o "build/dist/SAPERROR_v${env:GAME_VERSION}_Source.zip" HEAD
           if ($LASTEXITCODE -ne 0) { throw 'Source archive failed' }
-          $base = git describe --tags --abbrev=0 HEAD^ 2>$null
-          if ($LASTEXITCODE -eq 0 -and $base) {
+          # Query reachable tags without treating an absent tag as a native-command failure.
+          $tags = @(git tag --merged HEAD^ --sort=-version:refname --list 'v[0-9]*')
+          if ($LASTEXITCODE -ne 0) { throw 'Tag enumeration failed' }
+          $base = $tags | Where-Object { $_ -match '^v\d+\.\d+\.\d+
+            git diff --binary --output=build/dist/changes.patch $base HEAD
+            if ($LASTEXITCODE -ne 0) { throw 'Patch creation failed' }
+            "Base: $base" | Out-File build/dist/patch-base.txt
+            Compress-Archive -Path build/dist/changes.patch,build/dist/patch-base.txt -DestinationPath "build/dist/SAPERROR_v${env:GAME_VERSION}_Patch.zip"
+          } else { 'Initial version: no preceding stable tag; source archive is baseline.' | Out-File build/logs/patch-status.txt }
+          # Inspect actual ZIP contents, not only the existence of output paths.
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $expected = @{
+            "SAPERROR_v${env:GAME_VERSION}_Windows_x64.zip" = @('SAPERROR.exe','SAPERROR.pck','README.md')
+            "SAPERROR_v${env:GAME_VERSION}_Source.zip" = @('project.godot','export_presets.cfg','docs/SAPERROR_GDD.md')
+          }
+          foreach ($name in $expected.Keys) {
+            $path = Join-Path $PWD "build/dist/$name"
+            $zip = [System.IO.Compression.ZipFile]::OpenRead($path)
+            try {
+              foreach ($entry in $expected[$name]) {
+                $item = $zip.GetEntry($entry)
+                if ($null -eq $item -or $item.Length -le 0) { throw "Missing or empty ZIP entry: $name / $entry" }
+                "ZIP_QA $name / $entry : $($item.Length) bytes" | Tee-Object -FilePath build/logs/package-validation.txt -Append
+              }
+            } finally { $zip.Dispose() }
+            Get-FileHash $path | Out-File -Append build/logs/artifact-hashes.txt
+          }
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: SAPERROR-packages
+          path: build/dist/*.zip
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SAPERROR-QA-logs
+          path: build/logs/
+          if-no-files-found: warn
+ } | Select-Object -First 1
+          if ($base) {
             git diff --binary --output=build/dist/changes.patch $base HEAD
             if ($LASTEXITCODE -ne 0) { throw 'Patch creation failed' }
             "Base: $base" | Out-File build/dist/patch-base.txt
