@@ -1,4 +1,10 @@
 # Changelog
+## 0.2.2-alpha — Audio Foundation candidate
+- Original procedural PCM: mechanical key, reveal, flood, flag/unflag, fault, win/loss, invalid, boot and continuous industrial hum. Six bounded SFX voices.
+- Real board-state-driven feedback, separate effects/hum sliders and mute, localized audio page. Settings are session-only for now.
+- Audio PCM regression tests and Windows CI gate. Human listening and new visual review pending. Approved original PNG and board core unchanged.
+- Base: successful v0.2.1 CI run 45848165101.
+
 ## 0.2.1-alpha — Visual Refinement candidate
 - Screenshot-driven larger grid, clearer cells and labels, live recovery meter, real control hints and seed preservation.
 - CRT edge feather, ordered dither, subtle phosphor halo and reduced-motion-aware cell flash. Approved artwork and core unchanged.

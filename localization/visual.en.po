@@ -91,3 +91,18 @@ msgstr "CONTROLS"
 
 msgid "VIS_CONTROL_SHORT"
 msgstr "LMB: reveal\nRMB / F: flag\nMMB / Space:\nopen neighbors"
+
+msgid "VIS_AUDIO"
+msgstr "Audio"
+
+msgid "VIS_SOUND"
+msgstr "Sound"
+
+msgid "VIS_SFX"
+msgstr "Effects volume"
+
+msgid "VIS_HUM"
+msgstr "Terminal hum"
+
+msgid "VIS_AUDIO_TEST"
+msgstr "Test sound"

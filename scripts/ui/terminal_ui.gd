@@ -2,6 +2,7 @@ extends Control
 const Board = preload("res://scripts/board/state.gd")
 const Generator = preload("res://scripts/board/generator.gd")
 const Geometry = preload("res://scripts/ui/crt_geometry.gd")
+const TerminalAudio = preload("res://scripts/audio/terminal_audio.gd")
 signal effects_changed(amount: float, curve: bool, reduced: bool, flicker: bool, global_amount: float)
 signal fault_triggered
 signal fullscreen_requested
@@ -9,6 +10,7 @@ const GREEN := Color("b6edb1")
 const DIM := Color("729b79")
 const AMBER := Color("f0c37b")
 const RED := Color("f18b7d")
+var audio: TerminalAudio
 var board: Board
 var certificate: Dictionary = {}
 var buttons: Array[Button] = []
@@ -35,6 +37,8 @@ var global_amount: float = 0.0
 func _ready() -> void:
 	TranslationServer.set_locale("uk")
 	theme = _terminal_theme()
+	audio = TerminalAudio.new()
+	add_child(audio)
 	var bg := ColorRect.new()
 	bg.color = Color("081710")
 	bg.size = size
@@ -90,7 +94,9 @@ func _button(value: String, rect: Rect2, parent: Control, action: Callable, font
 	var b := Button.new()
 	b.text = value
 	b.add_theme_font_size_override("font_size",font_size)
-	b.pressed.connect(action)
+	b.pressed.connect(func():
+		audio.play_event("key")
+		action.call())
 	_place(b,rect,parent)
 	return b
 func _panel(rect: Rect2) -> Panel:
@@ -112,7 +118,7 @@ func _show(next: String) -> void:
 	add_child(page)
 	buttons.clear()
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.2.1-alpha",Rect2(946,82,390,48),page,27,DIM)
+	var version := _label("MINE // 0.2.2-alpha",Rect2(946,82,390,48),page,27,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -121,6 +127,7 @@ func _show(next: String) -> void:
 	if screen == "game": _game()
 	elif screen == "settings": _settings()
 	elif screen == "help": _help()
+	elif screen == "audio": _audio_settings()
 	else: _menu()
 func _menu() -> void:
 	_label(tr("VIS_BOOT"),Rect2(124,217,1170,100),page,39)
@@ -147,7 +154,27 @@ func _settings() -> void:
 	_button(tr("VIS_MOTION")+": "+_on_off(reduced),Rect2(124,553,1040,62),page,func(): reduced = not reduced; _apply(); _show("settings"))
 	_button(tr("VIS_FLICKER")+": "+_on_off(flicker),Rect2(124,635,1040,62),page,func(): flicker = not flicker; _apply(); _show("settings"))
 	_button(tr("VIS_GRADE")+": "+_on_off(global_amount>0.0),Rect2(124,717,1040,62),page,func(): global_amount = 0.25 if global_amount == 0.0 else 0.0; _apply(); _show("settings"))
+	_button(tr("VIS_AUDIO"),Rect2(510,803,654,57),page,func(): _show("audio"))
 	_button(tr("VIS_BACK"),Rect2(124,803,350,57),page,func(): _show("menu"))
+func _audio_settings() -> void:
+	_label(tr("VIS_AUDIO"),Rect2(124,212,1150,60),page,41)
+	_button(tr("VIS_SOUND")+": "+_on_off(audio.enabled),Rect2(124,300,1040,70),page,func(): audio.set_levels(audio.sfx_level,audio.hum_level,not audio.enabled); _show("audio"))
+	_audio_slider(tr("VIS_SFX"),audio.sfx_level,410,true)
+	_audio_slider(tr("VIS_HUM"),audio.hum_level,570,false)
+	_button(tr("VIS_AUDIO_TEST"),Rect2(124,718,640,60),page,func(): audio.play_event("reveal"))
+	_button(tr("VIS_BACK"),Rect2(124,803,350,57),page,func(): _show("settings"))
+func _audio_slider(caption: String, value: float, y: float, sfx: bool) -> void:
+	var readout := _label(caption+": "+str(roundi(value*100))+"%",Rect2(124,y,1040,55),page,32)
+	var slider := HSlider.new()
+	slider.min_value = 0.0
+	slider.max_value = 1.0
+	slider.step = 0.05
+	slider.value = value
+	_place(slider,Rect2(124,y+65,1040,46),page)
+	slider.value_changed.connect(func(v: float):
+		readout.text = caption+": "+str(roundi(v*100))+"%"
+		if sfx: audio.set_levels(v,audio.hum_level,audio.enabled)
+		else: audio.set_levels(audio.sfx_level,v,audio.enabled))
 func _on_off(value: bool) -> String:
 	return tr("VIS_ON" if value else "VIS_OFF")
 func _apply() -> void:
@@ -212,45 +239,62 @@ func _reveal(i: int) -> void:
 	if board == null:
 		if not seed_input.text.is_valid_int():
 			message_key = "CORE_SEED_BAD"
+			audio.play_event("invalid")
 			_refresh()
 			return
 		var generated: Dictionary = Generator.generate(seed_input.text.to_int(),i)
 		if generated.is_empty():
 			message_key = "CORE_FAIL"
+			audio.play_event("invalid")
 			_refresh()
 			return
 		certificate = generated["certificate"]
 		board = Board.new(8,8,generated["mask"],3)
+	if board.finished() or board.cells[i] != Board.Cell.CLOSED: return
+	var before: int = board.opened
 	board.reveal(i)
-	_after_action()
+	_after_action("flood" if board.opened-before > 1 else ("reveal" if board.opened > before else ""))
 func _cell_input(event: InputEvent, i: int) -> void:
 	if board == null or board.finished(): return
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_RIGHT:
-			board.flag(i)
+			_flag_action(i)
 			buttons[i].accept_event()
-			_after_action()
 		elif event.button_index == MOUSE_BUTTON_MIDDLE:
-			board.chord(i)
+			_chord_action(i)
 			buttons[i].accept_event()
-			_after_action()
 	elif event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_SPACE and board.cells[i] == Board.Cell.OPEN:
-			board.chord(i)
+			_chord_action(i)
 			buttons[i].accept_event()
-			_after_action()
 		elif event.keycode == KEY_F:
-			board.flag(i)
+			_flag_action(i)
 			buttons[i].accept_event()
-			_after_action()
-func _after_action() -> void:
+func _flag_action(i: int) -> void:
+	var previous: int = board.cells[i]
+	board.flag(i)
+	if previous != board.cells[i]:
+		_after_action("flag" if board.cells[i] == Board.Cell.FLAG else "unflag")
+func _chord_action(i: int) -> void:
+	var before: int = board.opened
+	var hits: int = board.hits
+	board.chord(i)
+	if board.opened != before or board.hits != hits:
+		_after_action("flood" if board.opened-before > 1 else "reveal")
+func _after_action(sound: String = "") -> void:
 	message_key = "CORE_ACTIVE"
 	if board.hits > last_hits:
 		message_key = "CORE_HIT"
 		fault_triggered.emit()
+		sound = "fault"
 	last_hits = board.hits
-	if board.won(): message_key = "CORE_WIN"
-	elif board.hp <= 0: message_key = "CORE_LOSS"
+	if board.won():
+		message_key = "CORE_WIN"
+		sound = "win"
+	elif board.hp <= 0:
+		message_key = "CORE_LOSS"
+		sound = "loss"
+	if not sound.is_empty(): audio.play_event(sound)
 	_refresh()
 func _refresh() -> void:
 	var hp: int = 3 if board == null else board.hp

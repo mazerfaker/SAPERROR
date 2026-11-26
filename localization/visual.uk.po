@@ -91,3 +91,18 @@ msgstr "КЕРУВАННЯ"
 
 msgid "VIS_CONTROL_SHORT"
 msgstr "ЛКМ: відкрити\nПКМ / F: прапор\nСКМ / пробіл:\nсусідні клітинки"
+
+msgid "VIS_AUDIO"
+msgstr "Звук"
+
+msgid "VIS_SOUND"
+msgstr "Звукові ефекти"
+
+msgid "VIS_SFX"
+msgstr "Гучність ефектів"
+
+msgid "VIS_HUM"
+msgstr "Гул термінала"
+
+msgid "VIS_AUDIO_TEST"
+msgstr "Перевірити звук"
