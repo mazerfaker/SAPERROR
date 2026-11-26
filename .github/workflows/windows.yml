@@ -1,0 +1,100 @@
+name: Windows Core QA
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  core:
+    runs-on: windows-2022
+    timeout-minutes: 35
+    env:
+      GODOT_VERSION: '4.7.2-stable'
+      GAME_VERSION: '0.1.0-alpha'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install pinned Godot and templates (release SHA-512 verification)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force build/logs, build/windows, build/dist | Out-Null
+          $v = $env:GODOT_VERSION
+          $base = "https://github.com/godotengine/godot-builds/releases/download/$v"
+          $editor = "Godot_v${v}_win64.exe.zip"
+          $templates = "Godot_v${v}_export_templates.tpz"
+          $dir = Join-Path $env:RUNNER_TEMP 'godot-pinned'
+          New-Item -ItemType Directory -Force $dir | Out-Null
+          Invoke-WebRequest "$base/SHA512-SUMS.txt" -OutFile "$dir/SHA512-SUMS.txt"
+          foreach ($file in @($editor,$templates)) {
+            Invoke-WebRequest "$base/$file" -OutFile "$dir/$file"
+            $line = Get-Content "$dir/SHA512-SUMS.txt" | Where-Object { $_ -match ('\s\*?' + [regex]::Escape($file) + '$') } | Select-Object -First 1
+            if (-not $line) { throw "Missing checksum: $file" }
+            $expected = ($line -split '\s+')[0]
+            $actual = (Get-FileHash "$dir/$file" -Algorithm SHA512).Hash
+            if ($actual -ne $expected) { throw "Checksum mismatch: $file" }
+            "$file $actual" | Add-Content build/logs/checksums.txt
+          }
+          Expand-Archive "$dir/$editor" "$dir/editor" -Force
+          Copy-Item "$dir/$templates" "$dir/templates.zip"
+          Expand-Archive "$dir/templates.zip" "$dir/export" -Force
+          $templateDir = Join-Path $env:APPDATA "Godot/export_templates/$($v -replace '-', '.')"
+          New-Item -ItemType Directory -Force $templateDir | Out-Null
+          Copy-Item "$dir/export/templates/*" $templateDir -Recurse -Force
+          $exe = Get-ChildItem "$dir/editor" -Recurse -Filter '*console.exe' | Select-Object -First 1
+          if (-not $exe) { throw 'Console Godot executable missing' }
+          "GODOT_EXE=$($exe.FullName)" | Add-Content $env:GITHUB_ENV
+      - name: Import and tests
+        shell: pwsh
+        run: |
+          function Invoke-Godot([string]$log, [string[]]$params) {
+            & $env:GODOT_EXE @params 2>&1 | Tee-Object -FilePath "build/logs/$log"
+            if ($LASTEXITCODE -ne 0) { throw "Godot failed: $log" }
+            if (Select-String -Path "build/logs/$log" -Pattern 'SCRIPT ERROR|Parse Error|^ERROR:' -Quiet) { throw "Godot reported errors: $log" }
+          }
+          Invoke-Godot 'version.txt' @('--version')
+          if ((Get-Content build/logs/version.txt -Raw) -notmatch '^4\.7\.2\.stable') { throw 'Unexpected Godot version' }
+          Invoke-Godot 'import.txt' @('--headless','--path','.','--editor','--import')
+          Invoke-Godot 'tests.txt' @('--headless','--path','.','--script','res://tests/core_test.gd')
+          if (-not (Select-String -Path build/logs/tests.txt -Pattern 'CORE_QA.*failures=0.*seeds=1000' -Quiet)) { throw 'Missing QA success marker' }
+          Invoke-Godot 'export.txt' @('--headless','--path','.','--export-release','Windows Desktop','build/windows/SAPERROR.exe')
+      - name: Verify and headless smoke
+        shell: pwsh
+        run: |
+          foreach ($f in @('build/windows/SAPERROR.exe','build/windows/SAPERROR.pck')) {
+            if (!(Test-Path $f) -or (Get-Item $f).Length -le 0) { throw "Missing $f" }
+            Get-FileHash $f | Out-File -Append build/logs/artifact-hashes.txt
+          }
+          $p = Start-Process -FilePath (Resolve-Path build/windows/SAPERROR.exe) -ArgumentList '--headless','--quit-after','5','--log-file', (Join-Path $PWD 'build/logs/smoke.txt') -PassThru
+          if (-not $p.WaitForExit(30000)) { $p.Kill(); throw 'Smoke timeout' }
+          if ($p.ExitCode -ne 0) { throw "Smoke exit $($p.ExitCode)" }
+          if (!(Test-Path build/logs/smoke.txt)) { throw 'Smoke log absent' }
+          if (Select-String -Path build/logs/smoke.txt -Pattern 'SCRIPT ERROR|Parse Error|^ERROR:' -Quiet) { throw 'Smoke errors' }
+      - name: Package portable and source
+        shell: pwsh
+        run: |
+          Copy-Item README.md build/windows/README.md
+          Compress-Archive -Path build/windows/* -DestinationPath "build/dist/SAPERROR_v${env:GAME_VERSION}_Windows_x64.zip"
+          git archive --format=zip -o "build/dist/SAPERROR_v${env:GAME_VERSION}_Source.zip" HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Source archive failed' }
+          $base = git describe --tags --abbrev=0 HEAD^ 2>$null
+          if ($LASTEXITCODE -eq 0 -and $base) {
+            git diff --binary --output=build/dist/changes.patch $base HEAD
+            if ($LASTEXITCODE -ne 0) { throw 'Patch creation failed' }
+            "Base: $base" | Out-File build/dist/patch-base.txt
+            Compress-Archive -Path build/dist/changes.patch,build/dist/patch-base.txt -DestinationPath "build/dist/SAPERROR_v${env:GAME_VERSION}_Patch.zip"
+          } else { 'Initial version: no preceding stable tag; source archive is baseline.' | Out-File build/logs/patch-status.txt }
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: SAPERROR-packages
+          path: build/dist/*.zip
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SAPERROR-QA-logs
+          path: build/logs/
+          if-no-files-found: warn
