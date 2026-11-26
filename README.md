@@ -11,3 +11,6 @@ Push to the authorized private GitHub repository; Windows workflow imports, exec
 
 ## License
 Project source/art rights retained; third-party Godot licensing information in LICENSES.md.
+
+## Visual Foundation candidate
+The approved terminal PNG is immutable. Start the game from scenes/game/gameplay.tscn. CRT effect intensity, curvature, reduced motion, flicker and fullscreen can be changed in terminal settings. The visual alpha uses the certified CLASSIC core; future modes are not presented as functioning. See docs/VISUAL_FOUNDATION.md.

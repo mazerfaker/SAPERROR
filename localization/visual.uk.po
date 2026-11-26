@@ -1,0 +1,87 @@
+msgid ""
+msgstr ""
+"Language: uk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "VIS_BOOT"
+msgstr "АРХІВНИЙ ТЕРМІНАЛ / СЕКТОР 01"
+
+msgid "VIS_TAGLINE"
+msgstr "Числа не брешуть. Зазвичай."
+
+msgid "VIS_CONTINUE"
+msgstr "Продовжити сектор"
+
+msgid "VIS_START"
+msgstr "Почати сектор"
+
+msgid "VIS_HELP"
+msgstr "Інструктаж"
+
+msgid "VIS_SETTINGS"
+msgstr "Налаштування"
+
+msgid "VIS_EXIT"
+msgstr "Вимкнути / Вихід"
+
+msgid "VIS_CORE_ONLY"
+msgstr "ВІЗУАЛЬНА АЛЬФА\nCLASSIC / 8 × 8\nКампанія ще недоступна"
+
+msgid "VIS_HELP_TEXT"
+msgstr "ЛКМ: відкрити. ПКМ або F: прапорець. СКМ або пробіл на відкритому числі: відкрити сусідів.\n\nЧисла показують кількість сусідніх мін. Перший хід безпечний. Відкрийте всі безпечні клітинки. Міна забирає одиницю цілісності. Прапорець — припущення, не доказ."
+
+msgid "VIS_BACK"
+msgstr "Назад / Меню"
+
+msgid "VIS_FULLSCREEN"
+msgstr "Повноекранний режим"
+
+msgid "VIS_CRT"
+msgstr "Інтенсивність CRT"
+
+msgid "VIS_CURVE"
+msgstr "Кривизна"
+
+msgid "VIS_MOTION"
+msgstr "Зменшення руху"
+
+msgid "VIS_FLICKER"
+msgstr "Мерехтіння"
+
+msgid "VIS_GRADE"
+msgstr "Фільтр сцени"
+
+msgid "VIS_ON"
+msgstr "УВІМК."
+
+msgid "VIS_OFF"
+msgstr "ВИМК."
+
+msgid "VIS_SECTOR"
+msgstr "СЕКТОР"
+
+msgid "VIS_DIFFICULTY"
+msgstr "Складність"
+
+msgid "VIS_STANDARD"
+msgstr "Стандарт"
+
+msgid "VIS_RULE"
+msgstr "ПРАВИЛО"
+
+msgid "VIS_MODULES"
+msgstr "МОДУЛІ"
+
+msgid "VIS_ANOMALY"
+msgstr "АНОМАЛІЯ"
+
+msgid "VIS_NONE"
+msgstr "Немає"
+
+msgid "VIS_RESOURCES"
+msgstr "РЕСУРСИ"
+
+msgid "VIS_FLAGS"
+msgstr "Прапорці"

@@ -1,4 +1,4 @@
-name: Windows Core QA
+name: Windows Core + Visual QA
 on:
   push:
   pull_request:
@@ -9,13 +9,45 @@ jobs:
   core:
     runs-on: windows-2022
     timeout-minutes: 35
+    permissions:
+      contents: write
     env:
       GODOT_VERSION: '4.7.2-stable'
-      GAME_VERSION: '0.1.0-alpha'
+      GAME_VERSION: '0.2.0-alpha'
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Reconstruct and verify approved PNG
+        shell: pwsh
+        run: |
+          $asset = 'assets/art/terminal_original.png'
+          $expected = '510b492cf7ef1bb83e912858570b2f2755c3dfcd907b3c063eff8a22be291bfd'
+          if (Test-Path '.asset-transfer') {
+            if ('${{ github.ref }}' -ne 'refs/heads/visual-foundation') { throw 'Asset reconstruction is restricted to visual-foundation' }
+            $parts = @(Get-ChildItem '.asset-transfer/part-*.b64' | Sort-Object Name)
+            if ($parts.Count -ne 6) { throw 'Missing asset transfer part' }
+            $encoded = ($parts | ForEach-Object { [IO.File]::ReadAllText($_.FullName) }) -join ''
+            New-Item -ItemType Directory -Force assets/art | Out-Null
+            [IO.File]::WriteAllBytes((Join-Path $PWD $asset),[Convert]::FromBase64String($encoded))
+            if ((Get-FileHash $asset -Algorithm SHA256).Hash.ToLower() -ne $expected) { throw 'Approved PNG hash mismatch' }
+            if ((git hash-object $asset) -ne '4c06dba23194f5178373a34a472377fbf77b2274') { throw 'Git blob hash mismatch' }
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add -- $asset
+            if ($LASTEXITCODE -ne 0) { throw 'Asset staging failed' }
+            git rm -r -- .asset-transfer
+            if ($LASTEXITCODE -ne 0) { throw 'Transfer cleanup failed' }
+            git commit -m 'assets: store byte-identical approved SAPERROR terminal PNG'
+            if ($LASTEXITCODE -ne 0) { throw 'Asset commit failed' }
+            git push origin HEAD:refs/heads/visual-foundation
+            if ($LASTEXITCODE -ne 0) { throw 'Asset commit push failed' }
+          }
+          if (!(Test-Path $asset)) { throw 'Approved PNG missing' }
+          if ((Get-FileHash $asset -Algorithm SHA256).Hash.ToLower() -ne $expected) { throw 'Approved PNG hash mismatch' }
+          New-Item -ItemType Directory -Force build/logs | Out-Null
+          "Approved PNG SHA256: $expected" | Tee-Object -FilePath build/logs/asset-integrity.txt
+          "Source commit: $(git rev-parse HEAD)" | Tee-Object -FilePath build/logs/source-commit.txt
       - name: Install pinned Godot and templates (release SHA-512 verification)
         shell: pwsh
         run: |
@@ -59,6 +91,8 @@ jobs:
           Invoke-Godot 'import.txt' @('--headless','--path','.','--editor','--import')
           Invoke-Godot 'tests.txt' @('--headless','--path','.','--script','res://tests/core_test.gd')
           if (-not (Select-String -Path build/logs/tests.txt -Pattern 'CORE_QA.*failures=0.*seeds=1000' -Quiet)) { throw 'Missing QA success marker' }
+          Invoke-Godot 'visual-tests.txt' @('--headless','--path','.','--script','res://tests/visual_test.gd')
+          if (-not (Select-String -Path build/logs/visual-tests.txt -Pattern 'VISUAL_QA.*failures=0' -Quiet)) { throw 'Missing visual QA marker' }
           Invoke-Godot 'export.txt' @('--headless','--path','.','--export-release','Windows Desktop','build/windows/SAPERROR.exe')
       - name: Verify and headless smoke
         shell: pwsh
@@ -79,21 +113,16 @@ jobs:
           Compress-Archive -Path build/windows/* -DestinationPath "build/dist/SAPERROR_v${env:GAME_VERSION}_Windows_x64.zip"
           git archive --format=zip -o "build/dist/SAPERROR_v${env:GAME_VERSION}_Source.zip" HEAD
           if ($LASTEXITCODE -ne 0) { throw 'Source archive failed' }
-          # Query reachable tags without treating an absent tag as a native-command failure.
-          $tags = @(git tag --merged HEAD^ --sort=-version:refname --list 'v[0-9]*')
-          if ($LASTEXITCODE -ne 0) { throw 'Tag enumeration failed' }
-          $base = $tags | Where-Object { $_ -match '^v\d+\.\d+\.\d+$' } | Select-Object -First 1
-          if ($base) {
-            git diff --binary --output=build/dist/changes.patch $base HEAD
-            if ($LASTEXITCODE -ne 0) { throw 'Patch creation failed' }
-            "Base: $base" | Out-File build/dist/patch-base.txt
-            Compress-Archive -Path build/dist/changes.patch,build/dist/patch-base.txt -DestinationPath "build/dist/SAPERROR_v${env:GAME_VERSION}_Patch.zip"
-          } else { 'Initial version: no preceding stable tag; source archive is baseline.' | Out-File build/logs/patch-status.txt }
+          $base = '1e6bc1fdc00784a9a272a8434a68efc2c4ac8e41'
+          git diff --binary --output=build/dist/changes.patch $base HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Patch creation failed' }
+          "Base: $base" | Out-File build/dist/patch-base.txt
+          Compress-Archive -Path build/dist/changes.patch,build/dist/patch-base.txt -DestinationPath "build/dist/SAPERROR_v${env:GAME_VERSION}_Patch.zip"
           # Inspect actual ZIP contents, not only the existence of output paths.
           Add-Type -AssemblyName System.IO.Compression.FileSystem
           $expected = @{
             "SAPERROR_v${env:GAME_VERSION}_Windows_x64.zip" = @('SAPERROR.exe','SAPERROR.pck','README.md')
-            "SAPERROR_v${env:GAME_VERSION}_Source.zip" = @('project.godot','export_presets.cfg','docs/SAPERROR_GDD.md')
+            "SAPERROR_v${env:GAME_VERSION}_Source.zip" = @('project.godot','export_presets.cfg','docs/SAPERROR_GDD.md','assets/art/terminal_original.png')
           }
           foreach ($name in $expected.Keys) {
             $path = Join-Path $PWD "build/dist/$name"

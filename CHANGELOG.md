@@ -1,4 +1,10 @@
 # Changelog
+## 0.2.0-alpha — Visual Foundation candidate
+- Immutable approved original PNG, masked live CRT SubViewport, native aspect letterboxing, shared shader/input transform.
+- Custom terminal controls, menu, instructions, settings, live 8×8 certified CLASSIC board and HUD, UA/EN. CRT and optional whole-scene filter foundation.
+- Visual geometry tests and asset integrity check. No campaign, modules, bosses, saves or finished visual acceptance claimed.
+- Baseline: successful 0.1 CI run 45842971602.
+
 ## 0.1.0-alpha — candidate, not released
 - Independent board, immutable mask, classic reveal/flood/chord/flags/neutralization, win/loss.
 - Pure topology helpers for six single-layer rules; only CLASSIC enabled in gameplay.

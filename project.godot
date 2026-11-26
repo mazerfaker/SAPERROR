@@ -1,15 +1,18 @@
 config_version=5
 [application]
 config/name="SAPERROR"
-config/version="0.1.0-alpha"
-run/main_scene="res://scenes/game/core.tscn"
+config/version="0.2.0-alpha"
+run/main_scene="res://scenes/game/gameplay.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 [display]
-window/size/viewport_width=1280
-window/size/viewport_height=720
+window/size/viewport_width=1672
+window/size/viewport_height=941
+window/size/window_width_override=1280
+window/size/window_height_override=720
 window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
 [rendering]
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 [internationalization]
-locale/translations=PackedStringArray("res://localization/core.en.po", "res://localization/core.uk.po")
+locale/translations=PackedStringArray("res://localization/core.en.po", "res://localization/core.uk.po", "res://localization/visual.en.po", "res://localization/visual.uk.po")

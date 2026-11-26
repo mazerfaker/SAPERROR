@@ -1,0 +1,22 @@
+extends RefCounted
+# Native coordinates measured from the approved 1672 x 941 PNG.
+const CANVAS := Vector2(1672, 941)
+const SCREEN := Rect2(475, 119, 713, 481)
+const RASTER := Vector2i(1426, 962)
+const CONTOUR := [Vector2(514,125),Vector2(624,119),Vector2(1000,120),Vector2(1144,130),Vector2(1168,145),Vector2(1181,178),Vector2(1186,233),Vector2(1187,470),Vector2(1181,548),Vector2(1167,578),Vector2(1142,592),Vector2(1044,599),Vector2(630,599),Vector2(522,592),Vector2(494,580),Vector2(483,555),Vector2(478,510),Vector2(475,400),Vector2(476,250),Vector2(483,178),Vector2(495,145)]
+static func mask_points() -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for point in CONTOUR: points.append((point - SCREEN.position) / SCREEN.size)
+	return points
+static func fit(window: Vector2) -> Rect2:
+	var factor: float = minf(window.x / CANVAS.x, window.y / CANVAS.y)
+	return Rect2((window - CANVAS * factor) * 0.5, CANVAS * factor)
+static func warp(uv: Vector2, curvature: float) -> Vector2:
+	var p: Vector2 = uv * 2.0 - Vector2.ONE
+	return (p * (1.0 + curvature * p.dot(p)) + Vector2.ONE) * 0.5
+static func to_raster(local: Vector2, curvature: float) -> Vector2:
+	return warp(local / SCREEN.size, curvature) * Vector2(RASTER)
+static func grid_metrics(area: Vector2, columns: int, rows: int, gap: float) -> Vector2:
+	if columns <= 0 or rows <= 0: return Vector2.ZERO
+	var side: float = floorf(maxf(0.0, minf((area.x-gap*(columns-1))/columns,(area.y-gap*(rows-1))/rows)))
+	return Vector2(side,side)

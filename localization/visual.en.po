@@ -1,0 +1,87 @@
+msgid ""
+msgstr ""
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "VIS_BOOT"
+msgstr "ARCHIVE TERMINAL / SECTOR 01"
+
+msgid "VIS_TAGLINE"
+msgstr "The numbers don't lie. Usually."
+
+msgid "VIS_CONTINUE"
+msgstr "Continue sector"
+
+msgid "VIS_START"
+msgstr "Start sector"
+
+msgid "VIS_HELP"
+msgstr "Instructions"
+
+msgid "VIS_SETTINGS"
+msgstr "Settings"
+
+msgid "VIS_EXIT"
+msgstr "Power off / Exit"
+
+msgid "VIS_CORE_ONLY"
+msgstr "VISUAL ALPHA\nCLASSIC / 8 × 8\nCampaign not yet available"
+
+msgid "VIS_HELP_TEXT"
+msgstr "Left click: reveal. Right click or F: flag. Middle click or Space on an open number: chord.\n\nNumbers count adjacent mines. First reveal is safe. Open every safe cell to win. Each mine costs one integrity point. Flags are hypotheses, not proof."
+
+msgid "VIS_BACK"
+msgstr "Back / Menu"
+
+msgid "VIS_FULLSCREEN"
+msgstr "Toggle fullscreen"
+
+msgid "VIS_CRT"
+msgstr "CRT intensity"
+
+msgid "VIS_CURVE"
+msgstr "Curvature"
+
+msgid "VIS_MOTION"
+msgstr "Reduced motion"
+
+msgid "VIS_FLICKER"
+msgstr "Flicker"
+
+msgid "VIS_GRADE"
+msgstr "Scene filter"
+
+msgid "VIS_ON"
+msgstr "ON"
+
+msgid "VIS_OFF"
+msgstr "OFF"
+
+msgid "VIS_SECTOR"
+msgstr "SECTOR"
+
+msgid "VIS_DIFFICULTY"
+msgstr "Difficulty"
+
+msgid "VIS_STANDARD"
+msgstr "Standard"
+
+msgid "VIS_RULE"
+msgstr "RULE"
+
+msgid "VIS_MODULES"
+msgstr "MODULES"
+
+msgid "VIS_ANOMALY"
+msgstr "ANOMALY"
+
+msgid "VIS_NONE"
+msgstr "None"
+
+msgid "VIS_RESOURCES"
+msgstr "RESOURCES"
+
+msgid "VIS_FLAGS"
+msgstr "Flags"

@@ -28,3 +28,8 @@ Private repository created by owner. Core CI status pending; earlier repository-
 - Fix: enumerate reachable release tags successfully even when none exist; verify portable/source ZIP required entries and SHA-256 hashes before publication. Retest pending.
 
 - Run 45842898342 failed before job creation: malformed workflow introduced by replacement-string interpolation. Repaired regex line and removed duplicated tail; retest pending.
+
+## Visual Foundation candidate
+- Baseline 0.1 Core CI run 45842971602 succeeded. 0.2 candidate retains the verified board, solver and generator unchanged.
+- Original PNG transferred byte-identically via verified reconstruction; CI rejects mismatched SHA-256. Native contour manually traced; runtime geometry tests added.
+- Visual shader compilation, actual rendered pixels, cursor interaction, window scaling, localization layout and manual Windows screenshots still require confirmation.
