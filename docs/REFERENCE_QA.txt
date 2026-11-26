@@ -1,0 +1,7 @@
+Independent Python reference, not Godot runtime
+Fallback patterns certified for first-click positions: 64/64
+Python seed cases certified: 1000/1000
+Unsound accepted deductions: 0 (assertions enabled)
+Fallback uses: 0
+Maximum candidate attempts: 9
+Maximum proof batches: 32
