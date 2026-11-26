@@ -1,4 +1,9 @@
 # Changelog
+## 0.3.0-alpha.1 — Onboarding Foundation candidate
+- Four certified CLASSIC difficulty profiles, local active-sector resume, persistent graphics/audio/language, session statistics and first five guided exercises. Original PNG and core BoardState unchanged.
+- Profile generator retains legacy Standard and independently certifies every new profile; fail closed. Save validates mask, cell states, HP and certificate. No campaign checkpoints, hints, rewind, modules or anomaly tutorial yet.
+- Base: successful v0.2.3 run 45858799859. New CI and manual QA pending.
+
 ## 0.2.3-alpha — CRT Immersion candidate
 - Skippable 2.4s CRT power-on and localized boot panel, beam warm-up and power-off collapse with synthetic shutdown sound and hum fade.
 - Transient sector win/loss banner and additive CRT outcome tint; input blocked during boot/shutdown; reduced-motion mode bypasses shutdown and outcome motion. Headless boot skipped.

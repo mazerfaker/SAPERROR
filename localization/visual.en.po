@@ -127,3 +127,90 @@ msgstr "SECTOR CLEARED"
 
 msgid "VIS_LOSS_BANNER"
 msgstr "CRITICAL FAILURE"
+
+msgid "VIS_NEW_GAME"
+msgstr "New game"
+
+msgid "VIS_TUTORIAL"
+msgstr "Tutorial"
+
+msgid "VIS_STATS"
+msgstr "STATISTICS"
+
+msgid "VIS_RUNS"
+msgstr "Sessions:"
+
+msgid "VIS_WINS"
+msgstr "Wins:"
+
+msgid "VIS_LOSSES"
+msgstr "Losses:"
+
+msgid "VIS_LESSONS"
+msgstr "Lessons:"
+
+msgid "VIS_SAVE_ERROR"
+msgstr "Save error"
+
+msgid "VIS_REPLACE_RUN"
+msgstr "Choosing a difficulty replaces the current sector."
+
+msgid "VIS_PROFILE_STORY"
+msgstr "Story"
+
+msgid "VIS_PROFILE_STANDARD"
+msgstr "Standard"
+
+msgid "VIS_PROFILE_EXPERT"
+msgstr "Expert"
+
+msgid "VIS_PROFILE_HARDCORE"
+msgstr "Hardcore"
+
+msgid "TUT_REPEAT"
+msgstr "Repeat"
+
+msgid "TUT_SKIP"
+msgstr "Skip"
+
+msgid "TUT_NEXT"
+msgstr "Next"
+
+msgid "TUT_COMPLETE"
+msgstr "Action confirmed. Continue when ready."
+
+msgid "TUT_TITLE_0"
+msgstr "Safe reveal"
+
+msgid "TUT_TITLE_1"
+msgstr "Clue and neighbors"
+
+msgid "TUT_TITLE_2"
+msgstr "Flag"
+
+msgid "TUT_TITLE_3"
+msgstr "Deduction"
+
+msgid "TUT_TITLE_4"
+msgstr "Chord and flood"
+
+msgid "TUT_HINT_0_0"
+msgstr "Left-click the marked cell #2."
+
+msgid "TUT_HINT_1_0"
+msgstr "Click open cell #2. Its clue 1 means one mine among the marked neighbors."
+
+msgid "TUT_HINT_2_0"
+msgstr "Right-click or F to flag cell #1."
+
+msgid "TUT_HINT_2_1"
+msgstr "Remove the same flag."
+
+msgid "TUT_HINT_3_0"
+msgstr "Two clues of 1 share neighbors. For this exercise flag cell #1 as a mine."
+
+msgid "TUT_HINT_4_0"
+msgstr "Mine #1 is flagged. Middle-click or Space on open cell #5 to reveal neighbors."
+
+msgid "TUT_HINT_4_1"
+msgstr "Left-click cell #9 to check safe expansion."

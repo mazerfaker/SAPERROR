@@ -89,7 +89,6 @@ func _ready() -> void:
 		add_child(player)
 		voices.append(player)
 	_apply_levels()
-	ambience.play()
 	play_event("boot")
 
 func set_levels(sfx: float, hum: float, active: bool) -> void:

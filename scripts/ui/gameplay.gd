@@ -77,12 +77,12 @@ func _ready() -> void:
 	ui.connect("fullscreen_requested", _toggle_fullscreen)
 	ui.connect("shutdown_requested", _shutdown)
 	ui.connect("outcome_triggered", _on_outcome)
-	_set_effects(effects, curve_enabled, reduced_motion, flicker_enabled, scene_effects)
-	if DisplayServer.get_name() == "headless":
+	_set_effects(ui.amount, ui.curve, ui.reduced, ui.flicker, ui.global_amount)
+	if DisplayServer.get_name() == "headless" or reduced_motion or effects <= 0.0:
 		lifecycle.skip_boot()
 	else:
 		ui.begin_boot()
-		display.grab_focus()
+	if DisplayServer.get_name() != "headless": display.grab_focus()
 	_apply_lifecycle()
 func _set_effects(amount: float, curve: bool, reduced: bool, flicker: bool, global_amount: float) -> void:
 	effects = amount

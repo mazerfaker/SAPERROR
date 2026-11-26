@@ -3,6 +3,9 @@ const Board = preload("res://scripts/board/state.gd")
 const Generator = preload("res://scripts/board/generator.gd")
 const Geometry = preload("res://scripts/ui/crt_geometry.gd")
 const TerminalAudio = preload("res://scripts/audio/terminal_audio.gd")
+const Profiles = preload("res://scripts/board/profiles.gd")
+const Store = preload("res://scripts/save/session_store.gd")
+const Tutorial = preload("res://scripts/ui/tutorial.gd")
 signal effects_changed(amount: float, curve: bool, reduced: bool, flicker: bool, global_amount: float)
 signal fault_triggered
 signal fullscreen_requested
@@ -19,6 +22,16 @@ var boot_percent: Label
 var outcome_banner: Control
 var audio: TerminalAudio
 var board: Board
+var profile: int = 1
+var active_seed: int = 1701
+var first_cell: int = -1
+var sessions: int = 0
+var wins: int = 0
+var losses: int = 0
+var save_failed: bool = false
+var cfg := ConfigFile.new()
+var tutorial: Tutorial
+var tutorial_done: int = 0
 var certificate: Dictionary = {}
 var buttons: Array[Button] = []
 var title_label: Label
@@ -42,9 +55,11 @@ var reduced: bool = false
 var flicker: bool = false
 var global_amount: float = 0.0
 func _ready() -> void:
-	TranslationServer.set_locale("uk")
+	_load_session()
+	TranslationServer.set_locale("uk" if is_uk else "en")
 	theme = _terminal_theme()
 	audio = TerminalAudio.new()
+	audio.set_levels(float(cfg.get_value("settings","sfx",0.55)),float(cfg.get_value("settings","hum",0.28)),bool(cfg.get_value("settings","sound",true)))
 	add_child(audio)
 	var bg := ColorRect.new()
 	bg.color = Color("081710")
@@ -57,10 +72,10 @@ func _style(fill: Color, border: Color, width: int = 2) -> StyleBoxFlat:
 	s.bg_color = fill
 	s.border_color = border
 	s.set_border_width_all(width)
-	s.content_margin_left = 12
-	s.content_margin_right = 12
-	s.content_margin_top = 6
-	s.content_margin_bottom = 6
+	s.content_margin_left = 2
+	s.content_margin_right = 2
+	s.content_margin_top = 2
+	s.content_margin_bottom = 2
 	return s
 func _terminal_theme() -> Theme:
 	var t := Theme.new()
@@ -125,7 +140,7 @@ func _show(next: String) -> void:
 	add_child(page)
 	buttons.clear()
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.2.3-alpha",Rect2(946,82,390,48),page,27,DIM)
+	var version := _label("MINE // 0.3.0-alpha.1",Rect2(946,82,390,48),page,27,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -135,16 +150,94 @@ func _show(next: String) -> void:
 	elif screen == "settings": _settings()
 	elif screen == "help": _help()
 	elif screen == "audio": _audio_settings()
+	elif screen == "profiles": _profiles()
+	elif screen == "tutorial": _tutorial()
 	else: _menu()
 func _menu() -> void:
-	_label(tr("VIS_BOOT"),Rect2(124,217,1170,100),page,39)
-	_label(tr("VIS_TAGLINE"),Rect2(124,309,1170,75),page,28,DIM)
-	_button(tr("VIS_CONTINUE") if board != null and not board.finished() else tr("VIS_START"),Rect2(124,407,640,74),page,func(): _show("game"))
-	_button(tr("VIS_HELP"),Rect2(124,500,640,74),page,func(): _show("help"))
-	_button(tr("VIS_SETTINGS"),Rect2(124,593,640,74),page,func(): _show("settings"))
-	_button(tr("VIS_EXIT"),Rect2(124,686,640,74),page,func(): shutdown_requested.emit())
-	_label(tr("VIS_CORE_ONLY"),Rect2(840,415,470,170),page,29,AMBER)
-	_button("EN" if is_uk else "UA",Rect2(1100,744,210,60),page,_language)
+	_label(tr("VIS_BOOT"),Rect2(124,190,1170,80),page,36)
+	_label(tr("VIS_TAGLINE"),Rect2(124,266,1170,62),page,28,DIM)
+	var resume := _button(tr("VIS_CONTINUE"),Rect2(124,345,640,65),page,func(): _show("game"))
+	resume.disabled = board == null or board.finished()
+	_button(tr("VIS_NEW_GAME"),Rect2(124,423,640,65),page,func(): _show("profiles"))
+	_button(tr("VIS_TUTORIAL"),Rect2(124,501,640,65),page,func(): _show("tutorial"))
+	_button(tr("VIS_HELP"),Rect2(124,579,640,65),page,func(): _show("help"))
+	_button(tr("VIS_SETTINGS"),Rect2(124,657,640,65),page,func(): _show("settings"))
+	_button(tr("VIS_EXIT"),Rect2(124,735,640,65),page,func(): _save_session(); shutdown_requested.emit())
+	_label(tr("VIS_STATS")+"\n"+tr("VIS_RUNS")+" "+str(sessions)+"\n"+tr("VIS_WINS")+" "+str(wins)+"\n"+tr("VIS_LOSSES")+" "+str(losses),Rect2(820,345,500,285),page,32)
+	_label(tr("VIS_LESSONS")+" %d / 5" % tutorial_done,Rect2(820,650,500,62),page,29,AMBER)
+	if save_failed: _label(tr("VIS_SAVE_ERROR"),Rect2(820,714,500,80),page,27,RED)
+	_button("EN" if is_uk else "UA",Rect2(1100,810,210,60),page,_language)
+func _profiles() -> void:
+	_label(tr("VIS_DIFFICULTY"),Rect2(124,190,1170,70),page,42)
+	if board != null and not board.finished():
+		_label(tr("VIS_REPLACE_RUN"),Rect2(124,265,1170,80),page,29,AMBER)
+	for i in range(4):
+		var label: String = tr("VIS_PROFILE_"+Profiles.IDS[i].to_upper())+"  //  %d×%d  ·  %d  ·  HP %d" % [Profiles.SIZES[i],Profiles.SIZES[i],Profiles.MINES[i],Profiles.HP[i]]
+		_button(label,Rect2(124,350+i*100,1170,74),page,_start_profile.bind(i),32)
+	_button(tr("VIS_BACK"),Rect2(124,803,350,57),page,func(): _show("menu"))
+func _start_profile(next_profile: int) -> void:
+	profile = next_profile
+	board = null
+	certificate.clear()
+	first_cell = -1
+	last_hits = 0
+	message_key = "CORE_READY"
+	_save_session()
+	_show("game")
+func _tutorial() -> void:
+	tutorial = Tutorial.new()
+	tutorial.size = Vector2(1266,710)
+	tutorial.position = Vector2(80,180)
+	tutorial.theme = theme
+	tutorial.start_at = mini(tutorial_done,4)
+	tutorial.completed.connect(func(step: int):
+		tutorial_done = maxi(tutorial_done,step+1)
+		_save_session())
+	tutorial.back.connect(func(): _show("menu"))
+	page.add_child(tutorial)
+func _load_session() -> void:
+	if DisplayServer.get_name() != "headless": cfg = Store.load_config()
+	is_uk = bool(cfg.get_value("settings","uk",true))
+	amount = clampf(float(cfg.get_value("settings","crt",0.6)),0.0,1.0)
+	curve = bool(cfg.get_value("settings","curve",true))
+	reduced = bool(cfg.get_value("settings","reduced",false))
+	flicker = bool(cfg.get_value("settings","flicker",false))
+	global_amount = clampf(float(cfg.get_value("settings","grade",0.0)),0.0,1.0)
+	tutorial_done = clampi(int(cfg.get_value("stats","tutorial",0)),0,5)
+	sessions = maxi(0,int(cfg.get_value("stats","sessions",0)))
+	wins = maxi(0,int(cfg.get_value("stats","wins",0)))
+	losses = maxi(0,int(cfg.get_value("stats","losses",0)))
+	var raw: Variant = cfg.get_value("run","data",{})
+	if raw is Dictionary and not raw.is_empty():
+		var resumed: Dictionary = Store.restore(raw)
+		if resumed.is_empty():
+			save_failed = true
+		else:
+			board = resumed["board"]
+			profile = resumed["profile"]
+			active_seed = resumed["seed"]
+			seed_value = str(active_seed)
+			first_cell = resumed["first"]
+			certificate = resumed["certificate"]
+			last_hits = board.hits
+			message_key = "CORE_ACTIVE"
+func _save_session() -> void:
+	if DisplayServer.get_name() == "headless": return
+	cfg.set_value("settings","uk",is_uk)
+	cfg.set_value("settings","crt",amount)
+	cfg.set_value("settings","curve",curve)
+	cfg.set_value("settings","reduced",reduced)
+	cfg.set_value("settings","flicker",flicker)
+	cfg.set_value("settings","grade",global_amount)
+	cfg.set_value("settings","sfx",audio.sfx_level)
+	cfg.set_value("settings","hum",audio.hum_level)
+	cfg.set_value("settings","sound",audio.enabled)
+	cfg.set_value("stats","tutorial",tutorial_done)
+	cfg.set_value("stats","sessions",sessions)
+	cfg.set_value("stats","wins",wins)
+	cfg.set_value("stats","losses",losses)
+	cfg.set_value("run","data",Store.snapshot(board,profile,active_seed,first_cell))
+	save_failed = Store.write_config(cfg) != OK
 func begin_boot() -> void:
 	boot_overlay = ColorRect.new()
 	(boot_overlay as ColorRect).color = Color("081710")
@@ -197,6 +290,7 @@ func _show_outcome(won: bool) -> void:
 func _language() -> void:
 	is_uk = not is_uk
 	TranslationServer.set_locale("uk" if is_uk else "en")
+	_save_session()
 	_show(screen)
 func _help() -> void:
 	_label(tr("VIS_HELP_TEXT"),Rect2(124,215,1170,500),page,34)
@@ -214,7 +308,7 @@ func _settings() -> void:
 	_button(tr("VIS_BACK"),Rect2(124,803,350,57),page,func(): _show("menu"))
 func _audio_settings() -> void:
 	_label(tr("VIS_AUDIO"),Rect2(124,212,1150,60),page,41)
-	_button(tr("VIS_SOUND")+": "+_on_off(audio.enabled),Rect2(124,300,1040,70),page,func(): audio.set_levels(audio.sfx_level,audio.hum_level,not audio.enabled); _show("audio"))
+	_button(tr("VIS_SOUND")+": "+_on_off(audio.enabled),Rect2(124,300,1040,70),page,func(): audio.set_levels(audio.sfx_level,audio.hum_level,not audio.enabled); _save_session(); _show("audio"))
 	_audio_slider(tr("VIS_SFX"),audio.sfx_level,410,true)
 	_audio_slider(tr("VIS_HUM"),audio.hum_level,570,false)
 	_button(tr("VIS_AUDIO_TEST"),Rect2(124,718,640,60),page,func(): audio.play_event("reveal"))
@@ -230,16 +324,18 @@ func _audio_slider(caption: String, value: float, y: float, sfx: bool) -> void:
 	slider.value_changed.connect(func(v: float):
 		readout.text = caption+": "+str(roundi(v*100))+"%"
 		if sfx: audio.set_levels(v,audio.hum_level,audio.enabled)
-		else: audio.set_levels(audio.sfx_level,v,audio.enabled))
+		else: audio.set_levels(audio.sfx_level,v,audio.enabled)
+		_save_session())
 func _on_off(value: bool) -> String:
 	return tr("VIS_ON" if value else "VIS_OFF")
 func _apply() -> void:
 	effects_changed.emit(amount,curve,reduced,flicker,global_amount)
+	_save_session()
 func _game() -> void:
 	var left := _panel(Rect2(80,180,284,608))
 	var right := _panel(Rect2(1062,180,284,608))
 	_label(tr("VIS_SECTOR")+" 01",Rect2(16,17,252,50),left,32)
-	_label(tr("VIS_DIFFICULTY")+"\n"+tr("VIS_STANDARD"),Rect2(16,85,252,84),left,30)
+	_label(tr("VIS_DIFFICULTY")+"\n"+tr("VIS_PROFILE_"+Profiles.IDS[profile].to_upper()),Rect2(16,85,252,84),left,30)
 	integrity = _label("",Rect2(16,189,252,105),left,33)
 	recovered = _label("",Rect2(16,315,252,93),left,31)
 	var track := ColorRect.new()
@@ -257,8 +353,8 @@ func _game() -> void:
 	_label(tr("VIS_CONTROL_SHORT"),Rect2(16,216,252,208),right,28)
 	_label(tr("VIS_ANOMALY")+"\n"+tr("VIS_NONE"),Rect2(16,464,252,105),right,29)
 	grid = GridContainer.new()
-	var w: int = 8 if board == null else board.width
-	var h: int = 8 if board == null else board.height
+	var w: int = Profiles.SIZES[profile] if board == null else board.width
+	var h: int = Profiles.SIZES[profile] if board == null else board.height
 	grid.columns = w
 	grid.add_theme_constant_override("h_separation",Geometry.GAME_CELL_GAP)
 	grid.add_theme_constant_override("v_separation",Geometry.GAME_CELL_GAP)
@@ -271,6 +367,13 @@ func _game() -> void:
 		var btn := Button.new()
 		btn.custom_minimum_size = cell
 		btn.add_theme_font_size_override("font_size",maxi(14,int(cell.x*0.68)))
+		for style_name in ["normal","hover","pressed","disabled","focus"]:
+			var style: StyleBoxFlat = _style(Color("183b27"),DIM,2)
+			style.content_margin_left = 2
+			style.content_margin_right = 2
+			style.content_margin_top = 2
+			style.content_margin_bottom = 2
+			btn.add_theme_stylebox_override(style_name,style)
 		btn.pressed.connect(_reveal.bind(i))
 		btn.gui_input.connect(_cell_input.bind(i))
 		grid.add_child(btn)
@@ -279,9 +382,10 @@ func _game() -> void:
 	status = _label("",Rect2(86,794,1250,46),page,31)
 	_label(tr("CORE_SEED"),Rect2(86,850,100,54),page,28)
 	seed_input = LineEdit.new()
-	seed_input.text = seed_value
+	seed_input.text = str(active_seed) if board != null else seed_value
+	seed_input.editable = board == null
 	_place(seed_input,Rect2(184,844,230,60),page)
-	_button(tr("CORE_NEW"),Rect2(430,844,330,60),page,_reset,28)
+	_button(tr("CORE_NEW"),Rect2(430,844,330,60),page,func(): _show("profiles"),28)
 	_button("EN" if is_uk else "UA",Rect2(774,844,126,60),page,_language,28)
 	_button(tr("VIS_BACK"),Rect2(914,844,422,60),page,func(): _show("menu"),28)
 	_refresh()
@@ -291,6 +395,9 @@ func _reset() -> void:
 	certificate.clear()
 	last_hits = 0
 	message_key = "CORE_READY"
+	first_cell = -1
+	if is_instance_valid(seed_input): seed_input.editable = true
+	_save_session()
 	_refresh()
 func _reveal(i: int) -> void:
 	if board == null:
@@ -299,14 +406,18 @@ func _reveal(i: int) -> void:
 			audio.play_event("invalid")
 			_refresh()
 			return
-		var generated: Dictionary = Generator.generate(seed_input.text.to_int(),i)
+		var generated: Dictionary = Profiles.generate(profile,seed_input.text.to_int(),i)
 		if generated.is_empty():
 			message_key = "CORE_FAIL"
 			audio.play_event("invalid")
 			_refresh()
 			return
 		certificate = generated["certificate"]
-		board = Board.new(8,8,generated["mask"],3)
+		active_seed = seed_input.text.to_int()
+		first_cell = i
+		seed_input.editable = false
+		board = Board.new(Profiles.SIZES[profile],Profiles.SIZES[profile],generated["mask"],Profiles.HP[profile])
+		sessions += 1
 	if board.finished() or board.cells[i] != Board.Cell.CLOSED: return
 	var before: int = board.opened
 	board.reveal(i)
@@ -354,14 +465,18 @@ func _after_action(sound: String = "") -> void:
 	if not sound.is_empty(): audio.play_event(sound)
 	_refresh()
 	if board.finished():
+		if board.won(): wins += 1
+		else: losses += 1
 		outcome_triggered.emit(board.won())
 		_show_outcome(board.won())
+	_save_session()
 func _refresh() -> void:
-	var hp: int = 3 if board == null else board.hp
-	integrity.text = tr("CORE_HP")+"\n"+"■ ".repeat(hp)+"□ ".repeat(3-hp)
+	var max_hp: int = Profiles.HP[profile]
+	var hp: int = max_hp if board == null else board.hp
+	integrity.text = tr("CORE_HP")+"\n%d / %d" % [hp,max_hp]
 	integrity.add_theme_color_override("font_color",RED if hp < 2 else (AMBER if hp == 2 else GREEN))
 	var opened: int = 0 if board == null else board.opened
-	var total: int = 54 if board == null else board.width * board.height - board.mine_total
+	var total: int = Profiles.SIZES[profile]*Profiles.SIZES[profile]-Profiles.MINES[profile] if board == null else board.width * board.height - board.mine_total
 	recovered.text = tr("CORE_OPEN")+"\n%d / %d" % [opened,total]
 	progress_fill.size.x = 252.0 * float(opened) / float(maxi(total,1))
 	var flags: int = 0
@@ -407,4 +522,4 @@ func _refresh() -> void:
 		for key in ["font_color","font_disabled_color","font_hover_color","font_pressed_color","font_focus_color"]:
 			b.add_theme_color_override(key,color)
 		b.tooltip_text = "%s %d: %s" % [tr("CORE_CELL"),i+1,desc]
-	flag_count.text = tr("VIS_FLAGS")+"\n%d / %d" % [flags,10 if board == null else board.mine_total]
+	flag_count.text = tr("VIS_FLAGS")+"\n%d / %d" % [flags,Profiles.MINES[profile] if board == null else board.mine_total]
