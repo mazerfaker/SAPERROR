@@ -1,7 +1,7 @@
 extends RefCounted
 # Deterministic, bounded run economy. No random state, no access to hidden board data.
-const MODULES := ["XRAY","CHAIN","CAPACITOR","ASSISTANT","CHRONOMANCER","SECOND_LIFE","FUSE","AUDITOR","RESONANCE","PROFIT","THIRD_EYE","SHIELDING","HOTFIX","STABILIZER"]
-const PRICES := [32,36,28,30,34,40,35,34,32,45,30,28,26,30]
+const MODULES := ["XRAY","CHAIN","CAPACITOR","ASSISTANT","CHRONOMANCER","SECOND_LIFE","FUSE","AUDITOR","RESONANCE","PROFIT","THIRD_EYE","SHIELDING","HOTFIX","STABILIZER","ARCHIVIST"]
+const PRICES := [32,36,28,30,34,40,35,34,32,45,30,28,26,30,30]
 const MAX_MODULES := 4
 const MAX_CREDITS := 1000000
 var credits: int = 30
@@ -211,3 +211,9 @@ func use_analyzer() -> bool:
 	if stock<=0: return false
 	stock -= 1
 	return true
+
+# Caller grants once per recorded optional archive; no repeatable reward.
+func archive_reward() -> int:
+	var value: int=15+(10 if owned.has("ARCHIVIST") else 0)
+	_gain(value)
+	return value

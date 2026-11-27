@@ -4,6 +4,8 @@ const RATE: int = 22050
 const HUM_RATE: int = 48000
 const HUM_PERIOD_SECONDS: int = 2
 const HUM_COPIES: int = 30
+const ADMIN_INTRO_PATH := "res://assets/audio/dragon-studio-glitch-effect-1-397982.mp3"
+const ADMIN_INTRO_SHA := "760b72bdaad71f83350e2ef3a9d037daf58f44855a05a6cce25d990f1ffb888a"
 const MENU_CLICK_PATH := "res://assets/audio/finntastico-old-computer-click-152513.mp3"
 const MENU_CLICK_SHA := "7ebe2a698a203d0682cfdf0d13c2a352bae46c69d989259698d9a87787a2d034"
 const EVENTS := ["key","reveal","flood","flag","unflag","fault","win","loss","invalid","boot","shutdown","k30","hum"]
@@ -102,6 +104,12 @@ static func menu_click_stream() -> AudioStreamMP3:
 	if source!=null: source.loop = false
 	return source
 
+static func admin_intro_stream() -> AudioStreamMP3:
+	if not ResourceLoader.exists(ADMIN_INTRO_PATH): return null
+	var source := load(ADMIN_INTRO_PATH) as AudioStreamMP3
+	if source!=null: source.loop=false
+	return source
+
 func _ready() -> void:
 	if DisplayServer.get_name() == "headless": return
 	for kind in EVENTS:
@@ -110,6 +118,8 @@ func _ready() -> void:
 	# Source checkout stays usable while original asset is awaiting upload.
 	# The old procedural click is only a fallback, never a replacement asset.
 	sounds["menu_click"] = menu_click if menu_click!=null else sounds["key"]
+	var intro := admin_intro_stream()
+	if intro!=null: sounds["admin_intro"]=intro
 	ambience = AudioStreamPlayer.new()
 	ambience.stream = sounds["hum"]
 	add_child(ambience)

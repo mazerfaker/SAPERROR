@@ -51,6 +51,12 @@ func run() -> void:
 			check(not menu_click.loop and menu_click.get_length()>0.1 and menu_click.get_length()<0.3,"short one-shot menu click")
 	else:
 		print("MENU_CLICK_ASSET_PENDING: original MP3 upload required; procedural fallback only")
+	var intro := Audio.admin_intro_stream()
+	if FileAccess.file_exists(Audio.ADMIN_INTRO_PATH):
+		check(FileAccess.get_sha256(Audio.ADMIN_INTRO_PATH)==Audio.ADMIN_INTRO_SHA,"original ADMIN intro bytes")
+		check(intro!=null,"ADMIN intro imports")
+		if intro!=null: check(not intro.loop and intro.get_length()>2.5 and intro.get_length()<2.8,"ADMIN one-shot duration")
+	else: print("ADMIN_INTRO_PENDING: asset awaiting upload")
 	var player := Audio.new()
 	root.add_child(player)
 	player.set_levels(-1.0,2.0,false)

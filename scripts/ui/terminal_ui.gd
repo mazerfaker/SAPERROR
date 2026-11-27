@@ -17,6 +17,8 @@ const Challenge = preload("res://scripts/board/anomaly_challenge.gd")
 const Campaign = preload("res://scripts/run/campaign.gd")
 var campaign := Campaign.new()
 var campaign_selected: bool = false
+var act_checkpoint: Dictionary = {}
+var campaign_failed: bool = false
 var challenge_kind: String = "LOOP"
 var parasite := Parasite.new()
 var portal_button: Button
@@ -204,7 +206,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.6.0-a1",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.6.0-a3",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -219,6 +221,9 @@ func _show(next: String) -> void:
 	elif screen == "campaign_intro": _campaign_intro()
 	elif screen == "campaign_boss": _campaign_boss()
 	elif screen == "campaign_boundary": _campaign_boundary()
+	elif screen == "campaign_route": _campaign_route()
+	elif screen == "campaign_archive": _campaign_archive()
+	elif screen == "campaign_recovery": _campaign_recovery()
 	elif screen == "tutorial": _tutorial()
 	elif screen == "shop": _shop()
 	elif screen == "replace": _replacement()
@@ -229,7 +234,7 @@ func _menu() -> void:
 	_label(tr("VIS_BOOT"),Rect2(124,190,1170,80),page,36)
 	_label(tr("VIS_TAGLINE"),Rect2(124,266,1170,62),page,28,DIM)
 	var resume := _button(tr("VIS_CONTINUE"),Rect2(124,345,640,65),page,_continue_run)
-	resume.disabled = not pending_sector and not sector_ready and (board == null or board.finished())
+	resume.disabled = not (campaign.active and campaign_failed) and not pending_sector and not sector_ready and (board == null or board.finished())
 	_button(tr("VIS_NEW_GAME"),Rect2(124,423,640,65),page,func(): _show("modes"))
 	_button(tr("VIS_TUTORIAL"),Rect2(124,501,640,65),page,func(): _show("tutorial"))
 	_button(tr("VIS_HELP"),Rect2(124,579,640,65),page,func(): _show("help"))
@@ -252,6 +257,8 @@ func _start_profile(next_profile: int, story: bool = false) -> void:
 	campaign=Campaign.new()
 	campaign.active=story
 	campaign_selected=false
+	act_checkpoint.clear()
+	campaign_failed=false
 	sector_number = 1
 	pending_sector = false
 	sector_ready = true
@@ -267,15 +274,20 @@ func _start_profile(next_profile: int, story: bool = false) -> void:
 	first_cell = -1
 	last_hits = 0
 	message_key = "CORE_READY"
+	if campaign.active: _capture_checkpoint()
 	_save_session()
 	_show("campaign_intro" if campaign.active else "game")
 func _continue_run() -> void:
-	if pending_sector: _advance_sector()
+	if campaign.active and campaign_failed: _show("campaign_recovery")
+	elif pending_sector: _advance_sector()
 	elif campaign.needs_intro(sector_number): _show("campaign_intro")
 	else: _show("game")
 func _advance_sector() -> void:
 	if protocol_active or not pending_sector: return
 	if campaign.active:
+		if campaign.archive_pending(sector_number):
+			_show("campaign_route")
+			return
 		var boss: String=campaign.boss_pending(sector_number)
 		if not boss.is_empty():
 			_show("campaign_boundary" if boss=="ADMIN" else "campaign_boss")
@@ -301,6 +313,7 @@ func _advance_sector() -> void:
 	first_cell = -1
 	last_hits = 0
 	message_key = "CORE_READY"
+	if campaign.active and sector_number in [4,7,10]: _capture_checkpoint()
 	_save_session()
 	_show("campaign_intro" if campaign.needs_intro(sector_number) else "game")
 func _tutorial() -> void:
@@ -332,6 +345,9 @@ func _load_session() -> void:
 	var raw_campaign: Variant = cfg.get_value("run","campaign",{})
 	if raw_campaign is Dictionary and not raw_campaign.is_empty():
 		if not campaign.restore(raw_campaign,sector_number): save_failed=true
+	var saved_checkpoint: Variant=cfg.get_value("run","act_checkpoint",{})
+	act_checkpoint=saved_checkpoint.duplicate(true) if saved_checkpoint is Dictionary else {}
+	campaign_failed=campaign.active and bool(cfg.get_value("run","campaign_failed",false))
 	pending_sector = bool(cfg.get_value("run","pending_sector",false))
 	sector_ready = bool(cfg.get_value("run","sector_ready",false)) and not pending_sector
 	profile = clampi(int(cfg.get_value("run","profile",1)),0,3)
@@ -396,6 +412,8 @@ func _save_session() -> void:
 	cfg.set_value("stats","losses",losses)
 	cfg.set_value("run","sector",sector_number)
 	cfg.set_value("run","campaign",campaign.snapshot())
+	cfg.set_value("run","act_checkpoint",act_checkpoint)
+	cfg.set_value("run","campaign_failed",campaign_failed)
 	cfg.set_value("run","pending_sector",pending_sector)
 	cfg.set_value("run","sector_ready",sector_ready)
 	cfg.set_value("run","profile",profile)
@@ -596,6 +614,7 @@ func _game() -> void:
 			_advance_sector()
 			if screen=="game": _show("shop")
 		elif _shop_available(): _show("shop")
+		elif campaign.active and campaign_failed: _show("campaign_recovery")
 		else: _show("modes"),28)
 	_button(tr("VIS_BACK"),Rect2(914,844,422,60),page,func(): _show("menu"),28)
 	_refresh()
@@ -729,14 +748,16 @@ func _after_action(sound: String = "") -> void:
 			wins += 1
 			last_reward = economy.reward(sector_number,board.opened,board.hits)
 			pending_sector = true
-		else: losses += 1
+		else:
+			losses += 1
+			if campaign.active: campaign_failed=true
 		outcome_triggered.emit(board.won())
 		if not protocol_active: _show_outcome(board.won())
 		_refresh()
 	_save_session()
 func _refresh() -> void:
 	if is_instance_valid(next_button):
-		next_button.text = tr("CAM_BOSS") if pending_sector and not campaign.boss_pending(sector_number).is_empty() else tr("VIS_SHOP" if pending_sector or _shop_available() else "CORE_NEW")
+		next_button.text = tr("CAM_RETRY") if campaign.active and campaign_failed else tr("CAM_ROUTE") if pending_sector and campaign.archive_pending(sector_number) else tr("CAM_BOSS") if pending_sector and not campaign.boss_pending(sector_number).is_empty() else tr("VIS_SHOP" if pending_sector or _shop_available() else "CORE_NEW")
 	if is_instance_valid(credit_label): credit_label.text = "CR %d" % economy.credits
 	var max_hp: int = _max_hp()
 	var hp: int = run_hp if board == null else board.hp
@@ -1288,3 +1309,73 @@ func _campaign_boundary() -> void:
 	_label("ACT IV // ADMIN",Rect2(124,215,1170,80),page,42,AMBER)
 	_label(tr("CAM_BOUNDARY"),Rect2(124,320,1170,300),page,32)
 	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("menu"))
+
+func _capture_checkpoint() -> void:
+	act_checkpoint={"sector":sector_number,"profile":profile,"hp":run_hp,"seed":active_seed,"economy":economy.snapshot(),"campaign":campaign.snapshot()}
+func _retry_checkpoint() -> void:
+	if not campaign.active or not campaign_failed: return
+	if profile==3 or act_checkpoint.is_empty():
+		_start_profile(profile,true)
+		return
+	var target: int=int(act_checkpoint.get("sector",0))
+	var saved := Campaign.new()
+	if target not in [1,4,7,10] or target>sector_number or int(act_checkpoint.get("profile",-1))!=profile or not saved.restore(act_checkpoint.get("campaign",{}),target):
+		_start_profile(profile,true)
+		return
+	var data: Variant=act_checkpoint.get("economy",{})
+	if not data is Dictionary:
+		_start_profile(profile,true)
+		return
+	campaign=saved
+	sector_number=target
+	active_seed=int(act_checkpoint.get("seed",1701))
+	seed_value=str(active_seed)
+	economy.reset(profile)
+	economy.restore(data,target,false)
+	run_hp=clampi(int(act_checkpoint.get("hp",1)),1,_max_hp())
+	sector_start_hp=run_hp
+	protected_hits=0
+	board=null
+	certificate.clear()
+	first_cell=-1
+	last_hits=0
+	pending_sector=false
+	sector_ready=true
+	campaign_failed=false
+	_reset_tools()
+	message_key="CORE_READY"
+	_save_session()
+	_show("campaign_intro" if campaign.needs_intro(sector_number) else "game")
+func _campaign_recovery() -> void:
+	_label(tr("CAM_RETRY"),Rect2(124,215,1170,80),page,42,RED)
+	_label(tr("CAM_RETRY_HARD" if profile==3 else "CAM_RETRY_ACT"),Rect2(124,320,1170,280),page,32)
+	_button(tr("CAM_ENTER"),Rect2(124,810,570,60),page,_retry_checkpoint)
+	_button(tr("VIS_BACK"),Rect2(714,810,570,60),page,func(): _show("menu"))
+func _campaign_route() -> void:
+	if not pending_sector or not campaign.archive_pending(sector_number): return
+	_label(tr("CAM_ROUTE"),Rect2(124,215,1170,80),page,42,AMBER)
+	_label(tr("CAM_ROUTE_DESC"),Rect2(124,310,1170,220),page,30)
+	_button(tr("CAM_ARCHIVE"),Rect2(124,575,1170,80),page,func(): _show("campaign_archive"))
+	_button(tr("CAM_SKIP"),Rect2(124,680,1170,80),page,func():
+		if campaign.choose_route(sector_number,false):
+			_save_session()
+			_advance_sector()
+			if screen=="game": _show("shop"))
+	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("menu"))
+func _campaign_archive() -> void:
+	if not pending_sector or not campaign.archive_pending(sector_number): return
+	var trial := ChallengeUI.new()
+	trial.kind=Campaign.ARCHIVES[sector_number]
+	trial.campaign_encounter=true
+	trial.position=Vector2(80,180)
+	trial.size=Vector2(1266,710)
+	trial.theme=theme
+	trial.back.connect(func(): _show("campaign_route"))
+	trial.clicked.connect(func(): audio.play_event("key"))
+	trial.encounter_won.connect(func():
+		if screen!="campaign_archive" or not trial.model.won() or not campaign.choose_route(sector_number,true): return
+		last_reward=economy.archive_reward()
+		_save_session()
+		_advance_sector()
+		if screen=="game": _show("shop"))
+	page.add_child(trial)

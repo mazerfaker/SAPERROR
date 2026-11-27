@@ -23,7 +23,11 @@ func run() -> void:
 		check(cam.complete_boss(sector,id),"boss unlock")
 		check(not cam.complete_boss(sector,id),"no duplicate")
 		cam.acknowledge(sector+1)
-	check(cam.records.size()==3 and cam.boss_pending(10)=="ADMIN","records and final gate")
+	check(cam.records.is_empty() and cam.boss_pending(10)=="ADMIN","bosses do not grant optional records")
+	for sector in [2,5,8]:
+		check(cam.choose_route(sector,true),"optional archive")
+		check(not cam.choose_route(sector,true),"archive reward once")
+	check(cam.records.size()==3,"three optional records")
 	check(not cam.complete_boss(10,"ADMIN"),"no fake ending")
 	var restored := Campaign.new()
 	check(restored.restore(cam.snapshot(),10) and restored.snapshot()==cam.snapshot(),"metadata round trip")

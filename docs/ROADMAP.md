@@ -45,3 +45,5 @@ Alpha.7 LIAR authored boss trial, no intermediate CI. Full combined v0.5 Beta ga
 0.5 Beta.1: first combined Windows regression after [skip ci] alpha.3–alpha.7. The Anomaly Lab contains LOOP, DOUBLE/PARALLEL, WATCHER, LIAR. PHANTOM/PARASITE/PORTAL are in normal run sectors. No claim of full GDD milestone until tests and manual acceptance; persistent campaign encounters, routes/rewards, Archivist and full balance remain open. Scope is Anomaly Beta, not v0.8 product Beta.
 
 0.5.0-beta.1 passed combined Windows CI (46027804129). 0.6 alpha.1 campaign foundation, separate mode, act intros and mandatory bosses. Preserve Anomaly Lab and Free Run; defer CI until Campaign Beta. Manual acceptance, route choices, checkpoints, full boss phases, ADMIN and endings pending.
+
+0.6 alpha.2–3 routes/archives, Archivist, act checkpoints, ADMIN intro asset path. Optional challenge HP is independent. CI deferred.

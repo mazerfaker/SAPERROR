@@ -565,3 +565,30 @@ msgstr "ECHO: Those records are ours. Sectors 07-09 contain a repeated state. Do
 
 msgid "CAM_ACT_3"
 msgstr "ADMIN: Access to sector 10 granted. Final authorization pending."
+
+msgid "MOD_ARCHIVIST"
+msgstr "Archivist"
+
+msgid "DESC_ARCHIVIST"
+msgstr "+10 CR for the first optional archive in a sector."
+
+msgid "CAM_ROUTE"
+msgstr "ROUTE SELECTION"
+
+msgid "CAM_ROUTE_DESC"
+msgstr "Recover an optional memory archive for 15 CR and a key record. Or evacuate now. Three records unlock additional endings; archive trials use independent integrity."
+
+msgid "CAM_ARCHIVE"
+msgstr "RECOVER ARCHIVE"
+
+msgid "CAM_SKIP"
+msgstr "EVACUATE / SKIP"
+
+msgid "CAM_RETRY"
+msgstr "RECOVERY"
+
+msgid "CAM_RETRY_HARD"
+msgstr "Hardcore restarts from the beginning."
+
+msgid "CAM_RETRY_ACT"
+msgstr "Restore the start of the current act, including inventory, credits and story records."

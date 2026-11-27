@@ -1,4 +1,7 @@
 # Changelog
+## 0.6.0-alpha.2–3 — routes, Archivist, checkpoints (CI deferred)
+Optional archive gates at sectors 2/5/8, 15 CR plus Archivist 10 CR once, key records only from recovered archives, act checkpoints and Hardcore restart. ADMIN one-shot source path and exact hash registered; missing asset remains silent until upload. Tests deferred.
+
 ## 0.6.0-alpha.1 — campaign foundation (CI deferred)
 Campaign and Free Run modes, four act intros, ten-sector bound, mandatory WATCHER/LIAR/LOOP gates, three memory records and saved metadata. Boss retries use local HP. ADMIN is an explicit unfinished gate, not an ending. Routes, checkpoints, final boss and endings remain upcoming. No intermediate CI.
 

@@ -565,3 +565,30 @@ msgstr "ECHO: Ці записи — наші. Сектори 07–09 містя�
 
 msgid "CAM_ACT_3"
 msgstr "ADMIN: Доступ до сектора 10 дозволено. Очікується фінальна авторизація."
+
+msgid "MOD_ARCHIVIST"
+msgstr "Архіваріус"
+
+msgid "DESC_ARCHIVIST"
+msgstr "+10 CR за перший необов'язковий архів у секторі."
+
+msgid "CAM_ROUTE"
+msgstr "ВИБІР МАРШРУТУ"
+
+msgid "CAM_ROUTE_DESC"
+msgstr "Віднови необов'язковий архів за 15 CR і ключовий запис або евакуюйся. Три записи відкривають додаткові фінали; архів має окремий запас HP."
+
+msgid "CAM_ARCHIVE"
+msgstr "ВІДНОВИТИ АРХІВ"
+
+msgid "CAM_SKIP"
+msgstr "ЕВАКУАЦІЯ / ПРОПУСК"
+
+msgid "CAM_RETRY"
+msgstr "ВІДНОВЛЕННЯ"
+
+msgid "CAM_RETRY_HARD"
+msgstr "Hardcore починається спочатку."
+
+msgid "CAM_RETRY_ACT"
+msgstr "Відновити початок поточного акту, включно з інвентарем, кредитами та сюжетними записами."
