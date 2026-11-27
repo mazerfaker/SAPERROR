@@ -460,3 +460,36 @@ msgstr "Топологію змінено"
 
 msgid "VIS_PORTAL_HELP"
 msgstr "Зв'язок можна безкоштовно вимкнути."
+
+msgid "CH_MENU"
+msgstr "Лабораторія аномалій"
+
+msgid "CH_MENU_INTRO"
+msgstr "Окремі авторські випробування. Повторюй без обмежень; прогрес і кредити забігу не змінюються."
+
+msgid "CH_AUTHORED"
+msgstr "АВТОРСЬКЕ ВИПРОБУВАННЯ"
+
+msgid "CH_LOOP_INTRO"
+msgstr "LOOP: позначена верхня зона повернеться до контрольного стану через три ходи. HP та знешкоджені міни не відновлюються. Розв'яжи поле після відкату."
+
+msgid "CH_LOOP_COUNT"
+msgstr "Ходів до локального відкату:"
+
+msgid "CH_LOOP_DONE"
+msgstr "Контрольний стан використано. Більше відкатів немає."
+
+msgid "CH_LOOP_RESET"
+msgstr "Позначену зону відновлено до контрольного стану."
+
+msgid "CH_ACTIONS"
+msgstr "Ходи"
+
+msgid "CH_INVALID"
+msgstr "Сертифікат задачі недоступний."
+
+msgid "CH_VICTORY"
+msgstr "ВИПРОБУВАННЯ ПРОЙДЕНО"
+
+msgid "CH_DEFEAT"
+msgstr "СИГНАЛ ВТРАЧЕНО — ПОВТОРИ"

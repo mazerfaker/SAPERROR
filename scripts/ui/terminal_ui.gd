@@ -12,6 +12,9 @@ const Economy = preload("res://scripts/run/economy.gd")
 const Phantom = preload("res://scripts/board/phantom.gd")
 var phantom := Phantom.new()
 const Parasite = preload("res://scripts/board/parasite.gd")
+const ChallengeUI = preload("res://scripts/ui/anomaly_challenge_ui.gd")
+const Challenge = preload("res://scripts/board/anomaly_challenge.gd")
+var challenge_kind: String = "LOOP"
 var parasite := Parasite.new()
 var portal_button: Button
 var journal_button: Button
@@ -198,7 +201,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.5.0-a3",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.5.0-a4",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -212,6 +215,8 @@ func _show(next: String) -> void:
 	elif screen == "tutorial": _tutorial()
 	elif screen == "shop": _shop()
 	elif screen == "replace": _replacement()
+	elif screen == "challenges": _challenges()
+	elif screen == "challenge": _challenge()
 	else: _menu()
 func _menu() -> void:
 	_label(tr("VIS_BOOT"),Rect2(124,190,1170,80),page,36)
@@ -226,6 +231,7 @@ func _menu() -> void:
 	_label(tr("VIS_STATS")+"\n"+tr("VIS_RUNS")+" "+str(sessions)+"\n"+tr("VIS_WINS")+" "+str(wins)+"\n"+tr("VIS_LOSSES")+" "+str(losses),Rect2(820,345,500,285),page,32)
 	_label(tr("VIS_LESSONS")+" %d / 9" % tutorial_done,Rect2(820,650,500,62),page,29,AMBER)
 	if save_failed: _label(tr("VIS_SAVE_ERROR"),Rect2(820,714,500,80),page,27,RED)
+	_button(tr("CH_MENU"),Rect2(820,810,500,60),page,func(): _show("challenges"),25)
 func _profiles() -> void:
 	_label(tr("VIS_DIFFICULTY"),Rect2(124,190,1170,70),page,42)
 	if board != null and not board.finished():
@@ -1190,3 +1196,24 @@ func _toggle_portal() -> void:
 	message_key = "VIS_PORTAL_CHANGED"
 	_refresh()
 	_save_session()
+
+func _challenges() -> void:
+	_label(tr("CH_MENU"),Rect2(124,215,1170,70),page,40)
+	_label(tr("CH_MENU_INTRO"),Rect2(124,292,1170,90),page,28,DIM)
+	for i in range(Challenge.KINDS.size()):
+		var id: String = Challenge.KINDS[i]
+		_button(id,Rect2(124+float(i%2)*570,400+float(i/2)*105,540,80),page,_start_challenge.bind(id),30)
+	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("menu"))
+func _start_challenge(id: String) -> void:
+	if not Challenge.KINDS.has(id): return
+	challenge_kind=id
+	_show("challenge")
+func _challenge() -> void:
+	var challenge := ChallengeUI.new()
+	challenge.kind=challenge_kind
+	challenge.position=Vector2(80,180)
+	challenge.size=Vector2(1266,710)
+	challenge.theme=theme
+	challenge.back.connect(func(): _show("challenges"))
+	challenge.clicked.connect(func(): audio.play_event("key"))
+	page.add_child(challenge)

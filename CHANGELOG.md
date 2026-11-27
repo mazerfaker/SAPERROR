@@ -1,4 +1,7 @@
 # Changelog
+## 0.5.0-alpha.4 — LOOP authored trial (CI deferred)
+- Anomaly Lab entry from main menu; isolated 5x5 authored board with runtime classic certificate gate. One marked local checkpoint reset after three actions; restores cell states but not neutralized mines, HP or run resources. Retry and completion presentation. No campaign reward or persisted trial in this draft. Tests queued for v0.5 Beta.
+
 ## 0.5.0-alpha.3 — PORTAL draft (CI deferred)
 - Bidirectional, deduplicated visible link on sectors 5,8,11,...; after initial certified reveal. Board clues, solver observation, hover, analyzer, chord and flood share the same linked topology. Free ON/OFF control preserves original certified proof route. Saves and rewind persist topology. No simultaneous anomalies in this draft. Tests added but not executed until v0.5 Beta by request.
 

@@ -460,3 +460,36 @@ msgstr "Topology changed"
 
 msgid "VIS_PORTAL_HELP"
 msgstr "Link can be switched off freely."
+
+msgid "CH_MENU"
+msgstr "Anomaly Lab"
+
+msgid "CH_MENU_INTRO"
+msgstr "Independent authored trials. Retry freely; campaign progress and credits are not affected."
+
+msgid "CH_AUTHORED"
+msgstr "AUTHORED TRIAL"
+
+msgid "CH_LOOP_INTRO"
+msgstr "LOOP: the marked upper region returns to its checkpoint after three moves. Health and neutralized mines are not restored. Solve the board after the reset."
+
+msgid "CH_LOOP_COUNT"
+msgstr "Moves to local reset:"
+
+msgid "CH_LOOP_DONE"
+msgstr "Checkpoint spent. No more automatic reset."
+
+msgid "CH_LOOP_RESET"
+msgstr "Marked zone restored to checkpoint."
+
+msgid "CH_ACTIONS"
+msgstr "Moves"
+
+msgid "CH_INVALID"
+msgstr "Challenge certificate unavailable."
+
+msgid "CH_VICTORY"
+msgstr "TRIAL COMPLETE"
+
+msgid "CH_DEFEAT"
+msgstr "SIGNAL LOST - RETRY"
