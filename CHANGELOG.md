@@ -1,4 +1,7 @@
 # Changelog
+## 0.5.0-alpha.1-k30.1 — physical input hotfix
+- Recognize K-30 once in root Window input before GUI focus/CRT forwarding, reset partial sequence when window loses focus, preserve physical key precedence. Regression uses root.push_input with different focus targets and Ukrainian logical keycodes; no change to board or environment. Requires a generated unfinished field, after first reveal. Actual physical Windows keyboard verification still pending.
+
 ## 0.5.0-alpha.1 — PHANTOM foundation candidate
 - One deterministic PHANTOM episode from sector 3, after three successful board actions; temporarily hides one previously visible clue for three further actions. Free journal preserves exact value and topology; other cartridges remain truthful. Scanner restores the hidden clue using an available hint, Cleanse uses one scanner stock or free Hotfix. Shielding prevents the first PHANTOM episode. Prices and activation cadence are provisional. Save and rewind preserve anomaly state; spent cleansing clears previous rewind. K-30 remains unchanged.
 - Ninth authored tutorial demonstrates journal and cleansing. Existing approved live environment, original art, CRT, board generator and solver unchanged. PARASITE/PORTAL/LOOP/DOUBLE, remaining modules, bosses, NULL and campaign deferred; do not claim full v0.5 milestone. CI and manual UI QA pending.

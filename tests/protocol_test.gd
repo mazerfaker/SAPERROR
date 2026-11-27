@@ -24,6 +24,13 @@ func tap(code: Protocol, physical: int, logical: int) -> bool:
 	var hit: bool = code.feed(event_for(physical,logical))
 	code.feed(event_for(physical,logical,false))
 	return hit
+func send_window_code(layout_uk: bool = false) -> void:
+	for key in Protocol.SEQUENCE:
+		var logical: int = key
+		if layout_uk and key==KEY_B: logical = 0x418
+		if layout_uk and key==KEY_A: logical = 0x424
+		root.push_input(event_for(key,logical),true)
+		root.push_input(event_for(key,logical,false),true)
 func run() -> void:
 	var code := Protocol.new()
 	for i in range(Protocol.SEQUENCE.size()):
@@ -71,17 +78,26 @@ func run() -> void:
 		var game = scene.instantiate()
 		root.add_child(game)
 		var ui = game.ui
-		for key in Protocol.SEQUENCE:
-			check(not ui.protocol_input(event_for(key,key)),"menu does not activate")
+		send_window_code()
+		check(not ui.protocol_active and ui.protocol.prefix.is_empty(),"window input in menu does not activate")
 		ui._start_profile(1)
 		ui._reveal(0)
 		check(ui.board!=null and not ui.board.finished(),"active UI field")
 		if ui.board!=null and not ui.board.finished():
 			var before_wins: int = ui.wins
-			for key in Protocol.SEQUENCE:
-				ui.protocol_input(event_for(key,key))
-				ui.protocol_input(event_for(key,key,false))
-			check(ui.protocol_active,"UI activation")
+			# No CRT focus: route through the actual root Window, not protocol_input().
+			var alternate := Button.new()
+			alternate.text = "QA focus sink"
+			root.add_child(alternate)
+			alternate.grab_focus()
+			root.push_input(event_for(KEY_UP,KEY_UP),true)
+			root.push_input(event_for(KEY_UP,KEY_UP,true,true),true)
+			check(ui.protocol.prefix.size()==1,"window echo counted only once")
+			root.push_input(event_for(KEY_UP,KEY_UP,false),true)
+			ui.protocol.reset_input()
+			send_window_code(true)
+			check(ui.protocol_active,"window activation with alternate focus and Ukrainian logical keys")
+			alternate.queue_free()
 			var old_hp: int = ui.board.hp
 			ui._reveal(1)
 			check(ui.board.hp==old_hp,"manual input blocked")
@@ -94,8 +110,9 @@ func run() -> void:
 			if ui.board!=null and not ui.board.finished():
 				var snapshot: Dictionary = Store.snapshot(ui.board,ui.profile,ui.active_seed,ui.first_cell)
 				check(not Store.restore(snapshot).is_empty(),"next field resume")
-				ui._begin_protocol()
-				check(ui.protocol_active,"repeat next sector")
+				game.display.grab_focus()
+				send_window_code()
+				check(ui.protocol_active,"repeat next sector through window with CRT focus")
 				ui._process(4.0)
 				ui._process(2.0)
 				check(ui.sector_number==3 and ui.wins==before_wins+2,"one win per activation")

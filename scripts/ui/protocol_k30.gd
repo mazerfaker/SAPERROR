@@ -10,6 +10,9 @@ func reset_input() -> void:
 	held.clear()
 func feed(event: InputEventKey) -> bool:
 	var key: int = event.physical_keycode
+	# Some platform/synthetic non-letter events have no physical code.
+	# Actual A/B input prefers the physical QWERTY location regardless of locale.
+	if key == 0 and event.keycode in SEQUENCE: key = event.keycode
 	if not event.pressed:
 		held.erase(key)
 		return false

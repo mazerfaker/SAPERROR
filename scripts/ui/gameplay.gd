@@ -171,6 +171,18 @@ func _toggle_fullscreen() -> void:
 	var mode: int = DisplayServer.window_get_mode()
 	var fullscreen: bool = mode == DisplayServer.WINDOW_MODE_FULLSCREEN or mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if fullscreen else DisplayServer.WINDOW_MODE_FULLSCREEN)
+# Capture secret physical keys at the root input stage, before GUI focus
+# or the manually forwarded SubViewport can consume them. Feed exactly once.
+func _input(event: InputEvent) -> void:
+	if not is_instance_valid(ui) or not event is InputEventKey: return
+	if not lifecycle.accepts_input():
+		ui.protocol.reset_input()
+		return
+	if ui.protocol_input(event):
+		get_viewport().set_input_as_handled()
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT and is_instance_valid(ui):
+		ui.protocol.reset_input()
 func _crt_input(event: InputEvent) -> void:
 	if not lifecycle.accepts_input():
 		if lifecycle.phase == Lifecycle.Phase.BOOT and event is InputEventKey and event.pressed and not event.echo:
@@ -178,9 +190,6 @@ func _crt_input(event: InputEvent) -> void:
 		display.accept_event()
 		return
 	if ui.protocol_active:
-		display.accept_event()
-		return
-	if event is InputEventKey and ui.protocol_input(event):
 		display.accept_event()
 		return
 	if event is InputEventMouse:
