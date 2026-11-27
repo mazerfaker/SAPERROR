@@ -1,4 +1,7 @@
 # Changelog
+## 0.7.0-beta.1 — combined Content & Art candidate
+First CI after all seven alpha stages. Existing regression plus extended authored anomalies, Classic/finite run, imported boss/act/ending art, original narrative audio, and collection. Package must retain eleven narrative SVG resources and approved audio/live assets. Candidate, not a completed release: actual visual/audio acceptance, GDD 25 SFX target, broader anomaly interactions, and balance remain open.
+
 ## 0.7.0-alpha.7 — collection and polish (CI deferred)
 Persistent read-only recovered archive collection (three new bilingual story records), unlocked ending thumbnails, locked states, credits link, and lab completion marks. Collection data validated and migrated from current campaign records; never grants run keys or rewards. Tests authored; full Beta QA next.
 

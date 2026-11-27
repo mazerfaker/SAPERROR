@@ -65,3 +65,5 @@ Alpha.7 LIAR authored boss trial, no intermediate CI. Full combined v0.5 Beta ga
 0.7 alpha.6: original procedural narrative score (4 acts, 4 bosses, 3 endings), music slider, preview, smooth transitions, bounded cache. Existing approved audio untouched. CI and listening deferred.
 
 0.7 alpha.7: persistent local collection, bilingual archive texts, ending thumbnails and lab completion. No CI until combined content beta.
+
+0.7 Beta.1: combined Windows CI after seven deferred stages; new authored anomaly, Classic, art, atmosphere, and collection tests, all previous campaign and live-environment regression. Candidate only until CI and manual QA; remaining full SFX coverage, generalized anomaly combinations, final asset acceptance and release readiness go into 0.8.
