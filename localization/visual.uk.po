@@ -502,3 +502,12 @@ msgstr "Підказки зв'язаних пар:"
 
 msgid "CH_DOUBLE_PROGRESS"
 msgstr "Відновлено:"
+
+msgid "CH_WATCHER_INTRO"
+msgstr "WATCHER: три позначені пари підказок зникнуть через п'ять ходів. Журнал завжди зберігає справжні значення. Віднови поле."
+
+msgid "CH_WATCHER_CLOSED"
+msgstr "WATCHER приховав групи. Перевір журнал."
+
+msgid "CH_WATCHER_COUNT"
+msgstr "Ходів до приховування:"

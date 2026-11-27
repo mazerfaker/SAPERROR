@@ -9,6 +9,7 @@ var body: Control
 var info: Label
 var readout: Label
 var layer_button: Button
+var journal_button: Button
 var tiles: Array[Button] = []
 func _ready() -> void:
 	restart()
@@ -59,7 +60,9 @@ func restart() -> void:
 		info=label("",Vector2(515,166),Vector2(720,116),29)
 		readout=label("",Vector2(515,292),Vector2(720,222),26)
 		layer_button=null
+		journal_button=null
 		if kind=="DOUBLE": layer_button=button("PARALLEL: A",Vector2(515,530),Vector2(720,56),_switch_layer)
+		if kind=="WATCHER": journal_button=button(tr("VIS_JOURNAL"),Vector2(515,530),Vector2(720,56),_journal)
 	else:
 		label(tr("CH_INVALID"),Vector2(25,180),Vector2(1100,120),30)
 	button(tr("TUT_REPEAT"),Vector2(18,630),Vector2(300,60),restart)
@@ -83,6 +86,9 @@ func _tile_input(event: InputEvent, i: int) -> void:
 func _move(i: int, flag: bool, chord: bool) -> void:
 	if model.act(i,flag,chord): clicked.emit()
 	refresh()
+func _journal() -> void:
+	model.toggle_journal()
+	refresh()
 func _switch_layer() -> void:
 	model.switch_layer()
 	refresh()
@@ -93,6 +99,7 @@ func refresh() -> void:
 	if is_instance_valid(layer_button):
 		layer_button.text="PARALLEL: "+("A → B" if model.active_layer==0 else "B → A")
 		layer_button.disabled=model.done()
+	if is_instance_valid(journal_button): journal_button.text=tr("VIS_JOURNAL")+": "+("OPEN" if model.journal_open else "CLOSED")
 	if not model.notice.is_empty(): readout.text += "\n"+tr(model.notice)
 	if model.done(): readout.text += "\n"+tr("CH_VICTORY" if model.won() else "CH_DEFEAT")
 	for i in range(tiles.size()):

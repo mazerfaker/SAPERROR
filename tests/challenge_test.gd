@@ -36,5 +36,15 @@ func run() -> void:
 		check(a.cells==before,"other layer unchanged")
 		model.switch_layer()
 		check(model.active_layer==0 and model.board()==a,"return to layer A")
+	check(model.start("WATCHER"),"WATCHER certificate")
+	if model.valid:
+		check(model.watcher_groups.size()==3 and model.watcher_log.size()==6,"three marked groups")
+		var target: int=int(model.watcher_groups[0][0])
+		var recorded: int=model.watcher_log[target]
+		for i in range(5): model.act(0,true)
+		check(model.watcher_closed and model.hidden(target),"groups close after five moves")
+		model.toggle_journal()
+		check(model.journal_open and model.watcher_log[target]==recorded and model.details().contains("#%d=%d" % [target+1,recorded]),"truth preserved in journal")
+		check(model.board().clue(target,0)==recorded,"no false ordinary clue")
 	print("CHALLENGE_QA checks=",checks," failures=",failures)
 	quit(0 if failures==0 else 1)

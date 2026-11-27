@@ -37,3 +37,5 @@ User-approved batch workflow: alpha.3–alpha.7 use [skip ci] commits, tests aut
 Alpha.4 LOOP implemented as independent Anomaly Lab authored challenge; campaign routes and persisted challenge progression remain separate. No intermediate CI.
 
 Alpha.5 DOUBLE and PARALLEL trial, no intermediate CI.
+
+Alpha.6 WATCHER authored boss trial, no intermediate CI.

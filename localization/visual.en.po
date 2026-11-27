@@ -502,3 +502,12 @@ msgstr "Paired clue readings:"
 
 msgid "CH_DOUBLE_PROGRESS"
 msgstr "Recovered:"
+
+msgid "CH_WATCHER_INTRO"
+msgstr "WATCHER: three marked pairs of clues become obscured after five moves. The journal always retains their true readings. Recover the field."
+
+msgid "CH_WATCHER_CLOSED"
+msgstr "WATCHER has obscured the groups. Read the journal."
+
+msgid "CH_WATCHER_COUNT"
+msgstr "Moves until obscuration:"

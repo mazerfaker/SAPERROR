@@ -7,7 +7,7 @@ const SIZE := 5
 const FIRST := 12
 const MASK_A := [0,1,14,21]
 const MASK_B := [0,2,10,19]
-const KINDS := ["LOOP","DOUBLE"]
+const KINDS := ["LOOP","DOUBLE","WATCHER"]
 const DOUBLE_LINKS := [Vector2i(11,13),Vector2i(13,11)]
 var kind: String = "LOOP"
 var boards: Array[Board] = []
@@ -19,6 +19,10 @@ var loop_done: bool = false
 var loop_zone: Array[int] = [0,1,2,3,4,5,6,7,8,9]
 var checkpoint: PackedInt32Array
 var notice: String = ""
+var watcher_groups: Array[Array] = []
+var watcher_log: Dictionary = {}
+var watcher_closed: bool = false
+var journal_open: bool = false
 func make_mask(mines: Array) -> PackedByteArray:
 	var mask := PackedByteArray()
 	mask.resize(SIZE*SIZE)
@@ -41,10 +45,23 @@ func start(next_kind: String) -> bool:
 	actions=0
 	loop_done=false
 	notice=""
+	watcher_groups.clear()
+	watcher_log.clear()
+	watcher_closed=false
+	journal_open=false
 	valid=false
 	if kind not in KINDS or not add_board(MASK_A): return false
 	if kind=="DOUBLE" and not add_board(MASK_B): return false
 	checkpoint=board().cells.duplicate()
+	if kind=="WATCHER":
+		var open_ids: Array[int] = []
+		for i in range(board().cells.size()):
+			if board().cells[i]==Board.Cell.OPEN: open_ids.append(i)
+		if open_ids.size()<6: return false
+		for group in range(3):
+			var pair: Array[int] = [open_ids[group*2],open_ids[group*2+1]]
+			watcher_groups.append(pair)
+			for index in pair: watcher_log[index]=board().clue(index,0)
 	valid=true
 	return true
 func board() -> Board:
@@ -73,6 +90,9 @@ func act(index: int, flag: bool = false, chord: bool = false) -> bool:
 	notice=""
 	if kind=="LOOP" and not loop_done and b.hp>0 and (actions>=3 or b.won()):
 		apply_loop()
+	if kind=="WATCHER" and not watcher_closed and actions>=5:
+		watcher_closed=true
+		notice="CH_WATCHER_CLOSED"
 	return true
 func apply_loop() -> void:
 	var b: Board = board()
@@ -86,14 +106,28 @@ func apply_loop() -> void:
 	notice="CH_LOOP_RESET"
 func switch_layer() -> void:
 	if valid and kind=="DOUBLE" and not lost(): active_layer=1-active_layer
+func toggle_journal() -> void:
+	if kind=="WATCHER": journal_open=not journal_open
 func marker(index: int) -> String:
+	if kind=="WATCHER":
+		for g in range(watcher_groups.size()):
+			if watcher_groups[g].has(index): return "WATCHER G%d" % (g+1)
 	if kind=="DOUBLE":
 		for link in DOUBLE_LINKS:
 			if index==(link.x if active_layer==0 else link.y): return "PARALLEL"
 	return "LOOP" if kind=="LOOP" and not loop_done and index in loop_zone else ""
-func hidden(_index: int) -> bool:
-	return false
+func hidden(index: int) -> bool:
+	return kind=="WATCHER" and watcher_closed and watcher_log.has(index)
 func details() -> String:
+	if kind=="WATCHER":
+		var status: String = tr("CH_WATCHER_CLOSED") if watcher_closed else tr("CH_WATCHER_COUNT")+" "+str(maxi(0,5-actions))
+		var lines := PackedStringArray([status])
+		for g in range(watcher_groups.size()):
+			var pair := PackedStringArray()
+			for index in watcher_groups[g]:
+				pair.append("#%d%s" % [int(index)+1,("="+str(watcher_log[index])) if journal_open else ""])
+			lines.append("G%d: %s" % [g+1," / ".join(pair)])
+		return "\n".join(lines)
 	if kind=="DOUBLE":
 		var lines := PackedStringArray()
 		for link in DOUBLE_LINKS:

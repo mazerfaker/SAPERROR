@@ -1,4 +1,7 @@
 # Changelog
+## 0.5.0-alpha.6 — WATCHER (CI deferred)
+Three marked groups of clues hidden after five actions, free journal preserves exact data, retry and victory. Boss authored trial, campaign integration deferred.
+
 ## 0.5.0-alpha.5 — DOUBLE (CI deferred)
 Two authored boards, visible paired clues, A/B switch, independent health and dual victory gate. PARALLEL scoped to trial, campaign integration deferred.
 
