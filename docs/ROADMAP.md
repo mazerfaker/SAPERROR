@@ -71,3 +71,5 @@ Alpha.7 LIAR authored boss trial, no intermediate CI. Full combined v0.5 Beta ga
 0.7.0-beta.1 verified Windows CI 46035015964, commit 6a41495. Product Beta 0.8.0-beta.1: staged save and integrity checks, backup recovery and fault-injection tests. Restore CI per stabilization milestone; do not proceed on failed QA. Next: performance instrumentation, long-run stress, balance, accessibility and final sound/presentation. Manual Windows acceptance remains mandatory.
 
 0.8.0-beta.1 verified Windows CI 46035954712, 137 save recovery checks passed. 0.8.0-beta.2 conservative optimization: shared immutable styles, dirty visual state, idle CRT/audio setter suppression, zero-effect shader bypass and local diagnostics. Target remains 60 FPS at 1080p; actual hardware measurements pending. Next 24–72h stress and performance baseline.
+
+0.8.0-beta.2 verified Windows CI 46037558423 (220 performance checks). 0.8.0-beta.3 adds 72h ×100 simulation at 5/10/24/48/72h, 60 sector advances, repeated screen cleanup, bounded resources, and separate native 72-second audio loop smoke. Actual 72-hour hardware soak and leak profiling remain open; CI pending.

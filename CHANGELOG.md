@@ -1,4 +1,7 @@
 # Changelog
+## 0.8.0-beta.3 — long-run stability candidate
+72h virtual clock ×100 with checkpoints at 5/10/24/48/72h, 60 actual protocol-driven sector advances and repeated UI disposal checks, unchanged texture/player identity, bounded UI/PCM caches and save validation. Separate 72s native playback-head wrap smoke with frame/memory reports. No claims of actual 72h rendering/audio or measured absence of all leaks before testing.
+
 ## 0.8.0-beta.2 — performance QA parser repair
 CI 46037036515 passed every prior test suite (217226 checks), but the new test script could not parse because its preload alias Panel shadowed a native Godot class. Rename the alias to PerformanceReadout, retain all assertions. Rerun full CI before accepting performance changes.
 
