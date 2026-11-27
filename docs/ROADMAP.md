@@ -39,3 +39,5 @@ Alpha.4 LOOP implemented as independent Anomaly Lab authored challenge; campaign
 Alpha.5 DOUBLE and PARALLEL trial, no intermediate CI.
 
 Alpha.6 WATCHER authored boss trial, no intermediate CI.
+
+Alpha.7 LIAR authored boss trial, no intermediate CI. Full combined v0.5 Beta gate next.

@@ -10,6 +10,7 @@ var info: Label
 var readout: Label
 var layer_button: Button
 var journal_button: Button
+var sensor_buttons: Array[Button] = []
 var tiles: Array[Button] = []
 func _ready() -> void:
 	restart()
@@ -61,6 +62,10 @@ func restart() -> void:
 		readout=label("",Vector2(515,292),Vector2(720,222),26)
 		layer_button=null
 		journal_button=null
+		sensor_buttons.clear()
+		if kind=="LIAR":
+			for index in range(3):
+				sensor_buttons.append(button("S%d" % (index+1),Vector2(515+index*240,530),Vector2(225,56),_select_sensor.bind(index)))
 		if kind=="DOUBLE": layer_button=button("PARALLEL: A",Vector2(515,530),Vector2(720,56),_switch_layer)
 		if kind=="WATCHER": journal_button=button(tr("VIS_JOURNAL"),Vector2(515,530),Vector2(720,56),_journal)
 	else:
@@ -86,6 +91,9 @@ func _tile_input(event: InputEvent, i: int) -> void:
 func _move(i: int, flag: bool, chord: bool) -> void:
 	if model.act(i,flag,chord): clicked.emit()
 	refresh()
+func _select_sensor(index: int) -> void:
+	model.submit_sensor(index)
+	refresh()
 func _journal() -> void:
 	model.toggle_journal()
 	refresh()
@@ -102,6 +110,7 @@ func refresh() -> void:
 	if is_instance_valid(journal_button): journal_button.text=tr("VIS_JOURNAL")+": "+("OPEN" if model.journal_open else "CLOSED")
 	if not model.notice.is_empty(): readout.text += "\n"+tr(model.notice)
 	if model.done(): readout.text += "\n"+tr("CH_VICTORY" if model.won() else "CH_DEFEAT")
+	for sensor in sensor_buttons: sensor.disabled=model.liar_solved or model.lost()
 	for i in range(tiles.size()):
 		var tile: Button=tiles[i]
 		var state: int=b.cells[i]

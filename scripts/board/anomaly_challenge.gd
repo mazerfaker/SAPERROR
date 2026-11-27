@@ -7,7 +7,8 @@ const SIZE := 5
 const FIRST := 12
 const MASK_A := [0,1,14,21]
 const MASK_B := [0,2,10,19]
-const KINDS := ["LOOP","DOUBLE","WATCHER"]
+const KINDS := ["LOOP","DOUBLE","WATCHER","LIAR"]
+const LIAR_ROWS := [0,2,4]
 const DOUBLE_LINKS := [Vector2i(11,13),Vector2i(13,11)]
 var kind: String = "LOOP"
 var boards: Array[Board] = []
@@ -23,6 +24,10 @@ var watcher_groups: Array[Array] = []
 var watcher_log: Dictionary = {}
 var watcher_closed: bool = false
 var journal_open: bool = false
+var sensor_values: Array[int] = []
+var checksum_values: Array[int] = []
+var liar_solved: bool = false
+var liar_bad: int = 1
 func make_mask(mines: Array) -> PackedByteArray:
 	var mask := PackedByteArray()
 	mask.resize(SIZE*SIZE)
@@ -49,6 +54,9 @@ func start(next_kind: String) -> bool:
 	watcher_log.clear()
 	watcher_closed=false
 	journal_open=false
+	sensor_values.clear()
+	checksum_values.clear()
+	liar_solved=false
 	valid=false
 	if kind not in KINDS or not add_board(MASK_A): return false
 	if kind=="DOUBLE" and not add_board(MASK_B): return false
@@ -62,12 +70,21 @@ func start(next_kind: String) -> bool:
 			var pair: Array[int] = [open_ids[group*2],open_ids[group*2+1]]
 			watcher_groups.append(pair)
 			for index in pair: watcher_log[index]=board().clue(index,0)
+	if kind=="LIAR":
+		var truth: Array[int] = []
+		for row in LIAR_ROWS:
+			var total: int = 0
+			for column in range(SIZE): total += int(board()._mask[int(row)*SIZE+column])
+			truth.append(total)
+		sensor_values=truth.duplicate()
+		sensor_values[liar_bad]+=1
+		checksum_values.assign([truth[0]+truth[1],truth[1]+truth[2],truth[0]+truth[2]])
 	valid=true
 	return true
 func board() -> Board:
 	return boards[active_layer]
 func won() -> bool:
-	if not valid: return false
+	if not valid or (kind=="LIAR" and not liar_solved): return false
 	for b in boards:
 		if not b.won(): return false
 	return true
@@ -106,9 +123,25 @@ func apply_loop() -> void:
 	notice="CH_LOOP_RESET"
 func switch_layer() -> void:
 	if valid and kind=="DOUBLE" and not lost(): active_layer=1-active_layer
+func decoded_sensors() -> Array[int]:
+	if checksum_values.size()!=3: return []
+	var a: int = (checksum_values[0]+checksum_values[2]-checksum_values[1])/2
+	return [a,checksum_values[0]-a,checksum_values[2]-a]
+func submit_sensor(index: int) -> bool:
+	if not valid or kind!="LIAR" or lost() or liar_solved or index<0 or index>=3: return false
+	var decoded: Array[int] = decoded_sensors()
+	if sensor_values[index]==decoded[index]:
+		notice="CH_LIAR_WRONG"
+		return false
+	liar_solved=true
+	notice="CH_LIAR_CORRECT"
+	return true
 func toggle_journal() -> void:
 	if kind=="WATCHER": journal_open=not journal_open
 func marker(index: int) -> String:
+	if kind=="LIAR":
+		var row: int = index/SIZE
+		if LIAR_ROWS.has(row): return "S%d" % (LIAR_ROWS.find(row)+1)
 	if kind=="WATCHER":
 		for g in range(watcher_groups.size()):
 			if watcher_groups[g].has(index): return "WATCHER G%d" % (g+1)
@@ -119,6 +152,9 @@ func marker(index: int) -> String:
 func hidden(index: int) -> bool:
 	return kind=="WATCHER" and watcher_closed and watcher_log.has(index)
 func details() -> String:
+	if kind=="LIAR":
+		var readings: Array[int] = decoded_sensors() if liar_solved else sensor_values
+		return "S1 = %d | S2 = %d | S3 = %d\nS1+S2 = %d | S2+S3 = %d | S1+S3 = %d\n%s" % [readings[0],readings[1],readings[2],checksum_values[0],checksum_values[1],checksum_values[2],tr("CH_LIAR_CORRECT" if liar_solved else "CH_LIAR_SELECT")]
 	if kind=="WATCHER":
 		var status: String = tr("CH_WATCHER_CLOSED") if watcher_closed else tr("CH_WATCHER_COUNT")+" "+str(maxi(0,5-actions))
 		var lines := PackedStringArray([status])

@@ -511,3 +511,15 @@ msgstr "WATCHER has obscured the groups. Read the journal."
 
 msgid "CH_WATCHER_COUNT"
 msgstr "Moves until obscuration:"
+
+msgid "CH_LIAR_INTRO"
+msgstr "LIAR: S1, S2 and S3 count mines in rows 1, 3 and 5. One sensor is false; pairwise sums are true. Identify the bad sensor and recover the field. Ordinary clues remain true."
+
+msgid "CH_LIAR_SELECT"
+msgstr "Select the false sensor using the checksums."
+
+msgid "CH_LIAR_WRONG"
+msgstr "That sensor agrees with the checksums. Recheck the sums."
+
+msgid "CH_LIAR_CORRECT"
+msgstr "Sensor corrected. Ordinary clues unchanged."

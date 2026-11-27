@@ -46,5 +46,18 @@ func run() -> void:
 		model.toggle_journal()
 		check(model.journal_open and model.watcher_log[target]==recorded and model.details().contains("#%d=%d" % [target+1,recorded]),"truth preserved in journal")
 		check(model.board().clue(target,0)==recorded,"no false ordinary clue")
+	check(model.start("LIAR"),"LIAR certificate")
+	if model.valid:
+		var decoded: Array[int]=model.decoded_sensors()
+		var wrong: int=0
+		for i in range(3):
+			var truth: int=0
+			for column in range(Challenge.SIZE): truth+=int(model.board()._mask[int(Challenge.LIAR_ROWS[i])*Challenge.SIZE+column])
+			check(decoded[i]==truth,"checksum resolves true row count")
+			if model.sensor_values[i]!=decoded[i]: wrong+=1
+		check(wrong==1,"exactly one false special sensor")
+		check(not model.submit_sensor(0) and not model.liar_solved,"wrong sensor rejected")
+		check(model.submit_sensor(1) and model.liar_solved,"correct sensor decoded")
+		check(not model.won(),"sensor alone is not victory")
 	print("CHALLENGE_QA checks=",checks," failures=",failures)
 	quit(0 if failures==0 else 1)

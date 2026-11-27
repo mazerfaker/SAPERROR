@@ -1,4 +1,7 @@
 # Changelog
+## 0.5.0-alpha.7 — LIAR (CI deferred)
+Three distinct marked row sensors, exactly one false reading, three true pair sums. Identifying the corrupted sensor and clearing the authored field are both required. Ordinary tile clues unchanged. Retry and feedback. Campaign encounter and reward deferred.
+
 ## 0.5.0-alpha.6 — WATCHER (CI deferred)
 Three marked groups of clues hidden after five actions, free journal preserves exact data, retry and victory. Boss authored trial, campaign integration deferred.
 
