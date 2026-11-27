@@ -7,7 +7,8 @@ const SIZE := 5
 const FIRST := 12
 const MASK_A := [0,1,14,21]
 const MASK_B := [0,2,10,19]
-const KINDS := ["LOOP"]
+const KINDS := ["LOOP","DOUBLE"]
+const DOUBLE_LINKS := [Vector2i(11,13),Vector2i(13,11)]
 var kind: String = "LOOP"
 var boards: Array[Board] = []
 var certificates: Array[Dictionary] = []
@@ -42,6 +43,7 @@ func start(next_kind: String) -> bool:
 	notice=""
 	valid=false
 	if kind not in KINDS or not add_board(MASK_A): return false
+	if kind=="DOUBLE" and not add_board(MASK_B): return false
 	checkpoint=board().cells.duplicate()
 	valid=true
 	return true
@@ -82,11 +84,23 @@ func apply_loop() -> void:
 		b.cells[i]=checkpoint[i]
 	loop_done=true
 	notice="CH_LOOP_RESET"
+func switch_layer() -> void:
+	if valid and kind=="DOUBLE" and not lost(): active_layer=1-active_layer
 func marker(index: int) -> String:
+	if kind=="DOUBLE":
+		for link in DOUBLE_LINKS:
+			if index==(link.x if active_layer==0 else link.y): return "PARALLEL"
 	return "LOOP" if kind=="LOOP" and not loop_done and index in loop_zone else ""
 func hidden(_index: int) -> bool:
 	return false
 func details() -> String:
+	if kind=="DOUBLE":
+		var lines := PackedStringArray()
+		for link in DOUBLE_LINKS:
+			var a: Board = boards[0]
+			var b: Board = boards[1]
+			lines.append("A#%d: %d | B#%d: %d" % [link.x+1,a.clue(link.x,0),link.y+1,b.clue(link.y,0)])
+		return "PARALLEL // "+("A" if active_layer==0 else "B")+"\n"+tr("CH_DOUBLE_LINKS")+"\n"+"\n".join(lines)+"\n"+tr("CH_DOUBLE_PROGRESS")+" A %d/21 | B %d/21" % [boards[0].opened,boards[1].opened]
 	if kind=="LOOP":
 		return tr("CH_LOOP_DONE") if loop_done else tr("CH_LOOP_COUNT")+" "+str(maxi(0,3-actions))
 	return ""

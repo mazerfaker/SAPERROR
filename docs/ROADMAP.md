@@ -35,3 +35,5 @@ Visual integration override: alpha.3-live.1 approved live background before v0.5
 User-approved batch workflow: alpha.3–alpha.7 use [skip ci] commits, tests authored but deferred. Full v0.5 Beta regression and manual gates only after all five stages. PORTAL draft adds reversible linked topology; no claims of passing until Beta.
 
 Alpha.4 LOOP implemented as independent Anomaly Lab authored challenge; campaign routes and persisted challenge progression remain separate. No intermediate CI.
+
+Alpha.5 DOUBLE and PARALLEL trial, no intermediate CI.

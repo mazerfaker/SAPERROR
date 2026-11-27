@@ -8,6 +8,7 @@ var model := Challenge.new()
 var body: Control
 var info: Label
 var readout: Label
+var layer_button: Button
 var tiles: Array[Button] = []
 func _ready() -> void:
 	restart()
@@ -56,7 +57,9 @@ func restart() -> void:
 			grid.add_child(tile)
 			tiles.append(tile)
 		info=label("",Vector2(515,166),Vector2(720,116),29)
-		readout=label("",Vector2(515,292),Vector2(720,300),27)
+		readout=label("",Vector2(515,292),Vector2(720,222),26)
+		layer_button=null
+		if kind=="DOUBLE": layer_button=button("PARALLEL: A",Vector2(515,530),Vector2(720,56),_switch_layer)
 	else:
 		label(tr("CH_INVALID"),Vector2(25,180),Vector2(1100,120),30)
 	button(tr("TUT_REPEAT"),Vector2(18,630),Vector2(300,60),restart)
@@ -80,10 +83,16 @@ func _tile_input(event: InputEvent, i: int) -> void:
 func _move(i: int, flag: bool, chord: bool) -> void:
 	if model.act(i,flag,chord): clicked.emit()
 	refresh()
+func _switch_layer() -> void:
+	model.switch_layer()
+	refresh()
 func refresh() -> void:
 	var b: Board = model.board()
 	info.text="%s %d  |  %s %d/%d  |  %s %d" % [tr("CORE_HP"),b.hp,tr("CORE_OPEN"),b.opened,b.cells.size()-b.mine_total,tr("CH_ACTIONS"),model.actions]
 	readout.text=model.details()
+	if is_instance_valid(layer_button):
+		layer_button.text="PARALLEL: "+("A → B" if model.active_layer==0 else "B → A")
+		layer_button.disabled=model.done()
 	if not model.notice.is_empty(): readout.text += "\n"+tr(model.notice)
 	if model.done(): readout.text += "\n"+tr("CH_VICTORY" if model.won() else "CH_DEFEAT")
 	for i in range(tiles.size()):

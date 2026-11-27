@@ -493,3 +493,12 @@ msgstr "TRIAL COMPLETE"
 
 msgid "CH_DEFEAT"
 msgstr "SIGNAL LOST - RETRY"
+
+msgid "CH_DOUBLE_INTRO"
+msgstr "DOUBLE: recover both fields. PARALLEL switches layer A/B. Marked pairs expose the exact local clue on each layer."
+
+msgid "CH_DOUBLE_LINKS"
+msgstr "Paired clue readings:"
+
+msgid "CH_DOUBLE_PROGRESS"
+msgstr "Recovered:"

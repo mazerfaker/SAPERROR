@@ -493,3 +493,12 @@ msgstr "ВИПРОБУВАННЯ ПРОЙДЕНО"
 
 msgid "CH_DEFEAT"
 msgstr "СИГНАЛ ВТРАЧЕНО — ПОВТОРИ"
+
+msgid "CH_DOUBLE_INTRO"
+msgstr "DOUBLE: віднови обидва поля. PARALLEL перемикає шар A/B. Позначені пари показують точні локальні підказки."
+
+msgid "CH_DOUBLE_LINKS"
+msgstr "Підказки зв'язаних пар:"
+
+msgid "CH_DOUBLE_PROGRESS"
+msgstr "Відновлено:"
