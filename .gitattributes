@@ -1,0 +1,6 @@
+# Approved resources must retain the exact uploaded bytes on every OS.
+/assets/live/config.json -text
+/assets/live/assets/** -text
+/assets/art/terminal_original.png -text
+/assets/icon/*.png -text
+/assets/icon/*.ico -text

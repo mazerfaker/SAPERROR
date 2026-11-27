@@ -4,7 +4,8 @@ const LEGACY_CANVAS := Vector2(1672, 941)
 const CANVAS := Vector2(1920, 1080)
 const ART_SCALE := CANVAS / LEGACY_CANVAS
 const LEGACY_SCREEN := Rect2(475, 119, 713, 481)
-const SCREEN := Rect2(LEGACY_SCREEN.position*ART_SCALE,LEGACY_SCREEN.size*ART_SCALE)
+# Pixel-aligned endpoints avoid Control snapping differences on the new canvas.
+const SCREEN := Rect2(545, 137, 819, 552)
 const RASTER := Vector2i(1426, 962)
 const GAME_GRID_AREA := Vector2(648, 608)
 const GAME_GRID_CENTER := Vector2(713, 484)

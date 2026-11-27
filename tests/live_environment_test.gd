@@ -76,6 +76,7 @@ func run() -> void:
 	check((game.live!=null)==ready,"game selects native environment or fallback")
 	check((game.frame!=null)!=ready,"no duplicate static background")
 	check(game.display.position==Geometry.SCREEN.position and game.display.size==Geometry.SCREEN.size,"CRT alignment")
+	check(Geometry.SCREEN.position.distance_to(Geometry.LEGACY_SCREEN.position*Geometry.ART_SCALE)<1.0 and Geometry.SCREEN.end.distance_to(Geometry.LEGACY_SCREEN.end*Geometry.ART_SCALE)<1.0,"pixel-aligned endpoints remain within one source pixel")
 	check(game.display.get_index()>(game.live.get_index() if ready else game.frame.get_index()),"CRT above environment")
 	check(game.ui!=null and game.raster.size==Geometry.RASTER,"preserve interactive raster")
 	game.queue_free()
