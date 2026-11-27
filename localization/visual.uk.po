@@ -649,3 +649,54 @@ msgstr "ВІДКРИТО"
 
 msgid "CAM_LOCKED"
 msgstr "ЗАБЛОКОВАНО"
+
+msgid "CH_MIMIC_INTRO"
+msgstr "MIMIC спотворює позначені закриті клітинки. Тильда — лише вигляд, не доказ міни. Числа й прапорці незмінні."
+
+msgid "CH_MIMIC_STATUS"
+msgstr "MIMIC // Лише візуальне спотворення."
+
+msgid "CH_NULL_INTRO"
+msgstr "NULL блокує добровільний сканер у позначеній зоні. Логічне відкриття й прапорці доступні."
+
+msgid "CH_NULL_STATUS"
+msgstr "NULL // Обмеження сканера; звичайні докази доступні."
+
+msgid "CH_NULL_BLOCKED"
+msgstr "Сканер заблоковано NULL. Заряд не витрачено."
+
+msgid "CH_SCAN_NONE"
+msgstr "Немає доведено безпечної цілі."
+
+msgid "CH_SCAN_FOUND"
+msgstr "Доведено безпечна клітинка"
+
+msgid "CH_SCAN_SPENT"
+msgstr "Скан використано."
+
+msgid "CH_SCAN_READY"
+msgstr "Доступний один добровільний скан."
+
+msgid "CH_INSTABILITY_INTRO"
+msgstr "Через три дії правило зміниться на CROSS. Після зміни можна безкоштовно повернути CLASSIC."
+
+msgid "CH_INST_SWITCH"
+msgstr "Правило змінено. Вільне перемикання CLASSIC/CROSS."
+
+msgid "CH_INST_COUNT"
+msgstr "Ходів до CROSS:"
+
+msgid "CH_INST_RULE"
+msgstr "ПРАВИЛО"
+
+msgid "CH_MAGNET_INTRO"
+msgstr "MAGNET: перед першим ходом підтвердь обмін закритих клітинок №1 і №3. Кількість мін незмінна, числа перераховуються."
+
+msgid "CH_MAGNET_WARNING"
+msgstr "Очікується обмін. Перевір числа й підтвердь видимий цикл."
+
+msgid "CH_MAGNET_COMMITTED"
+msgstr "Обмін виконано. Стан зафіксовано."
+
+msgid "CH_MAGNET_APPLY"
+msgstr "ПІДТВЕРДИТИ ОБМІН"

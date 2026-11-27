@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 45
     env:
       GODOT_VERSION: '4.7.2-stable'
-      GAME_VERSION: '0.6.0-beta.1'
+      GAME_VERSION: '0.7.0-alpha.1'
     steps:
       - name: Windows prerequisites
         shell: pwsh

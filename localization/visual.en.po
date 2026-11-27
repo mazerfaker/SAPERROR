@@ -649,3 +649,54 @@ msgstr "UNLOCKED"
 
 msgid "CAM_LOCKED"
 msgstr "LOCKED"
+
+msgid "CH_MIMIC_INTRO"
+msgstr "MIMIC distorts marked closed cells. The tilde is cosmetic, not evidence of a mine. Ordinary clues and flags remain unchanged."
+
+msgid "CH_MIMIC_STATUS"
+msgstr "MIMIC // Cosmetic corruption only."
+
+msgid "CH_NULL_INTRO"
+msgstr "NULL blocks the optional scanner in the marked zone. Manual deduction, reveal and flag remain available."
+
+msgid "CH_NULL_STATUS"
+msgstr "NULL // Scanner restriction; ordinary evidence is intact."
+
+msgid "CH_NULL_BLOCKED"
+msgstr "Scanner blocked by NULL. No charge consumed."
+
+msgid "CH_SCAN_NONE"
+msgstr "No proven safe target available."
+
+msgid "CH_SCAN_FOUND"
+msgstr "Proven safe tile"
+
+msgid "CH_SCAN_SPENT"
+msgstr "Scan spent."
+
+msgid "CH_SCAN_READY"
+msgstr "One optional scan available."
+
+msgid "CH_INSTABILITY_INTRO"
+msgstr "After three actions, the rule changes to CROSS. After the change you may freely switch back to CLASSIC."
+
+msgid "CH_INST_SWITCH"
+msgstr "Rule changed. Free CLASSIC/CROSS switch."
+
+msgid "CH_INST_COUNT"
+msgstr "Moves to CROSS:"
+
+msgid "CH_INST_RULE"
+msgstr "RULE"
+
+msgid "CH_MAGNET_INTRO"
+msgstr "MAGNET: before any move, acknowledge the marked exchange of closed cells #1 and #3. The mine total stays the same, clues are recalculated."
+
+msgid "CH_MAGNET_WARNING"
+msgstr "Exchange pending. Inspect the clues, then apply the visible cycle."
+
+msgid "CH_MAGNET_COMMITTED"
+msgstr "Exchange complete. Topology fixed."
+
+msgid "CH_MAGNET_APPLY"
+msgstr "APPLY EXCHANGE"

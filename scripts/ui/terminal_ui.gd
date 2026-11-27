@@ -208,7 +208,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.6.0-b1",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.7.0-a1",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -1266,7 +1266,7 @@ func _challenges() -> void:
 	_label(tr("CH_MENU_INTRO"),Rect2(124,292,1170,90),page,28,DIM)
 	for i in range(Challenge.KINDS.size()):
 		var id: String = Challenge.KINDS[i]
-		_button(id,Rect2(124+float(i%2)*570,400+float(i/2)*105,540,80),page,_start_challenge.bind(id),30)
+		_button(id,Rect2(124+float(i%2)*570,395+float(i/2)*97,540,76),page,_start_challenge.bind(id),30)
 	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("menu"))
 func _start_challenge(id: String) -> void:
 	if not Challenge.KINDS.has(id): return

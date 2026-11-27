@@ -1,4 +1,7 @@
 # Changelog
+## 0.7.0-alpha.1 — extended anomaly lab (CI deferred)
+MIMIC cosmetic closed-cell distortion, NULL voluntary scanner restriction, INSTABILITY announced third-action CROSS shift and free classic fallback, MAGNET explicit one-shot closed-cell exchange with both states gated by classic certification. Four authored lab trials, no campaign topology change. New tests authored; CI deferred.
+
 ## 0.6.0-beta.1 — complete campaign candidate
 First combined CI: all three endings via actual UI and public-deduction normal sectors and trials, route metadata, checkpoint retry, Hardcore restart, gallery and credits. Require exact approved ADMIN MP3. No intermediate CI. Candidate until CI and manual QA pass.
 

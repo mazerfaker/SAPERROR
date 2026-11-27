@@ -3,11 +3,16 @@ extends RefCounted
 const Board = preload("res://scripts/board/state.gd")
 const Validator = preload("res://scripts/solver/validator.gd")
 const Rules = preload("res://scripts/board/rules.gd")
+const Tools = preload("res://scripts/board/onboarding_tools.gd")
 const SIZE := 5
 const FIRST := 12
 const MASK_A := [0,1,14,21]
 const MASK_B := [0,2,10,19]
-const KINDS := ["LOOP","DOUBLE","WATCHER","LIAR"]
+const KINDS := ["LOOP","DOUBLE","WATCHER","LIAR","MIMIC","NULL","INSTABILITY","MAGNET"]
+const MIMIC_ZONE := [0,2,4,14,20,22,24]
+const NULL_ZONE := [0,1,2,3,4,9,14,19,20,21,22,23,24]
+const MAGNET_SWAP := Vector2i(0,2)
+const MAGNET_MASK := [2,1,14,21]
 const EXTRA_KINDS := ["LOOP_B","ADMIN_LINK","REWRITE"]
 const LIAR_ROWS := [0,2,4]
 const DOUBLE_LINKS := [Vector2i(11,13),Vector2i(13,11)]
@@ -29,6 +34,10 @@ var sensor_values: Array[int] = []
 var checksum_values: Array[int] = []
 var liar_solved: bool = false
 var liar_bad: int = 1
+var magnet_committed: bool = false
+var instability_triggered: bool = false
+var scan_used: bool = false
+var scan_cell: int = -1
 func make_mask(mines: Array) -> PackedByteArray:
 	var mask := PackedByteArray()
 	mask.resize(SIZE*SIZE)
@@ -58,6 +67,10 @@ func start(next_kind: String) -> bool:
 	sensor_values.clear()
 	checksum_values.clear()
 	liar_solved=false
+	magnet_committed=false
+	instability_triggered=false
+	scan_used=false
+	scan_cell=-1
 	valid=false
 	loop_zone.assign([15,16,17,18,19,20,21,22,23,24] if kind=="LOOP_B" else [0,1,2,3,4,5,6,7,8,9])
 	if kind not in KINDS and kind not in EXTRA_KINDS: return false
@@ -67,6 +80,14 @@ func start(next_kind: String) -> bool:
 		if not add_board(MASK_B): return false
 		for link in DOUBLE_LINKS:
 			if boards[0].cells[link.x]!=Board.Cell.OPEN or boards[1].cells[link.y]!=Board.Cell.OPEN: return false
+	if kind=="MAGNET":
+		var alternate: PackedByteArray=make_mask(MAGNET_MASK)
+		var proof: Dictionary=Validator.certify(SIZE,SIZE,alternate,FIRST,[Rules.Rule.CLASSIC])
+		if proof.is_empty(): return false
+		var preview := Board.new(SIZE,SIZE,alternate,3)
+		preview.reveal(FIRST)
+		if preview.cells!=board().cells or preview.finished(): return false
+		certificates.append(proof)
 	checkpoint=board().cells.duplicate()
 	if kind=="WATCHER":
 		var open_ids: Array[int] = []
@@ -104,6 +125,7 @@ func done() -> bool:
 	return won() or lost()
 func act(index: int, flag: bool = false, chord: bool = false) -> bool:
 	if not valid or done() or board().finished() or index<0 or index>=SIZE*SIZE: return false
+	if kind=="MAGNET" and not magnet_committed: return false
 	var b: Board = board()
 	var before: PackedInt32Array = b.cells.duplicate()
 	if flag: b.flag(index)
@@ -112,6 +134,11 @@ func act(index: int, flag: bool = false, chord: bool = false) -> bool:
 	if b.cells==before: return false
 	actions += 1
 	notice=""
+	scan_cell=-1
+	if kind=="INSTABILITY" and not instability_triggered and actions>=3 and not b.finished():
+		instability_triggered=true
+		b.rule=Rules.Rule.CROSS
+		notice="CH_INST_SWITCH"
 	if kind in ["LOOP","LOOP_B"] and not loop_done and b.hp>0 and (actions>=3 or b.won()):
 		apply_loop()
 	if kind=="WATCHER" and not watcher_closed and actions>=5:
@@ -132,6 +159,35 @@ func switch_layer() -> void:
 	if not valid or done(): return
 	if kind=="DOUBLE": active_layer=1-active_layer
 	elif kind=="ADMIN_LINK": board().portal_enabled=not board().portal_enabled
+	elif kind=="INSTABILITY" and instability_triggered:
+		board().rule=Rules.Rule.CLASSIC if board().rule==Rules.Rule.CROSS else Rules.Rule.CROSS
+	elif kind=="MAGNET": commit_magnet()
+func commit_magnet() -> bool:
+	# Explicit one-shot exchange before any action. Both endpoint cells are closed.
+	if not valid or kind!="MAGNET" or magnet_committed or actions!=0: return false
+	var b: Board=board()
+	if b.cells[MAGNET_SWAP.x]!=Board.Cell.CLOSED or b.cells[MAGNET_SWAP.y]!=Board.Cell.CLOSED: return false
+	var alternate := Board.new(SIZE,SIZE,make_mask(MAGNET_MASK),b.hp)
+	alternate.reveal(FIRST)
+	if alternate.cells!=b.cells or alternate.mine_total!=b.mine_total: return false
+	boards[0]=alternate
+	magnet_committed=true
+	notice="CH_MAGNET_COMMITTED"
+	return true
+func optional_scan() -> bool:
+	if not valid or kind!="NULL" or done() or scan_used: return false
+	var proof: Dictionary=Tools.safe_hint(board().observation([Rules.Rule.CLASSIC]))
+	if proof.is_empty():
+		notice="CH_SCAN_NONE"
+		return false
+	var index: int=int(proof["cell"])
+	if index in NULL_ZONE:
+		notice="CH_NULL_BLOCKED"
+		return false
+	scan_used=true
+	scan_cell=index
+	notice="CH_SCAN_FOUND"
+	return true
 func decoded_sensors() -> Array[int]:
 	if checksum_values.size()!=3: return []
 	var a: int = (checksum_values[0]+checksum_values[2]-checksum_values[1])/2
@@ -148,6 +204,10 @@ func submit_sensor(index: int) -> bool:
 func toggle_journal() -> void:
 	if kind=="WATCHER": journal_open=not journal_open
 func marker(index: int) -> String:
+	if kind=="MIMIC" and index in MIMIC_ZONE and board().cells[index]==Board.Cell.CLOSED: return "MIMIC"
+	if kind=="NULL" and index in NULL_ZONE: return "NULL"
+	if kind=="MAGNET" and index in [MAGNET_SWAP.x,MAGNET_SWAP.y]: return "MAGNET"
+	if index==scan_cell: return "SCAN"
 	if kind=="LIAR":
 		var row: int = index/SIZE
 		if LIAR_ROWS.has(row): return "S%d" % (LIAR_ROWS.find(row)+1)
@@ -162,6 +222,10 @@ func marker(index: int) -> String:
 func hidden(index: int) -> bool:
 	return kind=="WATCHER" and watcher_closed and watcher_log.has(index)
 func details() -> String:
+	if kind=="MIMIC": return tr("CH_MIMIC_STATUS")
+	if kind=="NULL": return tr("CH_NULL_STATUS")+"\n"+(tr("CH_SCAN_FOUND")+" #%d" % (scan_cell+1) if scan_cell>=0 else tr("CH_SCAN_SPENT" if scan_used else "CH_SCAN_READY"))
+	if kind=="INSTABILITY": return ("CLASSIC" if board().rule==Rules.Rule.CLASSIC else "CROSS")+"\n"+(tr("CH_INST_SWITCH") if instability_triggered else tr("CH_INST_COUNT")+" %d" % maxi(0,3-actions))
+	if kind=="MAGNET": return "#1 <-> #3\n"+tr("CH_MAGNET_COMMITTED" if magnet_committed else "CH_MAGNET_WARNING")
 	if kind=="LIAR":
 		var readings: Array[int] = decoded_sensors() if liar_solved else sensor_values
 		return "S1 = %d | S2 = %d | S3 = %d\nS1+S2 = %d | S2+S3 = %d | S1+S3 = %d\n%s" % [readings[0],readings[1],readings[2],checksum_values[0],checksum_values[1],checksum_values[2],tr("CH_LIAR_CORRECT" if liar_solved else "CH_LIAR_SELECT")]

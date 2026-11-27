@@ -1,6 +1,7 @@
 extends SceneTree
 const Challenge = preload("res://scripts/board/anomaly_challenge.gd")
 const Board = preload("res://scripts/board/state.gd")
+const Rules = preload("res://scripts/board/rules.gd")
 const Tools = preload("res://scripts/board/onboarding_tools.gd")
 const ChallengeUI = preload("res://scripts/ui/anomaly_challenge_ui.gd")
 var checks: int = 0
@@ -59,13 +60,36 @@ func run() -> void:
 		check(not model.submit_sensor(0) and not model.liar_solved,"wrong sensor rejected")
 		check(model.submit_sensor(1) and model.liar_solved,"correct sensor decoded")
 		check(not model.won(),"sensor alone is not victory")
+	check(model.start("MAGNET"),"both MAGNET states certified")
+	if model.valid:
+		var prior: PackedInt32Array=model.board().cells.duplicate()
+		check(not model.act(0,true),"moves blocked until acknowledged exchange")
+		check(model.commit_magnet(),"explicit exchange")
+		check(model.board().cells==prior and model.board()._mask==model.make_mask(Challenge.MAGNET_MASK),"only announced mine exchange, open state preserved")
+		check(not model.commit_magnet(),"no second exchange")
+	check(model.start("MIMIC"),"MIMIC setup")
+	if model.valid:
+		var obs: Dictionary=model.board().observation([0])
+		check(model.marker(0)=="MIMIC" and model.board().observation([0])==obs,"purely cosmetic closed cell")
+	check(model.start("NULL"),"NULL setup")
+	if model.valid:
+		var proof: Dictionary=Tools.safe_hint(model.board().observation([0]))
+		check(not proof.is_empty(),"public proof exists")
+		if not proof.is_empty():
+			check(int(proof["cell"]) in Challenge.NULL_ZONE and not model.optional_scan() and not model.scan_used,"NULL blocks optional scan without consuming it")
+	check(model.start("INSTABILITY"),"INSTABILITY setup")
+	if model.valid:
+		for i in range(3): model.act(0,true)
+		check(model.instability_triggered and model.board().rule==Rules.Rule.CROSS,"announced third action switch")
+		model.switch_layer()
+		check(model.board().rule==Rules.Rule.CLASSIC,"free return to certified topology")
 	# Replay public safe deductions through the actual challenge action path.
 	# No mine mask used to select moves. Every authored puzzle must remain finishable.
 	for kind in Challenge.KINDS+Challenge.EXTRA_KINDS:
 		check(model.start(kind),"full route setup "+kind)
 		if not model.valid: continue
 		if kind=="WATCHER": model.toggle_journal()
-		if kind=="ADMIN_LINK": model.switch_layer()
+		if kind=="ADMIN_LINK" or kind=="MAGNET": model.switch_layer()
 		if kind=="LIAR":
 			var truth: Array[int]=model.decoded_sensors()
 			for i in range(3):
@@ -73,6 +97,7 @@ func run() -> void:
 		for step in range(120):
 			if model.done(): break
 			if model.board().won() and kind=="DOUBLE": model.switch_layer()
+			if kind=="INSTABILITY" and model.board().rule!=Rules.Rule.CLASSIC: model.switch_layer()
 			var proof: Dictionary=Tools.safe_hint(model.board().observation([0]))
 			if proof.is_empty(): break
 			if not model.act(int(proof["cell"])): break

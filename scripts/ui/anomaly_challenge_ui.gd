@@ -14,6 +14,7 @@ var info: Label
 var readout: Label
 var layer_button: Button
 var journal_button: Button
+var scan_button: Button
 var sensor_buttons: Array[Button] = []
 var tiles: Array[Button] = []
 func _ready() -> void:
@@ -66,12 +67,14 @@ func restart() -> void:
 		readout=label("",Vector2(515,292),Vector2(720,222),26)
 		layer_button=null
 		journal_button=null
+		scan_button=null
 		sensor_buttons.clear()
 		if kind=="LIAR":
 			for index in range(3):
 				sensor_buttons.append(button("S%d" % (index+1),Vector2(515+index*240,530),Vector2(225,56),_select_sensor.bind(index)))
-		if kind in ["DOUBLE","ADMIN_LINK"]: layer_button=button("PARALLEL: A",Vector2(515,530),Vector2(720,56),_switch_layer)
+		if kind in ["DOUBLE","ADMIN_LINK","INSTABILITY","MAGNET"]: layer_button=button("PARALLEL: A",Vector2(515,530),Vector2(720,56),_switch_layer)
 		if kind=="WATCHER": journal_button=button(tr("VIS_JOURNAL"),Vector2(515,530),Vector2(720,56),_journal)
+		if kind=="NULL": scan_button=button(tr("VIS_HINT"),Vector2(515,530),Vector2(720,56),_scan)
 	else:
 		label(tr("CH_INVALID"),Vector2(25,180),Vector2(1100,120),30)
 	button(tr("TUT_REPEAT"),Vector2(18,630),Vector2(300,60),restart)
@@ -103,6 +106,9 @@ func _proceed() -> void:
 func _select_sensor(index: int) -> void:
 	model.submit_sensor(index)
 	refresh()
+func _scan() -> void:
+	model.optional_scan()
+	refresh()
 func _journal() -> void:
 	model.toggle_journal()
 	refresh()
@@ -116,6 +122,13 @@ func refresh() -> void:
 	if is_instance_valid(layer_button):
 		layer_button.text=("PORTAL: "+("ON" if b.portal_enabled else "OFF")) if kind=="ADMIN_LINK" else "PARALLEL: "+("A → B" if model.active_layer==0 else "B → A")
 		layer_button.disabled=model.done()
+		if kind=="MAGNET":
+			layer_button.text=tr("CH_MAGNET_COMMITTED" if model.magnet_committed else "CH_MAGNET_APPLY")
+			layer_button.disabled=model.magnet_committed or model.done()
+		elif kind=="INSTABILITY":
+			layer_button.text=tr("CH_INST_RULE")+" / "+("CLASSIC" if b.rule==0 else "CROSS")
+			layer_button.disabled=not model.instability_triggered or model.done()
+	if is_instance_valid(scan_button): scan_button.disabled=model.scan_used or model.done()
 	if is_instance_valid(journal_button): journal_button.text=tr("VIS_JOURNAL")+": "+tr("CH_JOURNAL_OPEN" if model.journal_open else "CH_JOURNAL_CLOSED")
 	if not model.notice.is_empty(): readout.text += "\n"+tr(model.notice)
 	if model.done(): readout.text += "\n"+tr("CH_VICTORY" if model.won() else "CH_DEFEAT")
@@ -124,9 +137,10 @@ func refresh() -> void:
 	for i in range(tiles.size()):
 		var tile: Button=tiles[i]
 		var state: int=b.cells[i]
-		tile.text=str(b.clue(i,0)) if state==Board.Cell.OPEN else ("⚑" if state==Board.Cell.FLAG else ("×" if state==Board.Cell.NEUTRALIZED else "·"))
+		tile.text=str(b.clue(i,b.rule)) if state==Board.Cell.OPEN else ("⚑" if state==Board.Cell.FLAG else ("×" if state==Board.Cell.NEUTRALIZED else "·"))
 		if state==Board.Cell.OPEN and model.hidden(i): tile.text="?"
-		tile.disabled=model.done() or b.finished()
+		if state==Board.Cell.CLOSED and model.marker(i)=="MIMIC": tile.text="~"
+		tile.disabled=model.done() or b.finished() or (kind=="MAGNET" and not model.magnet_committed)
 		var style := StyleBoxFlat.new()
 		style.bg_color=Color("081a11") if state==Board.Cell.OPEN else Color("183b27")
 		if state==Board.Cell.NEUTRALIZED: style.bg_color=Color("491e19")
