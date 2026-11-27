@@ -6,7 +6,7 @@ const TerminalAudio = preload("res://scripts/audio/terminal_audio.gd")
 const Profiles = preload("res://scripts/board/profiles.gd")
 const Store = preload("res://scripts/save/session_store.gd")
 const Tutorial = preload("res://scripts/ui/tutorial.gd")
-signal effects_changed(amount: float, curve: bool, reduced: bool, flicker: bool, global_amount: float)
+signal effects_changed(amount: float, glass: bool, reduced: bool, flicker: bool, global_amount: float)
 signal fault_triggered
 signal fullscreen_requested
 signal shutdown_requested
@@ -50,7 +50,7 @@ var last_hits: int = 0
 var is_uk: bool = true
 var screen: String = "menu"
 var amount: float = 0.6
-var curve: bool = true
+var glass: bool = true
 var reduced: bool = false
 var flicker: bool = false
 var global_amount: float = 0.0
@@ -140,7 +140,7 @@ func _show(next: String) -> void:
 	add_child(page)
 	buttons.clear()
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.3.0-alpha.1-crt.1",Rect2(946,82,390,48),page,27,DIM)
+	var version := _label("MINE // 0.3.0-a1-crt.2",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -199,7 +199,7 @@ func _load_session() -> void:
 	if DisplayServer.get_name() != "headless": cfg = Store.load_config()
 	is_uk = bool(cfg.get_value("settings","uk",true))
 	amount = clampf(float(cfg.get_value("settings","crt",0.6)),0.0,1.0)
-	curve = bool(cfg.get_value("settings","curve",true))
+	glass = bool(cfg.get_value("settings","glass",true))
 	reduced = bool(cfg.get_value("settings","reduced",false))
 	flicker = bool(cfg.get_value("settings","flicker",false))
 	global_amount = clampf(float(cfg.get_value("settings","grade",0.0)),0.0,1.0)
@@ -225,7 +225,8 @@ func _save_session() -> void:
 	if DisplayServer.get_name() == "headless": return
 	cfg.set_value("settings","uk",is_uk)
 	cfg.set_value("settings","crt",amount)
-	cfg.set_value("settings","curve",curve)
+	cfg.set_value("settings","glass",glass)
+	if cfg.has_section_key("settings","curve"): cfg.erase_section_key("settings","curve")
 	cfg.set_value("settings","reduced",reduced)
 	cfg.set_value("settings","flicker",flicker)
 	cfg.set_value("settings","grade",global_amount)
@@ -310,7 +311,7 @@ func _settings() -> void:
 		amount = v
 		crt_readout.text = tr("VIS_CRT")+": "+str(roundi(v*100))+"%"
 		_apply())
-	_button(tr("VIS_CURVE")+": "+_on_off(curve),Rect2(124,471,1040,62),page,func(): curve = not curve; _apply(); _show("settings"))
+	_button(tr("VIS_GLASS")+": "+_on_off(glass),Rect2(124,471,1040,62),page,func(): glass = not glass; _apply(); _show("settings"))
 	_button(tr("VIS_MOTION")+": "+_on_off(reduced),Rect2(124,553,1040,62),page,func(): reduced = not reduced; _apply(); _show("settings"))
 	_button(tr("VIS_FLICKER")+": "+_on_off(flicker),Rect2(124,635,1040,62),page,func(): flicker = not flicker; _apply(); _show("settings"))
 	_button(tr("VIS_GRADE")+": "+_on_off(global_amount>0.0),Rect2(124,717,1040,62),page,func(): global_amount = 0.25 if global_amount == 0.0 else 0.0; _apply(); _show("settings"))
@@ -339,7 +340,7 @@ func _audio_slider(caption: String, value: float, y: float, sfx: bool) -> void:
 func _on_off(value: bool) -> String:
 	return tr("VIS_ON" if value else "VIS_OFF")
 func _apply() -> void:
-	effects_changed.emit(amount,curve,reduced,flicker,global_amount)
+	effects_changed.emit(amount,glass,reduced,flicker,global_amount)
 	_save_session()
 func _game() -> void:
 	var left := _panel(Rect2(80,180,284,608))

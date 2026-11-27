@@ -1,4 +1,8 @@
 # Changelog
+## 0.3.0-alpha.1-crt.2 — fixed-projection CRT
+- Remove geometric distortion from both shader and input mapping. Intensity is now color-only post-processing inside the approved glass contour; no enlargement, shrinking or warping of the UI. Replace curvature setting with optional glass shading; legacy setting ignored.
+- Preserve scanlines, phosphor bloom, dither and electronic effects; soften scanline modulation and fix glass reflection math. Keep boot/shutdown luminance masks without spatial transforms. Regression tests verify fixed raster mapping and invariant display bounds at all intensities. Manual Windows visual acceptance pending.
+
 ## 0.3.0-alpha.1-crt.1 — screenshot-driven CRT correction
 - Normalized strength-dependent barrel warp with shared input mapping; no out-of-range sample strip. Stronger antialiased scanlines, subtle phosphor grille, two-radius halo, ordered 4x4 dither, vignette and soft glass reflection. Exact zero-strength bypass in ready state.
 - Live 0–100% CRT slider, power-off animation bypass when CRT disabled, increased geometry and material-binding checks. Original PNG untouched. Windows graphical acceptance still pending; headless cannot certify shader appearance.

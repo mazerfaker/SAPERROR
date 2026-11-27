@@ -214,3 +214,6 @@ msgstr "Mine #1 is flagged. Middle-click or Space on open cell #5 to reveal neig
 
 msgid "TUT_HINT_4_1"
 msgstr "Left-click cell #9 to check safe expansion."
+
+msgid "VIS_GLASS"
+msgstr "Glass effect"

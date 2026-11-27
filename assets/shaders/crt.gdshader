@@ -1,7 +1,7 @@
 shader_type canvas_item;
 render_mode unshaded;
 uniform vec2 contour[21];
-uniform float curvature : hint_range(0.0, 0.18) = 0.096;
+uniform float glass = 1.0;
 uniform float strength : hint_range(0.0, 1.0) = 0.6;
 uniform float fault : hint_range(0.0, 1.0) = 0.0;
 uniform float motion = 1.0;
@@ -23,7 +23,7 @@ float edge_mask(vec2 p) {
 	}
 	return inside ? smoothstep(0.0,0.0032,distance_to_edge) : 0.0;
 }
-// The primary sample is identical to Geometry.warp(). Never displace hit targets.
+// CRT is color-only post-processing. Primary texture coordinates are always UV.
 float bayer4(vec2 pixel) {
 	vec2 p = mod(floor(pixel),4.0);
 	vec2 low = mod(p,2.0);
@@ -42,10 +42,9 @@ float periodic_mask(float coord, float period) {
 void fragment() {
 	vec2 p = UV*2.0-1.0;
 	float r2 = dot(p,p);
-	// Normalized barrel transform stays inside the source rectangle.
-	vec2 uv = (p*(1.0+curvature*r2)/(1.0+2.0*curvature)+1.0)*0.5;
-	vec2 q = clamp(uv,vec2(0.0),vec2(1.0));
-	vec3 base = texture(TEXTURE,q).rgb;
+	// Fixed raster projection: no curvature, zoom, resampling transform or displacement.
+	vec2 q = UV;
+	vec3 base = texture(TEXTURE,UV).rgb;
 	vec3 rgb = base;
 	vec2 pixel = UV*vec2(713.0,481.0);
 	float t = TIME*motion;
@@ -64,10 +63,10 @@ void fragment() {
 		// Color-preserving bloom; red and amber warnings remain distinct.
 		vec3 glow = max(near_halo-base,vec3(0.0))*0.48 + max(far_halo-base,vec3(0.0))*0.26;
 		vec3 graded = base*1.08+glow;
-		float scan = 0.84+0.16*periodic_mask(pixel.y,3.0);
+		float scan = 0.88+0.12*periodic_mask(pixel.y,3.0);
 		float grille = 0.97+0.03*periodic_mask(pixel.x,3.0);
 		graded *= scan*grille;
-		float vignette = 1.0-0.30*smoothstep(0.12,1.8,r2);
+		float vignette = 1.0-glass*0.20*smoothstep(0.12,1.8,r2);
 		graded *= vignette;
 		// Coarse phosphor quantization / ordered dither, not animated white noise.
 		float dither = bayer4(pixel);
@@ -75,9 +74,10 @@ void fragment() {
 		float grain = hash(floor(pixel)+floor(t*18.0))-0.5;
 		graded += grain*0.012;
 		// Soft glass reflection and black-level lift; no changes to approved art.
-		float reflection = exp(-pow((p.x+0.48)*0.85,2.0)-pow((p.y+0.72)*2.5,2.0));
-		graded += vec3(0.009,0.025,0.015)*reflection;
-		graded += vec3(0.004,0.013,0.008)*(1.0-0.45*clamp(r2,0.0,1.0));
+		vec2 reflection_pos = (p+vec2(0.48,0.72))*vec2(0.85,2.5);
+		float reflection = exp(-dot(reflection_pos,reflection_pos));
+		graded += glass*vec3(0.009,0.025,0.015)*reflection;
+		graded += glass*vec3(0.004,0.013,0.008)*(1.0-0.45*clamp(r2,0.0,1.0));
 		float tear = step(0.96,hash(vec2(floor(pixel.y/4.0),floor(t*8.0))))*fault*motion;
 		graded += vec3(0.07,0.025,0.012)*tear;
 		graded += vec3(0.07,0.008,0.004)*fault;

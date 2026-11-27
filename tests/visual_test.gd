@@ -21,32 +21,36 @@ func run() -> void:
 		var rect: Rect2 = Geometry.fit(window)
 		check(absf(rect.size.aspect()-Geometry.CANVAS.aspect())<0.00001,"aspect ratio")
 		check(rect.position.x >= -0.001 and rect.position.y >= -0.001,"letterbox bounds")
-		for curve in [0.0,0.024,0.096,0.16]:
-			for local in [Vector2(100,100),Geometry.SCREEN.size*0.5,Vector2(600,380)]:
-				var physical: Vector2 = rect.position+(Geometry.SCREEN.position+local)*rect.size/Geometry.CANVAS
-				var recovered: Vector2 = (physical-rect.position)*Geometry.CANVAS/rect.size-Geometry.SCREEN.position
-				check(Geometry.to_raster(recovered,curve).distance_to(Geometry.to_raster(local,curve))<0.01,"window to CRT hit mapping")
-	check(Geometry.curvature_for(0.0,true)==0.0,"CRT off identity")
-	check(Geometry.curvature_for(1.0,false)==0.0,"curvature disabled")
-	check(Geometry.curvature_for(0.9,true)>Geometry.curvature_for(0.15,true),"intensity scales curvature")
-	for amount in [0.0,0.15,0.6,0.9,1.0]:
-		var c: float = Geometry.curvature_for(amount,true)
-		check(Geometry.warp(Vector2(0.5,0.5),c).is_equal_approx(Vector2(0.5,0.5)),"center invariant")
-		for y in range(11):
-			for x in range(11):
-				var uv := Vector2(x,y)/10.0
-				var warped: Vector2 = Geometry.warp(uv,c)
-				check(warped.x>=-0.00001 and warped.x<=1.00001 and warped.y>=-0.00001 and warped.y<=1.00001,"warp no black border")
+		for local in [Vector2(100,100),Geometry.SCREEN.size*0.5,Vector2(600,380)]:
+			var physical: Vector2 = rect.position+(Geometry.SCREEN.position+local)*rect.size/Geometry.CANVAS
+			var recovered: Vector2 = (physical-rect.position)*Geometry.CANVAS/rect.size-Geometry.SCREEN.position
+			check(Geometry.to_raster(recovered).distance_to(Geometry.to_raster(local))<0.01,"window to fixed CRT hit mapping")
+	for y in range(11):
+		for x in range(11):
+			var uv := Vector2(x,y)/10.0
+			check(Geometry.to_raster(uv*Geometry.SCREEN.size).distance_to(uv*Vector2(Geometry.RASTER))<0.01,"identity raster mapping")
+	var shader: Shader = load("res://assets/shaders/crt.gdshader") as Shader
+	check(shader != null,"CRT shader resource")
+	if shader != null:
+		check(shader.code.contains("texture(TEXTURE,UV)"),"primary sample fixed UV")
+		check(not shader.code.contains("uniform float curvature"),"no geometric distortion parameter")
 	var scene: PackedScene = load("res://scenes/game/gameplay.tscn") as PackedScene
 	check(scene!=null,"CRT scene loads")
 	if scene != null:
 		var game = scene.instantiate()
 		root.add_child(game)
+		game.ui._show("settings")
+		var original_position: Vector2 = game.display.position
+		var original_size: Vector2 = game.display.size
+		var original_page: Vector2 = game.ui.page.size
+		var hit: Vector2 = Geometry.to_raster(Vector2(100,100))
 		for strength in [0.0,0.15,0.6,0.9,1.0]:
-			game._set_effects(strength,true,false,false,0.0)
-			check(is_equal_approx(game.curvature,Geometry.curvature_for(strength,true)),"CPU curvature intensity")
-			check(is_equal_approx(float(game.crt_material.get_shader_parameter("curvature")),game.curvature),"shader/input agreement")
-			check(is_equal_approx(float(game.crt_material.get_shader_parameter("strength")),strength),"shader strength")
+			for glass in [false,true]:
+				game._set_effects(strength,glass,false,false,0.0)
+				check(is_equal_approx(float(game.crt_material.get_shader_parameter("strength")),strength),"shader strength")
+				check(is_equal_approx(float(game.crt_material.get_shader_parameter("glass")),1.0 if glass else 0.0),"glass post effect")
+				check(game.display.position==original_position and game.display.size==original_size and game.ui.page.size==original_page,"CRT cannot move or resize UI")
+				check(Geometry.to_raster(Vector2(100,100))==hit,"same hit target at every strength")
 		game.queue_free()
 	for n in [6,8,10,14,18]:
 		var area := Geometry.GAME_GRID_AREA

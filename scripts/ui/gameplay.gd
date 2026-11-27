@@ -11,11 +11,10 @@ var raster: SubViewport
 var crt_material: ShaderMaterial
 var grade_material: ShaderMaterial
 var ui: TerminalUI
-var curvature: float = 0.096
 var effects: float = 0.6
 var reduced_motion: bool = false
 var flicker_enabled: bool = false
-var curve_enabled: bool = true
+var glass_enabled: bool = true
 var scene_effects: float = 0.0
 var pointer_captured: bool = false
 var fault: float = 0.0
@@ -78,21 +77,20 @@ func _ready() -> void:
 	ui.connect("fullscreen_requested", _toggle_fullscreen)
 	ui.connect("shutdown_requested", _shutdown)
 	ui.connect("outcome_triggered", _on_outcome)
-	_set_effects(ui.amount, ui.curve, ui.reduced, ui.flicker, ui.global_amount)
+	_set_effects(ui.amount, ui.glass, ui.reduced, ui.flicker, ui.global_amount)
 	if DisplayServer.get_name() == "headless" or reduced_motion or effects <= 0.0:
 		lifecycle.skip_boot()
 	else:
 		ui.begin_boot()
 	if DisplayServer.get_name() != "headless": display.grab_focus()
 	_apply_lifecycle()
-func _set_effects(amount: float, curve: bool, reduced: bool, flicker: bool, global_amount: float) -> void:
+func _set_effects(amount: float, glass: bool, reduced: bool, flicker: bool, global_amount: float) -> void:
 	effects = amount
-	curve_enabled = curve
+	glass_enabled = glass
 	reduced_motion = reduced
 	flicker_enabled = flicker
 	scene_effects = global_amount
-	curvature = Geometry.curvature_for(amount,curve)
-	crt_material.set_shader_parameter("curvature",curvature)
+	crt_material.set_shader_parameter("glass",1.0 if glass_enabled else 0.0)
 	crt_material.set_shader_parameter("strength",effects)
 	crt_material.set_shader_parameter("motion",0.0 if reduced_motion else 1.0)
 	crt_material.set_shader_parameter("flicker",1.0 if flicker_enabled and not reduced_motion else 0.0)
@@ -161,10 +159,10 @@ func _crt_input(event: InputEvent) -> void:
 			return
 		var previous: Vector2 = m.position
 		if m is InputEventMouseMotion: previous -= m.relative
-		m.position = Geometry.to_raster(m.position,curvature)
+		m.position = Geometry.to_raster(m.position)
 		m.global_position = m.position
 		if m is InputEventMouseMotion:
-			m.relative = m.position - Geometry.to_raster(previous,curvature)
+			m.relative = m.position - Geometry.to_raster(previous)
 		raster.push_input(m,true)
 		display.accept_event()
 	elif event is InputEventKey:
