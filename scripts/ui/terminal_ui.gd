@@ -6,7 +6,9 @@ const TerminalAudio = preload("res://scripts/audio/terminal_audio.gd")
 const Profiles = preload("res://scripts/board/profiles.gd")
 const Store = preload("res://scripts/save/session_store.gd")
 const Tutorial = preload("res://scripts/ui/tutorial.gd")
-signal effects_changed(amount: float, glass: bool, reduced: bool, flicker: bool, global_amount: float)
+const Protocol = preload("res://scripts/ui/protocol_k30.gd")
+signal effects_changed(amount: float, glass: bool, reduced: bool, flicker: bool, global_amount: float, glitches: bool)
+signal protocol_triggered
 signal fault_triggered
 signal fullscreen_requested
 signal shutdown_requested
@@ -22,6 +24,18 @@ var boot_percent: Label
 var outcome_banner: Control
 var audio: TerminalAudio
 var board: Board
+var sector_number: int = 1
+var pending_sector: bool = false
+var sector_ready: bool = false
+var next_button: Button
+var protocol := Protocol.new()
+var protocol_active: bool = false
+var protocol_log: Label
+var protocol_panel: Panel
+var protocol_elapsed: float = 0.0
+var protocol_finished: bool = false
+var protocol_finish_elapsed: float = 0.0
+var protocol_scan: float = -1.0
 var profile: int = 1
 var active_seed: int = 1701
 var first_cell: int = -1
@@ -49,10 +63,11 @@ var message_key: String = "CORE_READY"
 var last_hits: int = 0
 var is_uk: bool = true
 var screen: String = "menu"
-var amount: float = 0.6
+var amount: float = 0.45
 var glass: bool = true
 var reduced: bool = false
-var flicker: bool = false
+var flicker: bool = true
+var glitches: bool = true
 var global_amount: float = 0.0
 func _ready() -> void:
 	_load_session()
@@ -117,6 +132,7 @@ func _button(value: String, rect: Rect2, parent: Control, action: Callable, font
 	b.text = value
 	b.add_theme_font_size_override("font_size",font_size)
 	b.pressed.connect(func():
+		if protocol_active: return
 		audio.play_event("key")
 		action.call())
 	_place(b,rect,parent)
@@ -128,6 +144,8 @@ func _panel(rect: Rect2) -> Panel:
 	_place(p,rect,page)
 	return p
 func _show(next: String) -> void:
+	if protocol_active: return
+	protocol.reset_input()
 	if is_instance_valid(seed_input):
 		seed_value = seed_input.text
 		seed_input = null
@@ -140,7 +158,7 @@ func _show(next: String) -> void:
 	add_child(page)
 	buttons.clear()
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.3.0-a1-crt.2",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.3.0-a2",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -156,8 +174,8 @@ func _show(next: String) -> void:
 func _menu() -> void:
 	_label(tr("VIS_BOOT"),Rect2(124,190,1170,80),page,36)
 	_label(tr("VIS_TAGLINE"),Rect2(124,266,1170,62),page,28,DIM)
-	var resume := _button(tr("VIS_CONTINUE"),Rect2(124,345,640,65),page,func(): _show("game"))
-	resume.disabled = board == null or board.finished()
+	var resume := _button(tr("VIS_CONTINUE"),Rect2(124,345,640,65),page,_continue_run)
+	resume.disabled = not pending_sector and not sector_ready and (board == null or board.finished())
 	_button(tr("VIS_NEW_GAME"),Rect2(124,423,640,65),page,func(): _show("profiles"))
 	_button(tr("VIS_TUTORIAL"),Rect2(124,501,640,65),page,func(): _show("tutorial"))
 	_button(tr("VIS_HELP"),Rect2(124,579,640,65),page,func(): _show("help"))
@@ -176,7 +194,31 @@ func _profiles() -> void:
 		_button(label,Rect2(124,350+i*100,1170,74),page,_start_profile.bind(i),32)
 	_button(tr("VIS_BACK"),Rect2(124,803,350,57),page,func(): _show("menu"))
 func _start_profile(next_profile: int) -> void:
+	if protocol_active: return
+	sector_number = 1
+	pending_sector = false
+	sector_ready = true
 	profile = next_profile
+	board = null
+	certificate.clear()
+	first_cell = -1
+	last_hits = 0
+	message_key = "CORE_READY"
+	_save_session()
+	_show("game")
+func _continue_run() -> void:
+	if pending_sector: _advance_sector()
+	else: _show("game")
+func _advance_sector() -> void:
+	if protocol_active or not pending_sector: return
+	# Shared completion route for normal wins and the hidden protocol.
+	pending_sector = false
+	sector_ready = true
+	sector_number += 1
+	active_seed = 0 if active_seed == 9223372036854775807 else active_seed+1
+	if is_instance_valid(seed_input):
+		seed_input.text = str(active_seed)
+	seed_value = str(active_seed)
 	board = null
 	certificate.clear()
 	first_cell = -1
@@ -198,15 +240,22 @@ func _tutorial() -> void:
 func _load_session() -> void:
 	if DisplayServer.get_name() != "headless": cfg = Store.load_config()
 	is_uk = bool(cfg.get_value("settings","uk",true))
-	amount = clampf(float(cfg.get_value("settings","crt",0.6)),0.0,1.0)
+	amount = clampf(float(cfg.get_value("settings","crt",0.45)),0.0,1.0)
 	glass = bool(cfg.get_value("settings","glass",true))
 	reduced = bool(cfg.get_value("settings","reduced",false))
-	flicker = bool(cfg.get_value("settings","flicker",false))
+	flicker = bool(cfg.get_value("settings","flicker_v2",true))
+	glitches = bool(cfg.get_value("settings","glitches",true))
 	global_amount = clampf(float(cfg.get_value("settings","grade",0.0)),0.0,1.0)
 	tutorial_done = clampi(int(cfg.get_value("stats","tutorial",0)),0,5)
 	sessions = maxi(0,int(cfg.get_value("stats","sessions",0)))
 	wins = maxi(0,int(cfg.get_value("stats","wins",0)))
 	losses = maxi(0,int(cfg.get_value("stats","losses",0)))
+	sector_number = maxi(1,int(cfg.get_value("run","sector",1)))
+	pending_sector = bool(cfg.get_value("run","pending_sector",false))
+	sector_ready = bool(cfg.get_value("run","sector_ready",false)) and not pending_sector
+	profile = clampi(int(cfg.get_value("run","profile",1)),0,3)
+	active_seed = int(cfg.get_value("run","seed",1701))
+	seed_value = str(active_seed)
 	var raw: Variant = cfg.get_value("run","data",{})
 	if raw is Dictionary and not raw.is_empty():
 		var resumed: Dictionary = Store.restore(raw)
@@ -214,6 +263,8 @@ func _load_session() -> void:
 			save_failed = true
 		else:
 			board = resumed["board"]
+			pending_sector = false
+			sector_ready = false
 			profile = resumed["profile"]
 			active_seed = resumed["seed"]
 			seed_value = str(active_seed)
@@ -228,7 +279,8 @@ func _save_session() -> void:
 	cfg.set_value("settings","glass",glass)
 	if cfg.has_section_key("settings","curve"): cfg.erase_section_key("settings","curve")
 	cfg.set_value("settings","reduced",reduced)
-	cfg.set_value("settings","flicker",flicker)
+	cfg.set_value("settings","flicker_v2",flicker)
+	cfg.set_value("settings","glitches",glitches)
 	cfg.set_value("settings","grade",global_amount)
 	cfg.set_value("settings","sfx",audio.sfx_level)
 	cfg.set_value("settings","hum",audio.hum_level)
@@ -237,6 +289,11 @@ func _save_session() -> void:
 	cfg.set_value("stats","sessions",sessions)
 	cfg.set_value("stats","wins",wins)
 	cfg.set_value("stats","losses",losses)
+	cfg.set_value("run","sector",sector_number)
+	cfg.set_value("run","pending_sector",pending_sector)
+	cfg.set_value("run","sector_ready",sector_ready)
+	cfg.set_value("run","profile",profile)
+	cfg.set_value("run","seed",active_seed)
 	cfg.set_value("run","data",Store.snapshot(board,profile,active_seed,first_cell))
 	save_failed = Store.write_config(cfg) != OK
 func begin_boot() -> void:
@@ -311,7 +368,8 @@ func _settings() -> void:
 		amount = v
 		crt_readout.text = tr("VIS_CRT")+": "+str(roundi(v*100))+"%"
 		_apply())
-	_button(tr("VIS_GLASS")+": "+_on_off(glass),Rect2(124,471,1040,62),page,func(): glass = not glass; _apply(); _show("settings"))
+	_button(tr("VIS_GLASS")+": "+_on_off(glass),Rect2(124,471,510,62),page,func(): glass = not glass; _apply(); _show("settings"))
+	_button(tr("VIS_GLITCHES")+": "+_on_off(glitches),Rect2(654,471,510,62),page,func(): glitches = not glitches; _apply(); _show("settings"))
 	_button(tr("VIS_MOTION")+": "+_on_off(reduced),Rect2(124,553,1040,62),page,func(): reduced = not reduced; _apply(); _show("settings"))
 	_button(tr("VIS_FLICKER")+": "+_on_off(flicker),Rect2(124,635,1040,62),page,func(): flicker = not flicker; _apply(); _show("settings"))
 	_button(tr("VIS_GRADE")+": "+_on_off(global_amount>0.0),Rect2(124,717,1040,62),page,func(): global_amount = 0.25 if global_amount == 0.0 else 0.0; _apply(); _show("settings"))
@@ -340,12 +398,12 @@ func _audio_slider(caption: String, value: float, y: float, sfx: bool) -> void:
 func _on_off(value: bool) -> String:
 	return tr("VIS_ON" if value else "VIS_OFF")
 func _apply() -> void:
-	effects_changed.emit(amount,glass,reduced,flicker,global_amount)
+	effects_changed.emit(amount,glass,reduced,flicker,global_amount,glitches)
 	_save_session()
 func _game() -> void:
 	var left := _panel(Rect2(80,180,284,608))
 	var right := _panel(Rect2(1062,180,284,608))
-	_label(tr("VIS_SECTOR")+" 01",Rect2(16,17,252,50),left,32)
+	_label(tr("VIS_SECTOR")+" %02d" % sector_number,Rect2(16,17,252,50),left,32)
 	_label(tr("VIS_DIFFICULTY")+"\n"+tr("VIS_PROFILE_"+Profiles.IDS[profile].to_upper()),Rect2(16,85,252,84),left,30)
 	integrity = _label("",Rect2(16,189,252,105),left,33)
 	recovered = _label("",Rect2(16,315,252,93),left,31)
@@ -396,11 +454,16 @@ func _game() -> void:
 	seed_input.text = str(active_seed) if board != null else seed_value
 	seed_input.editable = board == null
 	_place(seed_input,Rect2(184,844,230,60),page)
-	_button(tr("CORE_NEW"),Rect2(430,844,330,60),page,func(): _show("profiles"),28)
+	next_button = _button(tr("CORE_NEW"),Rect2(430,844,330,60),page,func():
+		if pending_sector: _advance_sector()
+		else: _show("profiles"),28)
 	_button("EN" if is_uk else "UA",Rect2(774,844,126,60),page,_language,28)
 	_button(tr("VIS_BACK"),Rect2(914,844,422,60),page,func(): _show("menu"),28)
 	_refresh()
 func _reset() -> void:
+	if protocol_active: return
+	pending_sector = false
+	sector_ready = true
 	if is_instance_valid(outcome_banner): outcome_banner.queue_free()
 	board = null
 	certificate.clear()
@@ -411,6 +474,7 @@ func _reset() -> void:
 	_save_session()
 	_refresh()
 func _reveal(i: int) -> void:
+	if protocol_active or pending_sector: return
 	if board == null:
 		if not seed_input.text.is_valid_int():
 			message_key = "CORE_SEED_BAD"
@@ -429,12 +493,13 @@ func _reveal(i: int) -> void:
 		seed_input.editable = false
 		board = Board.new(Profiles.SIZES[profile],Profiles.SIZES[profile],generated["mask"],Profiles.HP[profile])
 		sessions += 1
+		sector_ready = false
 	if board.finished() or board.cells[i] != Board.Cell.CLOSED: return
 	var before: int = board.opened
 	board.reveal(i)
 	_after_action("flood" if board.opened-before > 1 else ("reveal" if board.opened > before else ""))
 func _cell_input(event: InputEvent, i: int) -> void:
-	if board == null or board.finished(): return
+	if protocol_active or board == null or board.finished(): return
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_RIGHT:
 			_flag_action(i)
@@ -450,11 +515,13 @@ func _cell_input(event: InputEvent, i: int) -> void:
 			_flag_action(i)
 			buttons[i].accept_event()
 func _flag_action(i: int) -> void:
+	if protocol_active or board == null or board.finished(): return
 	var previous: int = board.cells[i]
 	board.flag(i)
 	if previous != board.cells[i]:
 		_after_action("flag" if board.cells[i] == Board.Cell.FLAG else "unflag")
 func _chord_action(i: int) -> void:
+	if protocol_active or board == null or board.finished(): return
 	var before: int = board.opened
 	var hits: int = board.hits
 	board.chord(i)
@@ -475,13 +542,18 @@ func _after_action(sound: String = "") -> void:
 		sound = "loss"
 	if not sound.is_empty(): audio.play_event(sound)
 	_refresh()
-	if board.finished():
-		if board.won(): wins += 1
+	if board.finished() and not pending_sector:
+		sector_ready = false
+		if board.won():
+			wins += 1
+			pending_sector = true
 		else: losses += 1
 		outcome_triggered.emit(board.won())
-		_show_outcome(board.won())
+		if not protocol_active: _show_outcome(board.won())
+		_refresh()
 	_save_session()
 func _refresh() -> void:
+	if is_instance_valid(next_button): next_button.text = tr("VIS_NEXT_SECTOR" if pending_sector else "CORE_NEW")
 	var max_hp: int = Profiles.HP[profile]
 	var hp: int = max_hp if board == null else board.hp
 	integrity.text = tr("CORE_HP")+"\n%d / %d" % [hp,max_hp]
@@ -500,7 +572,7 @@ func _refresh() -> void:
 		var fill: Color = Color("183b27")
 		var edge: Color = Color("5c936c")
 		b.text = "·"
-		b.disabled = board != null and board.finished()
+		b.disabled = protocol_active or (board != null and board.finished())
 		var desc: String = tr("CORE_CLOSED")
 		if state == Board.Cell.OPEN:
 			var clue: int = board.clue(i,board.rule)
@@ -534,3 +606,64 @@ func _refresh() -> void:
 			b.add_theme_color_override(key,color)
 		b.tooltip_text = "%s %d: %s" % [tr("CORE_CELL"),i+1,desc]
 	flag_count.text = tr("VIS_FLAGS")+"\n%d / %d" % [flags,Profiles.MINES[profile] if board == null else board.mine_total]
+
+# Hidden input is intercepted before forwarding normal UI key events.
+func protocol_input(event: InputEventKey) -> bool:
+	if protocol_active: return true
+	if screen != "game" or board == null or board.finished() or pending_sector:
+		protocol.reset_input()
+		return false
+	if protocol.feed(event):
+		_begin_protocol()
+		return true
+	return false
+func _begin_protocol() -> void:
+	if protocol_active or screen != "game" or not protocol.prepare(board): return
+	protocol_active = true
+	protocol_elapsed = 0.0
+	protocol_finished = false
+	protocol_finish_elapsed = 0.0
+	protocol_scan = 0.0
+	protocol_panel = Panel.new()
+	protocol_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	protocol_panel.add_theme_stylebox_override("panel",_style(Color("061b0f"),GREEN,3))
+	_place(protocol_panel,Rect2(80,180,284,608),page)
+	_label("PROTOCOL K-30",Rect2(14,12,256,54),protocol_panel,26,GREEN)
+	protocol_log = _label("",Rect2(14,72,256,520),protocol_panel,23,GREEN)
+	audio.play_event("k30")
+	protocol_triggered.emit()
+	_refresh()
+	_protocol_lines(1)
+func _protocol_lines(count: int) -> void:
+	if not is_instance_valid(protocol_log): return
+	var lines := PackedStringArray()
+	for i in range(clampi(count,0,5)):
+		lines.append("> "+tr("K30_"+str(i)))
+	protocol_log.text = "\n\n".join(lines)
+func _process(delta: float) -> void:
+	if not protocol_active: return
+	if protocol_finished:
+		protocol_finish_elapsed += delta
+		if protocol_finish_elapsed >= (0.6 if reduced else 1.35):
+			protocol_active = false
+			protocol_scan = -1.0
+			protocol.reset_input()
+			_advance_sector()
+		return
+	protocol_elapsed += delta
+	var intro: float = 0.35 if reduced else 1.0
+	if protocol_elapsed < intro:
+		_protocol_lines(clampi(int(protocol_elapsed/intro*4.0)+1,1,4))
+		return
+	_protocol_lines(4)
+	var duration: float = 0.65 if reduced else 1.85
+	var target: int = mini(protocol.queue.size(),ceili(clampf((protocol_elapsed-intro)/duration,0.0,1.0)*protocol.queue.size()))
+	if target > protocol.cursor:
+		protocol.advance(board,target-protocol.cursor)
+		protocol_scan = protocol.progress()
+		_refresh()
+	if board.won() and protocol.done():
+		protocol_finished = true
+		protocol_scan = -1.0
+		_protocol_lines(5)
+		_after_action()

@@ -11,7 +11,11 @@ var raster: SubViewport
 var crt_material: ShaderMaterial
 var grade_material: ShaderMaterial
 var ui: TerminalUI
-var effects: float = 0.6
+var effects: float = 0.45
+var glitches_enabled: bool = true
+var signal_fault: float = 0.0
+var next_glitch: float = 14.0
+var visual_rng := RandomNumberGenerator.new()
 var reduced_motion: bool = false
 var flicker_enabled: bool = false
 var glass_enabled: bool = true
@@ -77,18 +81,22 @@ func _ready() -> void:
 	ui.connect("fullscreen_requested", _toggle_fullscreen)
 	ui.connect("shutdown_requested", _shutdown)
 	ui.connect("outcome_triggered", _on_outcome)
-	_set_effects(ui.amount, ui.glass, ui.reduced, ui.flicker, ui.global_amount)
+	ui.connect("protocol_triggered", _on_protocol)
+	visual_rng.randomize()
+	_set_effects(ui.amount, ui.glass, ui.reduced, ui.flicker, ui.global_amount, ui.glitches)
 	if DisplayServer.get_name() == "headless" or reduced_motion or effects <= 0.0:
 		lifecycle.skip_boot()
 	else:
 		ui.begin_boot()
 	if DisplayServer.get_name() != "headless": display.grab_focus()
 	_apply_lifecycle()
-func _set_effects(amount: float, glass: bool, reduced: bool, flicker: bool, global_amount: float) -> void:
+func _set_effects(amount: float, glass: bool, reduced: bool, flicker: bool, global_amount: float, glitches: bool = true) -> void:
 	effects = amount
 	glass_enabled = glass
 	reduced_motion = reduced
 	flicker_enabled = flicker
+	glitches_enabled = glitches
+	crt_material.set_shader_parameter("bulge",Geometry.FIXED_BULGE)
 	scene_effects = global_amount
 	crt_material.set_shader_parameter("glass",1.0 if glass_enabled else 0.0)
 	crt_material.set_shader_parameter("strength",effects)
@@ -96,6 +104,8 @@ func _set_effects(amount: float, glass: bool, reduced: bool, flicker: bool, glob
 	crt_material.set_shader_parameter("flicker",1.0 if flicker_enabled and not reduced_motion else 0.0)
 	grade_material.set_shader_parameter("strength",scene_effects)
 	grade_material.set_shader_parameter("motion",0.0 if reduced_motion else 1.0)
+func _on_protocol() -> void:
+	if glitches_enabled and not reduced_motion and effects > 0.0: signal_fault = 1.0
 func _on_fault() -> void:
 	fault = 1.0
 func _on_outcome(won: bool) -> void:
@@ -130,6 +140,15 @@ func _process(delta: float) -> void:
 		get_tree().quit()
 	_apply_lifecycle()
 	fault = move_toward(fault,0.0,delta*1.7)
+	if glitches_enabled and not reduced_motion and effects > 0.0 and lifecycle.accepts_input():
+		next_glitch -= delta
+		if next_glitch <= 0.0:
+			signal_fault = maxf(signal_fault,visual_rng.randf_range(0.30,0.65))
+			next_glitch = visual_rng.randf_range(12.0,28.0)
+	else: signal_fault = 0.0
+	signal_fault = move_toward(signal_fault,0.0,delta*5.0)
+	crt_material.set_shader_parameter("signal_fault",signal_fault)
+	crt_material.set_shader_parameter("scan_wave",ui.protocol_scan if not reduced_motion else -1.0)
 	outcome = move_toward(outcome,0.0,delta*0.85)
 	crt_material.set_shader_parameter("fault",fault if not reduced_motion else 0.0)
 	crt_material.set_shader_parameter("outcome",outcome*outcome_sign if not reduced_motion else 0.0)
@@ -141,6 +160,12 @@ func _crt_input(event: InputEvent) -> void:
 	if not lifecycle.accepts_input():
 		if lifecycle.phase == Lifecycle.Phase.BOOT and event is InputEventKey and event.pressed and not event.echo:
 			if event.keycode in [KEY_ESCAPE,KEY_ENTER,KEY_SPACE]: _finish_boot()
+		display.accept_event()
+		return
+	if ui.protocol_active:
+		display.accept_event()
+		return
+	if event is InputEventKey and ui.protocol_input(event):
 		display.accept_event()
 		return
 	if event is InputEventMouse:

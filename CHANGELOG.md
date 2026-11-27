@@ -1,4 +1,9 @@
 # Changelog
+## 0.3.0-alpha.2-k30 — icon integration, secret protocol and CRT signal candidate
+- Fixed approved 25% legacy bulge coefficient 0.04 independent of CRT strength; matched click mapping. Subtle flicker and infrequent short video faults with separate toggle and reduced-motion suppression.
+- Hidden physical-key sequence, staged administrator reveal/flag animation, localized CRT log and synthetic confirmation tone. Shared classic sector completion/advance path, persisted sector index and pending transition, one win per activation. No rewrite of BoardState or solver.
+- Windows icon settings and CI verification; approved PNG/ICO binaries must be uploaded before icon-certified build. Missing assets explicitly produce provisional build. Full campaign/final sector/anomalies not implemented yet; no claims of their testing. Manual Windows rendering/audio/icon QA pending.
+
 ## 0.3.0-alpha.1-crt.2 — fixed-projection CRT
 - Remove geometric distortion from both shader and input mapping. Intensity is now color-only post-processing inside the approved glass contour; no enlargement, shrinking or warping of the UI. Replace curvature setting with optional glass shading; legacy setting ignored.
 - Preserve scanlines, phosphor bloom, dither and electronic effects; soften scanline modulation and fix glass reflection math. Keep boot/shutdown luminance masks without spatial transforms. Regression tests verify fixed raster mapping and invariant display bounds at all intensities. Manual Windows visual acceptance pending.

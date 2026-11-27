@@ -1,7 +1,9 @@
 config_version=5
 [application]
 config/name="SAPERROR"
-config/version="0.3.0-alpha.1-crt.2"
+config/version="0.3.0-alpha.2-k30"
+config/icon="res://assets/icon/saperror.png"
+config/windows_native_icon="res://assets/icon/saperror.ico"
 run/main_scene="res://scenes/game/gameplay.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 [display]

@@ -28,12 +28,13 @@ func run() -> void:
 	for y in range(11):
 		for x in range(11):
 			var uv := Vector2(x,y)/10.0
-			check(Geometry.to_raster(uv*Geometry.SCREEN.size).distance_to(uv*Vector2(Geometry.RASTER))<0.01,"identity raster mapping")
+			check(Geometry.to_raster(uv*Geometry.SCREEN.size).distance_to(Geometry.warp(uv)*Vector2(Geometry.RASTER))<0.01,"fixed bulge raster mapping")
 	var shader: Shader = load("res://assets/shaders/crt.gdshader") as Shader
 	check(shader != null,"CRT shader resource")
 	if shader != null:
-		check(shader.code.contains("texture(TEXTURE,UV)"),"primary sample fixed UV")
-		check(not shader.code.contains("uniform float curvature"),"no geometric distortion parameter")
+		check(shader.code.contains("texture(TEXTURE,q)"),"primary sample uses fixed glass mapping")
+		check(Geometry.FIXED_BULGE == 0.04,"approved 25 percent of old maximum")
+		check(not shader.code.contains("uniform float curvature"),"no intensity-linked curvature")
 	var scene: PackedScene = load("res://scenes/game/gameplay.tscn") as PackedScene
 	check(scene!=null,"CRT scene loads")
 	if scene != null:
@@ -48,6 +49,7 @@ func run() -> void:
 			for glass in [false,true]:
 				game._set_effects(strength,glass,false,false,0.0)
 				check(is_equal_approx(float(game.crt_material.get_shader_parameter("strength")),strength),"shader strength")
+				check(is_equal_approx(float(game.crt_material.get_shader_parameter("bulge")),Geometry.FIXED_BULGE),"same bulge for every CRT strength")
 				check(is_equal_approx(float(game.crt_material.get_shader_parameter("glass")),1.0 if glass else 0.0),"glass post effect")
 				check(game.display.position==original_position and game.display.size==original_size and game.ui.page.size==original_page,"CRT cannot move or resize UI")
 				check(Geometry.to_raster(Vector2(100,100))==hit,"same hit target at every strength")

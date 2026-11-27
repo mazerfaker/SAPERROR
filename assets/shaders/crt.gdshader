@@ -2,6 +2,9 @@ shader_type canvas_item;
 render_mode unshaded;
 uniform vec2 contour[21];
 uniform float glass = 1.0;
+uniform float bulge = 0.04;
+uniform float signal_fault = 0.0;
+uniform float scan_wave = -1.0;
 uniform float strength : hint_range(0.0, 1.0) = 0.6;
 uniform float fault : hint_range(0.0, 1.0) = 0.0;
 uniform float motion = 1.0;
@@ -23,7 +26,7 @@ float edge_mask(vec2 p) {
 	}
 	return inside ? smoothstep(0.0,0.0032,distance_to_edge) : 0.0;
 }
-// CRT is color-only post-processing. Primary texture coordinates are always UV.
+// Fixed approved glass geometry, independent of CRT post-processing strength.
 float bayer4(vec2 pixel) {
 	vec2 p = mod(floor(pixel),4.0);
 	vec2 low = mod(p,2.0);
@@ -42,9 +45,9 @@ float periodic_mask(float coord, float period) {
 void fragment() {
 	vec2 p = UV*2.0-1.0;
 	float r2 = dot(p,p);
-	// Fixed raster projection: no curvature, zoom, resampling transform or displacement.
-	vec2 q = UV;
-	vec3 base = texture(TEXTURE,UV).rgb;
+	// Match Geometry.warp() exactly. Bulge never depends on strength.
+	vec2 q = (p*(1.0+bulge*r2)/(1.0+2.0*bulge)+1.0)*0.5;
+	vec3 base = texture(TEXTURE,q).rgb;
 	vec3 rgb = base;
 	vec2 pixel = UV*vec2(713.0,481.0);
 	float t = TIME*motion;
@@ -63,8 +66,8 @@ void fragment() {
 		// Color-preserving bloom; red and amber warnings remain distinct.
 		vec3 glow = max(near_halo-base,vec3(0.0))*0.48 + max(far_halo-base,vec3(0.0))*0.26;
 		vec3 graded = base*1.08+glow;
-		float scan = 0.88+0.12*periodic_mask(pixel.y,3.0);
-		float grille = 0.97+0.03*periodic_mask(pixel.x,3.0);
+		float scan = 0.82+0.18*periodic_mask(pixel.y,3.0);
+		float grille = 0.95+0.05*periodic_mask(pixel.x,3.0);
 		graded *= scan*grille;
 		float vignette = 1.0-glass*0.20*smoothstep(0.12,1.8,r2);
 		graded *= vignette;
@@ -83,7 +86,25 @@ void fragment() {
 		graded += vec3(0.07,0.008,0.004)*fault;
 		vec3 tint = outcome > 0.0 ? vec3(0.015,0.07,0.025) : vec3(0.09,0.015,0.008);
 		graded += tint*abs(outcome);
-		graded *= 1.0-flicker*motion*0.025*(0.5+0.5*sin(t*13.0));
+		// Low-amplitude, irregular luminance drift; no full-screen strobe.
+		float drift = 0.5+0.3*sin(t*3.2)+0.2*sin(t*8.7+sin(t*1.1));
+		graded *= 1.0-flicker*motion*0.065*drift;
+		// Brief additive signal error: localized tearing and channel bleed. Base geometry stays fixed.
+		float band_id = floor(pixel.y/5.0);
+		float tick = floor(t*23.0);
+		float band = step(0.78,hash(vec2(band_id,tick)))*signal_fault*motion;
+		float jitter = (hash(vec2(band_id+18.0,tick))-0.5)*0.035*band;
+		vec2 offset = vec2(jitter,0.0);
+		vec3 shifted = texture(TEXTURE,clamp(q+offset,vec2(0.0),vec2(1.0))).rgb;
+		float split = 0.0028*band;
+		vec3 chroma = vec3(texture(TEXTURE,clamp(q+offset+vec2(split,0.0),vec2(0.0),vec2(1.0))).r,shifted.g,texture(TEXTURE,clamp(q+offset-vec2(split,0.0),vec2(0.0),vec2(1.0))).b);
+		graded = mix(graded,chroma,band*0.48);
+		graded += vec3(0.025,0.09,0.035)*band;
+		if (scan_wave >= 0.0) {
+			float field = step(0.272,q.x)*step(q.x,0.728)*step(0.187,q.y)*step(q.y,0.82);
+			float line = exp(-abs(q.y-(0.187+0.633*scan_wave))*85.0);
+			graded += vec3(0.06,0.25,0.10)*line*field;
+		}
 		rgb = mix(base,graded,strength);
 	}
 	float beam_mask = beam>=0.999 ? 1.0 : 1.0-smoothstep(max(0.0,beam-0.012),beam+0.012,abs(p.y));

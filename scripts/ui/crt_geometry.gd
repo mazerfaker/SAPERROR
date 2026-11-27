@@ -14,8 +14,12 @@ static func mask_points() -> PackedVector2Array:
 static func fit(window: Vector2) -> Rect2:
 	var factor: float = minf(window.x / CANVAS.x, window.y / CANVAS.y)
 	return Rect2((window - CANVAS * factor) * 0.5, CANVAS * factor)
+const FIXED_BULGE: float = 0.04 # exactly 25% of crt.1 maximum 0.16
+static func warp(uv: Vector2) -> Vector2:
+	var p: Vector2 = uv*2.0-Vector2.ONE
+	return (p*(1.0+FIXED_BULGE*p.dot(p))/(1.0+2.0*FIXED_BULGE)+Vector2.ONE)*0.5
 static func to_raster(local: Vector2) -> Vector2:
-	return local / SCREEN.size * Vector2(RASTER)
+	return warp(local / SCREEN.size)*Vector2(RASTER)
 static func grid_metrics(area: Vector2, columns: int, rows: int, gap: float) -> Vector2:
 	if columns <= 0 or rows <= 0: return Vector2.ZERO
 	var side: float = floorf(maxf(0.0, minf((area.x-gap*(columns-1))/columns,(area.y-gap*(rows-1))/rows)))

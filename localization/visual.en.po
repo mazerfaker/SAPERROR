@@ -217,3 +217,24 @@ msgstr "Left-click cell #9 to check safe expansion."
 
 msgid "VIS_GLASS"
 msgstr "Glass effect"
+
+msgid "VIS_GLITCHES"
+msgstr "Video faults"
+
+msgid "VIS_NEXT_SECTOR"
+msgstr "Next sector"
+
+msgid "K30_0"
+msgstr "UNDOCUMENTED INPUT DETECTED"
+
+msgid "K30_1"
+msgstr "PROTOCOL K-30 INITIALIZED"
+
+msgid "K30_2"
+msgstr "ADMINISTRATOR ACCESS GRANTED"
+
+msgid "K30_3"
+msgstr "OVERRIDING SECTOR..."
+
+msgid "K30_4"
+msgstr "SECTOR CLEARED"

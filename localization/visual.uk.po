@@ -217,3 +217,24 @@ msgstr "ЛКМ натисніть клітинку №9, щоб перевіри
 
 msgid "VIS_GLASS"
 msgstr "Ефект скла"
+
+msgid "VIS_GLITCHES"
+msgstr "Відеозбої"
+
+msgid "VIS_NEXT_SECTOR"
+msgstr "Наступний сектор"
+
+msgid "K30_0"
+msgstr "ВИЯВЛЕНО НЕДОКУМЕНТОВАНУ КОМБІНАЦІЮ"
+
+msgid "K30_1"
+msgstr "ПРОТОКОЛ K-30 АКТИВОВАНО"
+
+msgid "K30_2"
+msgstr "ДОСТУП АДМІНІСТРАТОРА НАДАНО"
+
+msgid "K30_3"
+msgstr "ПЕРЕХОПЛЕННЯ КЕРУВАННЯ СЕКТОРОМ..."
+
+msgid "K30_4"
+msgstr "СЕКТОР ОЧИЩЕНО"
