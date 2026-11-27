@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 45
     env:
       GODOT_VERSION: '4.7.2-stable'
-      GAME_VERSION: '0.8.0-beta.7'
+      GAME_VERSION: '0.8.0-beta.8'
     steps:
       - name: Windows prerequisites
         shell: pwsh
@@ -167,6 +167,8 @@ jobs:
           if (-not (Select-String -Path build/logs/accessibility-tests.txt -Pattern 'ACCESSIBILITY_QA.*failures=0' -Quiet)) { throw 'Missing accessibility QA marker' }
           Invoke-Godot 'synergy-tests.txt' @('--headless','--path','.','--script','res://tests/synergy_test.gd')
           if (-not (Select-String -Path build/logs/synergy-tests.txt -Pattern 'SYNERGY_QA.*failures=0' -Quiet)) { throw 'Missing synergy QA marker' }
+          Invoke-Godot 'final-integration-tests.txt' @('--headless','--path','.','--script','res://tests/final_integration_test.gd')
+          if (-not (Select-String -Path build/logs/final-integration-tests.txt -Pattern 'FINAL_INTEGRATION_QA.*failures=0' -Quiet)) { throw 'Missing final integration marker' }
           Invoke-Godot 'export.txt' @('--headless','--path','.','--export-release','Windows Desktop','build/windows/SAPERROR.exe')
       - name: Native render and audio QA
         shell: pwsh
@@ -233,7 +235,13 @@ jobs:
       - name: Package portable and source
         shell: pwsh
         run: |
+          foreach ($gate in @('live-render-status.txt','native-soak-status.txt')) {
+            $path = Join-Path 'build/logs' $gate
+            if (!(Test-Path $path) -or !(Select-String -Path $path -Pattern '^\w+ confirmed' -Quiet)) { throw "Final beta requires confirmed native QA: $gate" }
+          }
           Copy-Item README.md build/windows/README.md
+          Copy-Item LICENSES.md build/windows/LICENSES.md
+          Copy-Item docs/FINAL_BETA_QA.md build/windows/FINAL_BETA_QA.md
           if ($env:SAPERROR_ICON_READY -eq 'true') { Copy-Item assets/icon/SAPERROR.ico build/windows/SAPERROR.ico }
           Compress-Archive -Path build/windows/* -DestinationPath "build/dist/SAPERROR_v${env:GAME_VERSION}_Windows_x64.zip"
           git archive --format=zip -o "build/dist/SAPERROR_v${env:GAME_VERSION}_Source.zip" HEAD
@@ -246,9 +254,10 @@ jobs:
           # Inspect actual ZIP contents, not only the existence of output paths.
           Add-Type -AssemblyName System.IO.Compression.FileSystem
           $expected = @{
-            "SAPERROR_v${env:GAME_VERSION}_Windows_x64.zip" = @('SAPERROR.exe','SAPERROR.pck','README.md')
+            "SAPERROR_v${env:GAME_VERSION}_Windows_x64.zip" = @('SAPERROR.exe','SAPERROR.pck','README.md','LICENSES.md','FINAL_BETA_QA.md','SAPERROR.ico')
             "SAPERROR_v${env:GAME_VERSION}_Source.zip" = @('project.godot','export_presets.cfg','docs/SAPERROR_GDD.md','assets/art/terminal_original.png','assets/live/config.json','assets/live/assets/base.png','assets/live/assets/audio/01_Old_Ballast(3).wav','assets/audio/finntastico-old-computer-click-152513.mp3','assets/audio/dragon-studio-glitch-effect-1-397982.mp3','assets/narrative/bosses/watcher.svg','assets/narrative/bosses/liar.svg','assets/narrative/bosses/loop.svg','assets/narrative/bosses/admin.svg','assets/narrative/acts/boot.svg','assets/narrative/acts/corruption.svg','assets/narrative/acts/echo.svg','assets/narrative/acts/admin.svg','assets/narrative/endings/shutdown.svg','assets/narrative/endings/containment.svg','assets/narrative/endings/rewrite.svg')
           }
+          $expected["SAPERROR_v${env:GAME_VERSION}_Patch.zip"] = @('changes.patch','patch-base.txt')
           foreach ($name in $expected.Keys) {
             $path = Join-Path $PWD "build/dist/$name"
             $zip = [System.IO.Compression.ZipFile]::OpenRead($path)

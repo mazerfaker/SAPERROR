@@ -1,4 +1,7 @@
 # Changelog
+## 0.8.0-beta.8 — Final Integration candidate
+End-to-end isolated real save/reload and recovery QA, persistent last reward readout, strict native smoke packaging gate, verified patch ZIP entries, updated player README and manual release checklist in portable ZIP. No telemetry, installer, new art or main merge. CI pending.
+
 ## 0.8.0-beta.7 — Anomaly Synergy candidate
 Persisted sector anomaly plans; Story single, Standard/Expert pairs after sector 5, Hardcore triple after sector 5. Separate free journal records, shared Hotfix limit, emergency blocked-cell cleanse, portal-independent Phantom clue selection, combined save validation and public-proof replay. Existing active saves retain legacy schedule. Authored challenge mechanics remain separate. CI pending.
 

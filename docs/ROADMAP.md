@@ -81,3 +81,5 @@ Alpha.7 LIAR authored boss trial, no intermediate CI. Full combined v0.5 Beta ga
 0.8.0-beta.5 verified CI 46042249939, Audio Ultimate 81/81. 0.8.0-beta.6 adds persistent high contrast, large field symbols and clear CRT controls, keyboard navigation and focus, localized warning, resolution mapping regressions. Actual monitor/readability acceptance and general UI scaling pending. Next anomaly combination validation.
 
 0.8.0-beta.6 verified CI 46043805511, 43 accessibility checks. 0.8.0-beta.7 adds combinations of the three normal-field anomalies with profile gates, persisted plan, journal access, shared Hotfix, emergency recovery and combined replay QA. Other anomalies remain authored encounters. CI pending.
+
+0.8.0-beta.7 verified CI 46046217846: 566 synergy checks, 686103 total assertions, zero failures. 0.8.0-beta.8 Final Integration candidate: real isolated session persistence regression, native smoke package gate, portable instructions and manual release checklist. Product Beta completion requires successful CI; actual hardware and human acceptance, rights clearance and release preparation remain open. See FINAL_BETA_QA.md.

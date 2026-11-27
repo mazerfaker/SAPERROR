@@ -1,16 +1,18 @@
-# SAPERROR — 0.1.0-alpha (Core candidate)
+# SAPERROR — 0.8.0-beta.8 (Product Beta candidate)
 The numbers don't lie. Usually. / Числа не брешуть. Зазвичай.
 
-Windows x64, offline, Godot 4.7.2 stable + matching templates. This is an internal Core candidate, not the finished game and not a verified binary. Master specification: [GDD](docs/SAPERROR_GDD.md). See [roadmap](docs/ROADMAP.md) and [QA](docs/QA.md).
+Offline Windows x64 analog-horror minesweeper roguelite. Godot 4.7.2 stable. This is an integration beta candidate, not 1.0 or a manually accepted release.
 
-## Run source
-Open project.godot in Godot 4.7.2 stable; import, run F6/F5 (F5 for main scene). Left click to reveal, right click to flag, middle click or Space on an open cell to chord. First click creates an 8×8 certified board with 10 mines and three HP. Seed is a signed integer. Restart to change seed. UA/EN switches immediately. This deliberately uses a diagnostic UI; production art is v0.2.
+## Play
+Extract the whole Windows x64 ZIP into one folder and run SAPERROR.exe. Keep SAPERROR.pck next to it. No Godot installation needed. Campaign: four acts, ten sectors, four difficulties and three endings. Anomaly Lab and Classic are separate modes; finite Free Run unlocks after an ending. Endless mode is also available. Settings include Ukrainian/English, audio mixer, CRT and accessibility. Local save is in Godot user:// (normally %APPDATA%/Godot/app_userdata/SAPERROR/ on Windows); back up the session files before upgrading. No telemetry in this beta.
+
+Controls: left click reveal, right click or physical F flag, middle click or Space on open cell chord, arrows move focus, Tab changes control, Enter/Space activates, Escape goes back, F11 toggles fullscreen when CRT has focus. Horror, sudden audio and flashing light: adjust audio and accessibility options. Clear CRT does not stop the physical room lamp.
+
+## Source
+Open project.godot with Godot 4.7.2 stable, import and press F5. Matching export templates required for a Windows build. Original approved room PNG, live assets and icon must not be replaced. [GDD](docs/SAPERROR_GDD.md) | [Roadmap](docs/ROADMAP.md) | [Final beta QA](docs/FINAL_BETA_QA.md).
 
 ## CI
-Push to the authorized private GitHub repository; Windows workflow imports, executes 1000 seed cases and unit checks, exports and packages. Download only after success. Portable archive contains EXE/PCK together. No engine installation required for that archive. The first source snapshot is the patch baseline. Do not call any build stable before CI and manual verification.
+Development branch visual-foundation. Download packages only from a successful workflow. Source ZIP and cumulative binary patch against the baseline named in patch-base.txt are separate from the portable game. Native smoke gates, certified boards, regression suites, ZIP entries and asset hashes are checked. Hardware acceptance and rights clearance remain open before public 1.0.
 
 ## License
-Project source/art rights retained; third-party Godot licensing information in LICENSES.md.
-
-## Visual Foundation candidate
-The approved terminal PNG is immutable. Start the game from scenes/game/gameplay.tscn. CRT effect intensity, curvature, reduced motion, flicker and fullscreen can be changed in terminal settings. The visual alpha uses the certified CLASSIC core; future modes are not presented as functioning. See docs/VISUAL_FOUNDATION.md.
+Project rights retained. See LICENSES.md. Third-party audio provenance/redistribution clearance must be completed before public release.

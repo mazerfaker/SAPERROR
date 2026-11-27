@@ -109,6 +109,8 @@ var losses: int = 0
 var save_failed: bool = false
 var save_recovered: bool = false
 var cfg := ConfigFile.new()
+# Explicit isolated path for integration QA; production defaults to the existing save.
+var session_path: String=Store.PATH
 var tutorial: Tutorial
 var tutorial_done: int = 0
 var certificate: Dictionary = {}
@@ -235,7 +237,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.8.0-b7",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.8.0-b8",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -383,8 +385,8 @@ func _tutorial() -> void:
 	tutorial.back.connect(func(): _show("menu"))
 	page.add_child(tutorial)
 func _load_session() -> void:
-	if DisplayServer.get_name() != "headless":
-		var report: Dictionary=Store.load_report()
+	if DisplayServer.get_name() != "headless" or session_path!=Store.PATH:
+		var report: Dictionary=Store.load_report(session_path)
 		cfg=report["config"]
 		save_recovered=report["source"] in ["backup","staged"]
 		save_failed=report["source"]=="invalid"
@@ -418,6 +420,7 @@ func _load_session() -> void:
 			if id in Campaign.ENDINGS and not ending_gallery.has(id): ending_gallery.append(id)
 	collection.restore(cfg,campaign.records)
 	campaign_failed=campaign.active and bool(cfg.get_value("run","campaign_failed",false))
+	last_reward=clampi(int(cfg.get_value("run","last_reward",0)),0,Economy.MAX_CREDITS)
 	pending_sector = bool(cfg.get_value("run","pending_sector",false))
 	sector_ready = bool(cfg.get_value("run","sector_ready",false)) and not pending_sector
 	profile = clampi(int(cfg.get_value("run","profile",1)),0,3)
@@ -465,7 +468,7 @@ func _load_session() -> void:
 					var prior: Board = checked["board"]
 					if prior._mask==board._mask: rewind_data = previous.duplicate(true)
 func _save_session() -> void:
-	if DisplayServer.get_name() == "headless": return
+	if DisplayServer.get_name() == "headless" and session_path==Store.PATH: return
 	cfg.set_value("settings","uk",is_uk)
 	cfg.set_value("settings","contrast",high_contrast)
 	cfg.set_value("settings","large_symbols",large_symbols)
@@ -494,6 +497,7 @@ func _save_session() -> void:
 	cfg.set_value("run","act_checkpoint",act_checkpoint)
 	cfg.set_value("run","campaign_failed",campaign_failed)
 	cfg.set_value("run","pending_sector",pending_sector)
+	cfg.set_value("run","last_reward",last_reward)
 	cfg.set_value("run","sector_ready",sector_ready)
 	cfg.set_value("run","profile",profile)
 	cfg.set_value("run","seed",active_seed)
@@ -503,7 +507,7 @@ func _save_session() -> void:
 	cfg.set_value("run","hints",hints_left)
 	cfg.set_value("run","rewinds",rewinds_left)
 	cfg.set_value("run","rewind_data",rewind_data if board!=null and not board.finished() else {})
-	save_failed = Store.write_config(cfg) != OK
+	save_failed = Store.write_config(cfg,session_path) != OK
 	if not save_failed: save_recovered=false
 func begin_boot() -> void:
 	boot_overlay = ColorRect.new()
