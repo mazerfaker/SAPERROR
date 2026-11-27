@@ -732,7 +732,8 @@ func _reset_tools() -> void:
 	hint_cell = -1
 	hint_sources.clear()
 func _before_move() -> Dictionary:
-	if rewinds_left<=0 or board==null: return {}
+	if rewinds_left<=0 or board==null or first_cell<0 or first_cell>=board.cells.size(): return {}
+	if board.cells[first_cell]!=Board.Cell.OPEN: return {}
 	return Store.snapshot(board,profile,active_seed,first_cell)
 func _remember_move(previous: Dictionary) -> void:
 	if rewinds_left>0 and not previous.is_empty() and not board.finished(): rewind_data = previous

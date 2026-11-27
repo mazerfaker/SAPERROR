@@ -49,6 +49,7 @@ func run() -> void:
 	ui._start_profile(1)
 	ui._reveal(0)
 	check(ui.board!=null and not ui.board.finished(),"active standard field")
+	check(ui.rewind_data.is_empty(),"first reveal cannot be rewound before generation")
 	if ui.board!=null and not ui.board.finished():
 		ui._cycle_rule()
 		check(ui.board.rule==Rules.Rule.CROSS,"cartridge UI")
