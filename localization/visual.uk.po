@@ -748,3 +748,15 @@ msgstr "ВІДЛУННЯ ПАМ'ЯТІ"
 
 msgid "CAM_ACT_SIGNAL_3"
 msgstr "КОРЕНЕВИЙ ДОСТУП"
+
+msgid "CAM_FINAL_STATUS"
+msgstr "ФІНАЛЬНИЙ СТАН"
+
+msgid "CAM_END_STATUS_SHUTDOWN"
+msgstr "СИГНАЛ ПРИПИНЕНО"
+
+msgid "CAM_END_STATUS_CONTAINMENT"
+msgstr "АРХІВ ІЗОЛЬОВАНО"
+
+msgid "CAM_END_STATUS_REWRITE"
+msgstr "ПРОТОКОЛ ПЕРЕПИСАНО"

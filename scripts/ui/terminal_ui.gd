@@ -15,6 +15,7 @@ const Parasite = preload("res://scripts/board/parasite.gd")
 const ChallengeUI = preload("res://scripts/ui/anomaly_challenge_ui.gd")
 const BossEmblem = preload("res://scripts/ui/boss_emblem.gd")
 const ActPlate = preload("res://scripts/ui/act_plate.gd")
+const EndingPlate = preload("res://scripts/ui/ending_plate.gd")
 const Challenge = preload("res://scripts/board/anomaly_challenge.gd")
 const Campaign = preload("res://scripts/run/campaign.gd")
 var campaign := Campaign.new()
@@ -215,7 +216,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.7.0-a4",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.7.0-a5",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -1496,11 +1497,20 @@ func _choose_ending(id: String) -> void:
 	_show("ending_scene")
 func _ending_scene(id: String) -> void:
 	if id not in Campaign.ENDINGS: return
-	var tint: Color=RED if id=="SHUTDOWN" else (AMBER if id=="CONTAINMENT" else GREEN)
-	_label("MINE // "+id,Rect2(124,215,1170,110),page,56,tint)
-	_label(tr("CAM_END_"+id),Rect2(124,350,1170,350),page,34,tint)
+	var tint: Color=EndingPlate.TINTS[id]
+	var replay: bool=screen=="gallery_preview"
+	_label("MINE // "+id,Rect2(124,215,1170,80),page,48,tint)
+	_label(tr("CAM_FINAL_STATUS")+" // "+tr("CAM_END_STATUS_"+id),Rect2(124,298,1170,48),page,25,tint)
+	var dialogue:=_label(tr("CAM_END_"+id),Rect2(124,365,696,340),page,30)
+	dialogue.name="EndingDialogue"
+	var plate:=EndingPlate.new()
+	plate.name="EndingIllustration"
+	plate.ending_id=id
+	plate.reduced_motion=reduced
+	_place(plate,Rect2(850,353,470,372),page)
+	var back_button:=_button(tr("VIS_BACK"),Rect2(714,810,570,60),page,func(): _show("gallery" if replay else "menu"))
+	back_button.name="EndingBack"
 	_button(tr("CAM_CREDITS"),Rect2(124,810,570,60),page,func(): _show("credits"))
-	_button(tr("VIS_BACK"),Rect2(714,810,570,60),page,func(): _show("menu"))
 func _credits() -> void:
 	_label("SAPERROR",Rect2(124,205,1170,110),page,64)
 	_label(tr("CAM_CREDIT_TEXT"),Rect2(124,350,1170,380),page,30)

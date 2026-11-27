@@ -1,4 +1,7 @@
 # Changelog
+## 0.7.0-alpha.5 — illustrated endings (CI deferred)
+Three original imported SVG illustrations for SHUTDOWN, CONTAINMENT and REWRITE, localized result status and short distinct nonblocking transitions. Reduced Motion keeps illustrations static. Gallery replay returns to gallery and does not mutate story progress. Existing audio preserved for the next dedicated audio stage. QA authored, not executed.
+
 ## 0.7.0-alpha.4 — act illustrations (CI deferred)
 Four original imported vector plates: BOOT signal, CORRUPTION damaged grid, ECHO duplicated memory, ADMIN sealed root-access eye. Live UA/EN dialogue, sector range and status, brief optional nonblocking fade and static Reduced Motion. Existing navigation and story unchanged. Art/layout tests authored; actual render acceptance pending.
 
