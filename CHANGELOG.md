@@ -1,4 +1,7 @@
 # Changelog
+## 0.7.0-alpha.3 — boss identity art (CI deferred)
+Four original SVG emblems in the approved phosphor palette, dedicated accent and low-opacity slow scan. Static with Reduced Motion. Boss header reserves art area above board; ADMIN identity retained in all three phases and on introduction. No room background or board logic changes. Import/layout tests authored; visual acceptance pending.
+
 ## 0.7.0-alpha.2 — Classic and Free Run (CI deferred)
 Independent Classic 6/8/10 square fields, one HP, optional timer, seed and retry; no anomalies, economy or modules. Finite Free Run ten sectors unlocked after any ending. Preserve legacy Endless and campaign save. Classic session is in-memory only. Tests deferred.
 

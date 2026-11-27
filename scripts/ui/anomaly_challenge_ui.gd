@@ -1,6 +1,10 @@
 extends Control
 const Challenge = preload("res://scripts/board/anomaly_challenge.gd")
 const Board = preload("res://scripts/board/state.gd")
+const BossEmblem = preload("res://scripts/ui/boss_emblem.gd")
+var boss_identity: String = ""
+var reduced_motion: bool = false
+var emblem: BossEmblem
 signal back
 signal clicked
 signal encounter_won
@@ -46,8 +50,19 @@ func restart() -> void:
 	add_child(body)
 	tiles.clear()
 	model.start(kind)
-	label((encounter_title if not encounter_title.is_empty() else kind)+" // "+tr("CH_AUTHORED"),Vector2(0,0),Vector2(1266,56),36)
-	label(tr("CH_"+kind+"_INTRO"),Vector2(0,62),Vector2(1266,92),26)
+	var identity: String=boss_identity if not boss_identity.is_empty() else BossEmblem.resolve(kind)
+	emblem=null
+	var text_width: float=1060.0 if not identity.is_empty() else 1266.0
+	var title_label:=label((encounter_title if not encounter_title.is_empty() else kind)+" // "+tr("CH_AUTHORED"),Vector2(0,0),Vector2(text_width,56),36)
+	label(tr("CH_"+kind+"_INTRO"),Vector2(0,62),Vector2(text_width,92),24 if not identity.is_empty() else 26)
+	if BossEmblem.ART.has(identity):
+		title_label.add_theme_color_override("font_color",BossEmblem.TINTS[identity])
+		emblem=BossEmblem.new()
+		emblem.boss_id=identity
+		emblem.reduced_motion=reduced_motion
+		emblem.position=Vector2(1070,0)
+		emblem.size=Vector2(196,154)
+		body.add_child(emblem)
 	if model.valid:
 		var grid := GridContainer.new()
 		grid.columns=Challenge.SIZE

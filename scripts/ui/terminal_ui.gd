@@ -13,6 +13,7 @@ const Phantom = preload("res://scripts/board/phantom.gd")
 var phantom := Phantom.new()
 const Parasite = preload("res://scripts/board/parasite.gd")
 const ChallengeUI = preload("res://scripts/ui/anomaly_challenge_ui.gd")
+const BossEmblem = preload("res://scripts/ui/boss_emblem.gd")
 const Challenge = preload("res://scripts/board/anomaly_challenge.gd")
 const Campaign = preload("res://scripts/run/campaign.gd")
 var campaign := Campaign.new()
@@ -213,7 +214,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.7.0-a2",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.7.0-a3",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -1289,6 +1290,7 @@ func _start_challenge(id: String) -> void:
 	_show("challenge")
 func _challenge() -> void:
 	var challenge := ChallengeUI.new()
+	challenge.reduced_motion=reduced
 	challenge.kind=challenge_kind
 	challenge.position=Vector2(80,180)
 	challenge.size=Vector2(1266,710)
@@ -1333,7 +1335,9 @@ func _campaign_boss() -> void:
 		_show("ending_choice" if sector_number==10 else "menu")
 		return
 	var trial := ChallengeUI.new()
+	trial.reduced_motion=reduced
 	trial.kind=kind
+	trial.boss_identity=id
 	trial.campaign_encounter=true
 	if id=="LOOP": trial.encounter_title="LOOP // %d/2" % (campaign.loop_phase+1)
 	elif id=="ADMIN": trial.encounter_title="ADMIN // %d/3" % (campaign.admin_phase+1)
@@ -1410,6 +1414,7 @@ func _campaign_route() -> void:
 func _campaign_archive() -> void:
 	if not pending_sector or not campaign.archive_pending(sector_number): return
 	var trial := ChallengeUI.new()
+	trial.reduced_motion=reduced
 	trial.kind=Campaign.ARCHIVES[sector_number]
 	trial.campaign_encounter=true
 	trial.position=Vector2(80,180)
@@ -1428,7 +1433,11 @@ func _campaign_archive() -> void:
 func _admin_intro() -> void:
 	if not campaign.active or not pending_sector or campaign.boss_pending(sector_number)!="ADMIN": return
 	_label("ADMIN // ROOT ACCESS",Rect2(124,215,1170,90),page,48,RED)
-	_label(tr("CAM_ADMIN_INTRO"),Rect2(124,330,1170,350),page,32)
+	_label(tr("CAM_ADMIN_INTRO"),Rect2(124,330,790,350),page,32)
+	var emblem:=BossEmblem.new()
+	emblem.boss_id="ADMIN"
+	emblem.reduced_motion=reduced
+	_place(emblem,Rect2(930,310,390,312),page)
 	_button(tr("CAM_ENTER"),Rect2(124,810,570,60),page,func(): _show("campaign_boss"))
 	_button(tr("VIS_BACK"),Rect2(714,810,570,60),page,func(): _show("menu"))
 	if not campaign.admin_intro_seen:
@@ -1455,6 +1464,7 @@ func _ending_choice() -> void:
 func _rewrite_trial() -> void:
 	if not campaign.cleared.has(10) or campaign.records.size()!=3 or campaign.rewrite_done or not campaign.ending.is_empty(): return
 	var trial := ChallengeUI.new()
+	trial.reduced_motion=reduced
 	trial.kind="REWRITE"
 	trial.campaign_encounter=true
 	trial.position=Vector2(80,180)
