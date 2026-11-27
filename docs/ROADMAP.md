@@ -31,3 +31,5 @@ Visual integration override: alpha.3-live.1 approved live background before v0.5
 0.5 alpha.1 PHANTOM, journal, cleansing, Shielding/Hotfix and lesson 9 candidate. One marked clue per sector from sector 3, temporary concealment only, classic proof remains available. PARASITE and PORTAL next after CI. Shielding/Hotfix currently support PHANTOM only; NULL and other anomaly interactions deferred. Prices/cadence provisional.
 
 0.5 alpha.2 PARASITE candidate: 14/15 modules, one public proven-safe target, three-action countdown, five with Stabilizer, free emergency cleanse if no charge after lock; alternate anomaly types to avoid unsolved interactions. No mine movement. PORTAL next after passing tests and manual acceptance.
+
+User-approved batch workflow: alpha.3–alpha.7 use [skip ci] commits, tests authored but deferred. Full v0.5 Beta regression and manual gates only after all five stages. PORTAL draft adds reversible linked topology; no claims of passing until Beta.

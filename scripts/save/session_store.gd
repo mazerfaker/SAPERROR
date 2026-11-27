@@ -17,7 +17,7 @@ static func write_config(cfg: ConfigFile, path: String = PATH) -> Error:
 	return cfg.save(path)
 static func snapshot(board: Board, profile: int, seed_value: int, first: int, start_hp: int = -1, protected_hits: int = 0) -> Dictionary:
 	if board == null or board.finished(): return {}
-	return {"profile":profile,"seed":seed_value,"first":first,"mask":board._mask.duplicate(),"cells":board.cells.duplicate(),"hp":board.hp,"rule":board.rule,"start_hp":Profiles.HP[profile] if start_hp<0 else start_hp,"protected_hits":protected_hits}
+	return {"profile":profile,"seed":seed_value,"first":first,"mask":board._mask.duplicate(),"cells":board.cells.duplicate(),"hp":board.hp,"rule":board.rule,"start_hp":Profiles.HP[profile] if start_hp<0 else start_hp,"protected_hits":protected_hits,"portal_pair":board.portal_pair,"portal_enabled":board.portal_enabled}
 static func restore(data: Dictionary) -> Dictionary:
 	for key in ["profile","seed","first","mask","cells","hp"]:
 		if not data.has(key): return {}
@@ -60,6 +60,12 @@ static func restore(data: Dictionary) -> Dictionary:
 	board.cells = cells.duplicate()
 	board.opened = opened
 	board.hits = hits
+	var pair: Variant = data.get("portal_pair",Vector2i(-1,-1))
+	var link: Variant = data.get("portal_enabled",false)
+	if typeof(pair)!=TYPE_VECTOR2I or typeof(link)!=TYPE_BOOL: return {}
+	if pair!=Vector2i(-1,-1):
+		if not board.configure_portal(pair.x,pair.y,link): return {}
+	elif link: return {}
 	if board.finished(): return {}
 	var phantom := Phantom.new()
 	var anomaly: Variant = data.get("phantom",{})
@@ -68,4 +74,5 @@ static func restore(data: Dictionary) -> Dictionary:
 	var infection: Variant = data.get("parasite",{})
 	if not infection is Dictionary or not parasite.restore(infection,board): return {}
 	if phantom.active() and parasite.active(): return {}
+	if board.has_portal() and (phantom.active() or parasite.active()): return {}
 	return {"parasite":parasite,"phantom":phantom,"board":board,"profile":profile,"seed":data["seed"],"first":first,"certificate":proof,"start_hp":start_hp,"protected_hits":protected_hits}

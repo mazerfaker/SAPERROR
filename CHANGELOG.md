@@ -1,4 +1,7 @@
 # Changelog
+## 0.5.0-alpha.3 — PORTAL draft (CI deferred)
+- Bidirectional, deduplicated visible link on sectors 5,8,11,...; after initial certified reveal. Board clues, solver observation, hover, analyzer, chord and flood share the same linked topology. Free ON/OFF control preserves original certified proof route. Saves and rewind persist topology. No simultaneous anomalies in this draft. Tests added but not executed until v0.5 Beta by request.
+
 ## 0.5.0-alpha.2 — PARASITE candidate
 - Alternate PHANTOM and PARASITE in sectors 3+; one logically proven safe target, three successful actions before lock, stabilizer +2. If opened early infection resolves. Direct reveal, flags, chord/flood cannot bypass lock; cleanse restores access, including no-resource emergency purge after lock. No mine/clue changes. Persist and validate state, preserve old saves and K30; Hotfix shared across anomalies. Provisional pacing and emergency fallback, CI/manual QA pending.
 

@@ -454,3 +454,9 @@ msgstr "Stabilizer"
 
 msgid "DESC_STABILIZER"
 msgstr "Delays PARASITE lock by two actions."
+
+msgid "VIS_PORTAL_CHANGED"
+msgstr "Topology changed"
+
+msgid "VIS_PORTAL_HELP"
+msgstr "Link can be switched off freely."

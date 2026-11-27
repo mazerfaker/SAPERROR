@@ -454,3 +454,9 @@ msgstr "Стабілізатор"
 
 msgid "DESC_STABILIZER"
 msgstr "Відтерміновує блокування PARASITE на дві дії."
+
+msgid "VIS_PORTAL_CHANGED"
+msgstr "Топологію змінено"
+
+msgid "VIS_PORTAL_HELP"
+msgstr "Зв'язок можна безкоштовно вимкнути."

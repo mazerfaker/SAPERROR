@@ -38,12 +38,13 @@ static func restore_action(board: Board, before: Dictionary) -> bool:
 static func analyzer(board: Board, index: int) -> Dictionary:
 	if board==null or board.finished() or index<0 or index>=board.cells.size() or board.cells[index]!=Board.Cell.OPEN: return {}
 	var rule: int = Rules.Rule.CLASSIC if board.rule!=Rules.Rule.CLASSIC else Rules.Rule.CROSS
-	return {"rule":rule,"value":board.clue(index,rule),"cells":Rules.neighbors(board.width,board.height,index,rule)}
+	return {"rule":rule,"value":board.clue(index,rule),"cells":board.neighbors(index,rule)}
 # Third Eye reads an explicitly bounded, non-wrapping 3x3 group including its center.
 static func third_eye(board: Board, index: int) -> Dictionary:
 	if board==null or board.finished() or index<0 or index>=board.cells.size(): return {}
 	var cells: Array[int] = Rules.neighbors(board.width,board.height,index,Rules.Rule.CLASSIC)
 	cells.append(index)
 	cells.sort()
-	var count: int = board.count_mines(index,Rules.Rule.CLASSIC)+int(board._mask[index])
+	var count: int = 0
+	for i in cells: count += int(board._mask[i])
 	return {"cells":cells,"value":count}

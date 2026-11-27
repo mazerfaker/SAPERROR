@@ -13,6 +13,7 @@ const Phantom = preload("res://scripts/board/phantom.gd")
 var phantom := Phantom.new()
 const Parasite = preload("res://scripts/board/parasite.gd")
 var parasite := Parasite.new()
+var portal_button: Button
 var journal_button: Button
 var cleanse_button: Button
 const Rules = preload("res://scripts/board/rules.gd")
@@ -197,7 +198,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.5.0-a2",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.5.0-a3",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -508,7 +509,9 @@ func _game() -> void:
 	cleanse_button = _button(tr("VIS_CLEANSE"),Rect2(146,548,122,48),left,_cleanse,18)
 	_label(tr("VIS_RULE"),Rect2(16,17,252,44),right,30,DIM)
 	rule_button = _button("CLASSIC",Rect2(16,64,252,56),right,_cycle_rule,28)
-	_label(tr("VIS_RULE_HOVER"),Rect2(16,132,252,82),right,24,DIM)
+	_label(tr("VIS_RULE_HOVER"),Rect2(16,132,252,42),right,18,DIM)
+	portal_button = _button("PORTAL",Rect2(16,178,252,42),right,_toggle_portal,22)
+	portal_button.hide()
 	hint_button = _button("",Rect2(16,232,252,62),right,_request_hint,25)
 	rewind_button = _button("",Rect2(16,310,252,62),right,_rewind,25)
 	shield_button = _button("",Rect2(16,388,252,62),right,_arm_shield,24)
@@ -614,6 +617,9 @@ func _reveal(i: int) -> void:
 	var before: int = board.opened
 	protected_this_move = 0
 	_guarded_reveal(i)
+	# Activate only after the certified initial reveal; the link is freely reversible.
+	if before==0 and sector_number>=5 and sector_number%3==2 and not board.finished():
+		board.configure_portal(0,board.cells.size()-1)
 	economy.observe(board.opened-before,board.hits==last_hits,board.clue(i,board.rule) if board.cells[i]==Board.Cell.OPEN else 0)
 	_remember_move(saved)
 	_after_action("flood" if board.opened-before > 1 else ("reveal" if board.opened > before else ""))
@@ -657,8 +663,8 @@ func _after_action(sound: String = "") -> void:
 	var infection_event: String = ""
 	if not protocol_active:
 		# Alternate anomaly types for this conservative alpha; preserve legacy PHANTOM saves.
-		var parasite_sector: bool = sector_number>=4 and sector_number%2==0 and not phantom.triggered
-		anomaly_event = phantom.advance(board,sector_number>=3 and not parasite_sector and parasite.cell<0,economy.owned.has("SHIELDING"))
+		var parasite_sector: bool = sector_number>=4 and sector_number%2==0 and not phantom.triggered and not board.has_portal()
+		anomaly_event = phantom.advance(board,sector_number>=3 and not parasite_sector and parasite.cell<0 and not board.has_portal(),economy.owned.has("SHIELDING"))
 		infection_event = parasite.advance(board,parasite_sector,economy.owned.has("STABILIZER"))
 	_clear_inspection()
 	hint_cell = -1
@@ -716,6 +722,8 @@ func _refresh() -> void:
 		status.text += " // PHANTOM #%d [%d]" % [phantom.cell+1,phantom.until_action-phantom.actions]
 	elif parasite.active() and not protocol_active and board!=null and not board.finished():
 		status.text += " // PARASITE #%d [%s]" % [parasite.cell+1,"LOCK" if parasite.blocked() else str(parasite.remaining())]
+	if board!=null and board.has_portal() and not protocol_active and not board.finished() and inspect_result.is_empty():
+		status.text += " // PORTAL %s [%d-%d]" % [_on_off(board.portal_enabled),board.portal_pair.x+1,board.portal_pair.y+1]
 	if pending_sector and last_reward>0: status.text += "  +%d CR" % last_reward
 	status.add_theme_color_override("font_color",RED if message_key == "CORE_LOSS" else (AMBER if message_key in ["CORE_HIT","CORE_FAIL","CORE_SEED_BAD"] else GREEN))
 	for i in range(buttons.size()):
@@ -759,7 +767,10 @@ func _refresh() -> void:
 			fill = Color("49221a") if parasite.blocked() else Color("382e15")
 			desc = tr("VIS_PARASITE_BLOCKED" if parasite.blocked() else "VIS_PARASITE_WARNING")
 			b.disabled = parasite.blocked()
-		b.add_theme_stylebox_override("normal",_style(fill,edge,2))
+		if board!=null and board.has_portal() and i in [board.portal_pair.x,board.portal_pair.y] and not protocol_active:
+			edge = Color("7ac5d0")
+			desc += " / PORTAL #%d" % ((board.portal_pair.y if i==board.portal_pair.x else board.portal_pair.x)+1)
+		b.add_theme_stylebox_override("normal",_style(fill,edge,3 if board!=null and board.has_portal() and i in [board.portal_pair.x,board.portal_pair.y] else 2))
 		b.add_theme_stylebox_override("disabled",_style(fill,edge,2))
 		b.add_theme_stylebox_override("hover",_style(fill.lightened(0.13),color,2))
 		b.add_theme_stylebox_override("pressed",_style(fill.lightened(0.25),color,3))
@@ -933,7 +944,11 @@ func _leave_cell(i: int) -> void:
 		_refresh_marks()
 func _refresh_tools() -> void:
 	var active: bool = board!=null and not board.finished() and not protocol_active
-	if is_instance_valid(journal_button): journal_button.disabled = not active or (phantom.cell<0 and parasite.cell<0)
+	if is_instance_valid(portal_button):
+		portal_button.visible = board!=null and board.has_portal()
+		portal_button.disabled = not active
+		portal_button.text = "PORTAL: "+_on_off(board.portal_enabled) if board!=null else "PORTAL"
+	if is_instance_valid(journal_button): journal_button.disabled = not active or (phantom.cell<0 and parasite.cell<0 and not board.has_portal())
 	if is_instance_valid(cleanse_button):
 		cleanse_button.disabled = not active or not (phantom.active() or parasite.active()) or (economy.stock<=0 and not _free_cleanse() and not parasite.blocked())
 	if is_instance_valid(rule_button):
@@ -958,7 +973,7 @@ func _refresh_tools() -> void:
 func _refresh_marks() -> void:
 	var neighbors: Array[int] = []
 	if board!=null and hover_cell>=0 and hover_cell<board.cells.size() and board.cells[hover_cell]==Board.Cell.OPEN and not protocol_active:
-		neighbors = Rules.neighbors(board.width,board.height,hover_cell,board.rule)
+		neighbors = board.neighbors(hover_cell,board.rule)
 	for i in range(marks.size()):
 		if not is_instance_valid(marks[i]): continue
 		var target: bool = i==hint_cell
@@ -1045,7 +1060,7 @@ func _guarded_reveal(i: int) -> void:
 		board.hp = hp
 func _guarded_chord(i: int) -> void:
 	if board.finished() or board.cells[i]!=Board.Cell.OPEN: return
-	var neighbors: Array[int] = Rules.neighbors(board.width,board.height,i,board.rule)
+	var neighbors: Array[int] = board.neighbors(i,board.rule)
 	var count: int = 0
 	for n in neighbors:
 		if board.cells[n] in [Board.Cell.FLAG,Board.Cell.NEUTRALIZED]: count += 1
@@ -1131,8 +1146,13 @@ func _inspect_target(i: int) -> void:
 func _free_cleanse() -> bool:
 	return economy.owned.has("HOTFIX") and not phantom.hotfix_used and not parasite.hotfix_used
 func _open_journal() -> void:
-	if protocol_active or board==null or board.finished() or (phantom.cell<0 and parasite.cell<0): return
+	if protocol_active or board==null or board.finished() or (phantom.cell<0 and parasite.cell<0 and not board.has_portal()): return
 	_clear_inspection()
+	if board.has_portal():
+		inspect_result = "PORTAL #%d <-> #%d / %s" % [board.portal_pair.x+1,board.portal_pair.y+1,tr("VIS_PORTAL_HELP")]
+		inspect_marks.assign([board.portal_pair.x,board.portal_pair.y])
+		_refresh()
+		return
 	if parasite.cell>=0:
 		inspect_result = "%s: PARASITE #%d / %s" % [tr("VIS_JOURNAL"),parasite.cell+1,tr("VIS_PARASITE_SAFE")]
 		inspect_marks.append(parasite.cell)
@@ -1158,5 +1178,15 @@ func _cleanse() -> void:
 	_clear_inspection()
 	message_key = "VIS_PARASITE_CLEAR" if infection else "VIS_PHANTOM_CLEAR"
 	audio.play_event("key")
+	_refresh()
+	_save_session()
+
+func _toggle_portal() -> void:
+	if protocol_active or board==null or board.finished() or not board.has_portal(): return
+	board.portal_enabled = not board.portal_enabled
+	_clear_inspection()
+	hint_cell = -1
+	hint_sources.clear()
+	message_key = "VIS_PORTAL_CHANGED"
 	_refresh()
 	_save_session()
