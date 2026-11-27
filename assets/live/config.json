@@ -1,0 +1,227 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "indicator": {
+    "min": 0,
+    "max": 6,
+    "initial": 3,
+    "stepMs": [
+      120,
+      300
+    ],
+    "holdMs": [
+      800,
+      3000
+    ]
+  },
+  "lamp": {
+    "intervalMs": [
+      20000,
+      30000
+    ],
+    "episodeMs": [
+      500,
+      500
+    ],
+    "cues": [
+      [
+        0,
+        false
+      ],
+      [
+        55,
+        true
+      ],
+      [
+        132,
+        false
+      ],
+      [
+        170,
+        true
+      ],
+      [
+        238,
+        false
+      ],
+      [
+        285,
+        true
+      ],
+      [
+        450,
+        false
+      ],
+      [
+        485,
+        true
+      ]
+    ]
+  },
+  "layers": {
+    "base": {
+      "file": "assets/base.png",
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "opacity": 1.0,
+      "blend": "source-over",
+      "psd_name": "SAPERROR_Lamp_On_1920x1080"
+    },
+    "lamp_off": {
+      "file": "assets/lamp_off.png",
+      "x": 1379,
+      "y": 0,
+      "width": 541,
+      "height": 653,
+      "opacity": 1.0,
+      "blend": "source-over",
+      "psd_name": "SAPERROR_Lamp_Off_1920x1080"
+    },
+    "1_on": {
+      "file": "assets/1_on.png",
+      "x": 1543,
+      "y": 683,
+      "width": 19,
+      "height": 22,
+      "opacity": 1.0,
+      "blend": "source-over",
+      "psd_name": "1_on"
+    },
+    "2_on": {
+      "file": "assets/2_on.png",
+      "x": 1560,
+      "y": 683,
+      "width": 19,
+      "height": 22,
+      "opacity": 1.0,
+      "blend": "source-over",
+      "psd_name": "2_on"
+    },
+    "3_on": {
+      "file": "assets/3_on.png",
+      "x": 1576,
+      "y": 683,
+      "width": 19,
+      "height": 22,
+      "opacity": 1.0,
+      "blend": "source-over",
+      "psd_name": "3_on"
+    },
+    "4_on": {
+      "file": "assets/4_on.png",
+      "x": 1592,
+      "y": 683,
+      "width": 19,
+      "height": 22,
+      "opacity": 1.0,
+      "blend": "source-over",
+      "psd_name": "4_on"
+    },
+    "5_on": {
+      "file": "assets/5_on.png",
+      "x": 1608,
+      "y": 683,
+      "width": 19,
+      "height": 22,
+      "opacity": 1.0,
+      "blend": "source-over",
+      "psd_name": "5_on"
+    },
+    "6_on": {
+      "file": "assets/6_on.png",
+      "x": 1624,
+      "y": 683,
+      "width": 19,
+      "height": 22,
+      "opacity": 1.0,
+      "blend": "source-over",
+      "psd_name": "6_on"
+    },
+    "1_off": {
+      "file": "assets/1_off.png",
+      "x": 1543,
+      "y": 684,
+      "width": 20,
+      "height": 20,
+      "opacity": 1.0,
+      "blend": "source-over",
+      "psd_name": "1_off"
+    },
+    "2_off": {
+      "file": "assets/2_off.png",
+      "x": 1560,
+      "y": 684,
+      "width": 20,
+      "height": 20,
+      "opacity": 1.0,
+      "blend": "source-over",
+      "psd_name": "2_off"
+    },
+    "3_off": {
+      "file": "assets/3_off.png",
+      "x": 1576,
+      "y": 684,
+      "width": 20,
+      "height": 20,
+      "opacity": 1.0,
+      "blend": "source-over",
+      "psd_name": "3_off"
+    },
+    "4_off": {
+      "file": "assets/4_off.png",
+      "x": 1592,
+      "y": 684,
+      "width": 20,
+      "height": 20,
+      "opacity": 1.0,
+      "blend": "source-over",
+      "psd_name": "4_off"
+    },
+    "5_off": {
+      "file": "assets/5_off.png",
+      "x": 1608,
+      "y": 684,
+      "width": 20,
+      "height": 20,
+      "opacity": 1.0,
+      "blend": "source-over",
+      "psd_name": "5_off"
+    },
+    "6_off": {
+      "file": "assets/6_off.png",
+      "x": 1624,
+      "y": 684,
+      "width": 20,
+      "height": 20,
+      "opacity": 1.0,
+      "blend": "source-over",
+      "psd_name": "6_off"
+    }
+  },
+  "audio": {
+    "file": "assets/audio/01_Old_Ballast(3).wav",
+    "gain": 0.1
+  },
+  "post": {
+    "device": {
+      "x": 1440,
+      "y": 653,
+      "width": 415,
+      "height": 196,
+      "files": {
+        "high": [
+          "assets/post/device_high_0.png",
+          "assets/post/device_high_1.png",
+          "assets/post/device_high_2.png",
+          "assets/post/device_high_3.png",
+          "assets/post/device_high_4.png",
+          "assets/post/device_high_5.png",
+          "assets/post/device_high_6.png"
+        ]
+      }
+    }
+  },
+  "defaultMode": "high"
+}
