@@ -5,6 +5,8 @@ const CRT = preload("res://assets/shaders/crt.gdshader")
 const Grade = preload("res://assets/shaders/scene_grade.gdshader")
 const Lifecycle = preload("res://scripts/ui/crt_lifecycle.gd")
 const ART_PATH := "res://assets/art/terminal_original.png"
+const Environment = preload("res://scripts/environment/live_environment.gd")
+var live: Environment
 var frame: TextureRect
 var display: TextureRect
 var raster: SubViewport
@@ -32,17 +34,25 @@ func _ready() -> void:
 		get_tree().quit(2)
 		return
 	var art: Texture2D = load(ART_PATH) as Texture2D
-	if art == null or art.get_size() != Geometry.CANVAS:
+	if art == null or art.get_size() != Geometry.LEGACY_CANVAS:
 		push_error("SAPERROR: unexpected approved artwork dimensions")
 		get_tree().quit(2)
 		return
-	frame = TextureRect.new()
-	frame.name = "BackgroundImage"
-	frame.texture = art
-	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	frame.size = Geometry.CANVAS
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(frame)
+	var candidate := Environment.new()
+	if candidate.setup():
+		live = candidate
+		live.name = "LiveEnvironment"
+		add_child(live)
+	else:
+		candidate.free()
+		# A source checkout without the live assets remains recoverable. CI prohibits release packaging in this state.
+		frame = TextureRect.new()
+		frame.name = "BackgroundImage"
+		frame.texture = art
+		frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		frame.size = Geometry.CANVAS
+		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(frame)
 	raster = SubViewport.new()
 	raster.name = "CRTViewport"
 	raster.size = Geometry.RASTER
@@ -70,10 +80,13 @@ func _ready() -> void:
 	display.mouse_exited.connect(_mouse_exit)
 	var post := ColorRect.new()
 	post.name = "GlobalPostProcessing"
-	post.size = Geometry.CANVAS
+	post.size = Geometry.CANVAS if live==null else Geometry.SCREEN.size
+	post.position = Vector2.ZERO if live==null else Geometry.SCREEN.position
 	post.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	grade_material = ShaderMaterial.new()
 	grade_material.shader = Grade
+	grade_material.set_shader_parameter("clip_to_crt",live!=null)
+	grade_material.set_shader_parameter("contour",Geometry.mask_points())
 	post.material = grade_material
 	add_child(post)
 	ui.connect("effects_changed", _set_effects)
@@ -128,6 +141,7 @@ func _shutdown() -> void:
 	ui.audio.play_event("shutdown")
 func _process(delta: float) -> void:
 	if crt_material == null: return
+	if is_instance_valid(live): live.set_audio_settings(ui.audio.sfx_level,ui.audio.enabled)
 	var previous: int = lifecycle.phase
 	lifecycle.advance(delta)
 	if lifecycle.phase == Lifecycle.Phase.BOOT:

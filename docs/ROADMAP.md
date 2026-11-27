@@ -25,3 +25,5 @@ Alpha.3: scanner, nonfatal charged rewind, three free cartridges, lessons 6–7.
 0.4 alpha.2: HP carry, repair, shield, Second Life/Fuse/Auditor, confirmed replacement and lesson 8. Eight real modules of fifteen; balance and manual QA pending. Remaining systems split into later alpha releases.
 
 0.4 alpha.3: 11/15 modules, 4/5 active tools, six cartridges, extended persistent counters. Four anomaly/archive-dependent modules and cleansing deferred until their mechanics exist; no fake effects. Statistics UI and balance pass pending.
+
+Visual integration override: alpha.3-live.1 approved live background before v0.5 anomalies. Preserve full gameplay and original static fallback. Require exact assets, scheduler QA, native render/audio evidence and manual visual acceptance; no claim of real 24h rendering from accelerated logical stress.

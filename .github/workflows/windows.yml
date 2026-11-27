@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 45
     env:
       GODOT_VERSION: '4.7.2-stable'
-      GAME_VERSION: '0.4.0-alpha.3'
+      GAME_VERSION: '0.4.0-alpha.3-live.1'
     steps:
       - name: Windows prerequisites
         shell: pwsh
@@ -79,6 +79,24 @@ jobs:
           if (($sizes | Sort-Object) -join ',' -ne '16,24,32,48,64,128,256') { throw 'ICO sizes mismatch' }
           'SAPERROR_ICON_READY=true' | Add-Content $env:GITHUB_ENV
           'ICON_QA approved PNG and 7 ICO sizes verified' | Set-Content build/logs/icon-qa.txt
+      - name: Verify approved live environment assets
+        shell: pwsh
+        run: |
+          $manifest = Get-Content assets/live/approved-sha256.json -Raw | ConvertFrom-Json -AsHashtable
+          $missing = @()
+          foreach ($entry in $manifest.GetEnumerator()) {
+            $path = Join-Path 'assets/live' $entry.Key
+            if (!(Test-Path -LiteralPath $path)) { $missing += $entry.Key; continue }
+            $hash = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLower()
+            if ($hash -ne $entry.Value) { throw "Approved live asset hash mismatch: $path" }
+          }
+          if ($missing.Count -gt 0) {
+            'LIVE_ASSETS_READY=false' | Add-Content $env:GITHUB_ENV
+            "LIVE_ASSETS pending upload: $($missing -join ', ')" | Tee-Object -FilePath build/logs/live-assets.txt
+          } else {
+            'LIVE_ASSETS_READY=true' | Add-Content $env:GITHUB_ENV
+            "LIVE_ASSETS verified $($manifest.Count) exact files" | Tee-Object -FilePath build/logs/live-assets.txt
+          }
       - name: Import and tests
         shell: pwsh
         run: |
@@ -110,7 +128,24 @@ jobs:
           if (-not (Select-String -Path build/logs/survival-tests.txt -Pattern 'SURVIVAL_QA.*failures=0' -Quiet)) { throw 'Missing survival QA marker' }
           Invoke-Godot 'advanced-tests.txt' @('--headless','--path','.','--script','res://tests/advanced_builds_test.gd')
           if (-not (Select-String -Path build/logs/advanced-tests.txt -Pattern 'ADVANCED_QA.*failures=0' -Quiet)) { throw 'Missing advanced QA marker' }
+          Invoke-Godot 'live-tests.txt' @('--headless','--path','.','--script','res://tests/live_environment_test.gd')
+          if (-not (Select-String -Path build/logs/live-tests.txt -Pattern 'LIVE_QA.*failures=0' -Quiet)) { throw 'Missing live QA marker' }
+          if ($env:LIVE_ASSETS_READY -ne 'true') { throw 'Live integration requires all approved files; no fallback release packaging' }
           Invoke-Godot 'export.txt' @('--headless','--path','.','--export-release','Windows Desktop','build/windows/SAPERROR.exe')
+      - name: Native render and audio QA
+        shell: pwsh
+        run: |
+          $log = Join-Path $PWD 'build/logs/live-render.txt'
+          $args = @('--path','.', '--windowed','--resolution','1280x720','--script','res://tests/live_render_test.gd','--log-file', $log)
+          try {
+            $proc = Start-Process -FilePath $env:GODOT_EXE -ArgumentList $args -PassThru
+            if (!$proc.WaitForExit(90000)) { $proc.Kill(); throw 'Native renderer timed out' }
+            if ($proc.ExitCode -ne 0 -or !(Test-Path $log) -or !(Select-String -Path $log -Pattern 'LIVE_RENDER failures=0' -Quiet)) { throw 'Native render/audio QA did not pass' }
+            'LIVE_RENDER confirmed native composition and audio smoke' | Set-Content build/logs/live-render-status.txt
+          } catch {
+            "LIVE_RENDER UNCONFIRMED: $_ ; manual GPU/audio QA required" | Tee-Object -FilePath build/logs/live-render-status.txt
+            Write-Warning 'Native render or audio validation unavailable/failed. Do not treat package as visually accepted.'
+          }
       - name: Verify and headless smoke
         shell: pwsh
         run: |
@@ -162,7 +197,7 @@ jobs:
           Add-Type -AssemblyName System.IO.Compression.FileSystem
           $expected = @{
             "SAPERROR_v${env:GAME_VERSION}_Windows_x64.zip" = @('SAPERROR.exe','SAPERROR.pck','README.md')
-            "SAPERROR_v${env:GAME_VERSION}_Source.zip" = @('project.godot','export_presets.cfg','docs/SAPERROR_GDD.md','assets/art/terminal_original.png')
+            "SAPERROR_v${env:GAME_VERSION}_Source.zip" = @('project.godot','export_presets.cfg','docs/SAPERROR_GDD.md','assets/art/terminal_original.png','assets/live/config.json','assets/live/assets/base.png','assets/live/assets/audio/01_Old_Ballast(3).wav')
           }
           foreach ($name in $expected.Keys) {
             $path = Join-Path $PWD "build/dist/$name"

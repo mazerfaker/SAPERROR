@@ -13,7 +13,8 @@ func _initialize() -> void:
 func run() -> void:
 	check(int(ProjectSettings.get_setting("display/window/size/mode",0))==3,"fullscreen startup default")
 	var texture: Texture2D = load(ART) as Texture2D
-	check(texture != null and texture.get_size() == Geometry.CANVAS,"original texture import")
+	check(texture != null and texture.get_size() == Geometry.LEGACY_CANVAS,"original texture import")
+	check(Geometry.CANVAS==Vector2(1920,1080),"native live canvas")
 	var poly: PackedVector2Array = Geometry.mask_points()
 	check(poly.size() == 21,"mask contour")
 	check(Geometry2D.is_point_in_polygon(Vector2(0.5,0.5),poly),"mask center")
