@@ -1,4 +1,7 @@
 # Changelog
+## 0.6.0-alpha.1 — campaign foundation (CI deferred)
+Campaign and Free Run modes, four act intros, ten-sector bound, mandatory WATCHER/LIAR/LOOP gates, three memory records and saved metadata. Boss retries use local HP. ADMIN is an explicit unfinished gate, not an ending. Routes, checkpoints, final boss and endings remain upcoming. No intermediate CI.
+
 ## 0.5.0-beta.1 — combined Anomaly QA candidate
 - First combined CI after all five deferred alpha commits. Full previous regression, exact audio/live resources, portal topology, four authored trials and public-deduction replay through each trial, real UI creation/retry/controls. Candidate, not accepted release. Campaign routes/rewards, persistent lab completion, remaining Archivist, full anomaly combinations, balance and manual QA remain open.
 

@@ -14,6 +14,9 @@ var phantom := Phantom.new()
 const Parasite = preload("res://scripts/board/parasite.gd")
 const ChallengeUI = preload("res://scripts/ui/anomaly_challenge_ui.gd")
 const Challenge = preload("res://scripts/board/anomaly_challenge.gd")
+const Campaign = preload("res://scripts/run/campaign.gd")
+var campaign := Campaign.new()
+var campaign_selected: bool = false
 var challenge_kind: String = "LOOP"
 var parasite := Parasite.new()
 var portal_button: Button
@@ -201,7 +204,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.5.0-b1",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.6.0-a1",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -212,6 +215,10 @@ func _show(next: String) -> void:
 	elif screen == "help": _help()
 	elif screen == "audio": _audio_settings()
 	elif screen == "profiles": _profiles()
+	elif screen == "modes": _modes()
+	elif screen == "campaign_intro": _campaign_intro()
+	elif screen == "campaign_boss": _campaign_boss()
+	elif screen == "campaign_boundary": _campaign_boundary()
 	elif screen == "tutorial": _tutorial()
 	elif screen == "shop": _shop()
 	elif screen == "replace": _replacement()
@@ -223,7 +230,7 @@ func _menu() -> void:
 	_label(tr("VIS_TAGLINE"),Rect2(124,266,1170,62),page,28,DIM)
 	var resume := _button(tr("VIS_CONTINUE"),Rect2(124,345,640,65),page,_continue_run)
 	resume.disabled = not pending_sector and not sector_ready and (board == null or board.finished())
-	_button(tr("VIS_NEW_GAME"),Rect2(124,423,640,65),page,func(): _show("profiles"))
+	_button(tr("VIS_NEW_GAME"),Rect2(124,423,640,65),page,func(): _show("modes"))
 	_button(tr("VIS_TUTORIAL"),Rect2(124,501,640,65),page,func(): _show("tutorial"))
 	_button(tr("VIS_HELP"),Rect2(124,579,640,65),page,func(): _show("help"))
 	_button(tr("VIS_SETTINGS"),Rect2(124,657,640,65),page,func(): _show("settings"))
@@ -238,10 +245,13 @@ func _profiles() -> void:
 		_label(tr("VIS_REPLACE_RUN"),Rect2(124,265,1170,80),page,29,AMBER)
 	for i in range(4):
 		var label: String = tr("VIS_PROFILE_"+Profiles.IDS[i].to_upper())+"  //  %d×%d  ·  %d  ·  HP %d" % [Profiles.SIZES[i],Profiles.SIZES[i],Profiles.MINES[i],Profiles.HP[i]]
-		_button(label,Rect2(124,350+i*100,1170,74),page,_start_profile.bind(i),32)
+		_button(label,Rect2(124,350+i*100,1170,74),page,_start_profile.bind(i,campaign_selected),32)
 	_button(tr("VIS_BACK"),Rect2(124,803,350,57),page,func(): _show("menu"))
-func _start_profile(next_profile: int) -> void:
+func _start_profile(next_profile: int, story: bool = false) -> void:
 	if protocol_active: return
+	campaign=Campaign.new()
+	campaign.active=story
+	campaign_selected=false
 	sector_number = 1
 	pending_sector = false
 	sector_ready = true
@@ -258,12 +268,21 @@ func _start_profile(next_profile: int) -> void:
 	last_hits = 0
 	message_key = "CORE_READY"
 	_save_session()
-	_show("game")
+	_show("campaign_intro" if campaign.active else "game")
 func _continue_run() -> void:
 	if pending_sector: _advance_sector()
+	elif campaign.needs_intro(sector_number): _show("campaign_intro")
 	else: _show("game")
 func _advance_sector() -> void:
 	if protocol_active or not pending_sector: return
+	if campaign.active:
+		var boss: String=campaign.boss_pending(sector_number)
+		if not boss.is_empty():
+			_show("campaign_boundary" if boss=="ADMIN" else "campaign_boss")
+			return
+		if sector_number>=10:
+			_show("campaign_boundary")
+			return
 	# Shared completion route for normal wins and the hidden protocol.
 	pending_sector = false
 	sector_ready = true
@@ -283,7 +302,7 @@ func _advance_sector() -> void:
 	last_hits = 0
 	message_key = "CORE_READY"
 	_save_session()
-	_show("game")
+	_show("campaign_intro" if campaign.needs_intro(sector_number) else "game")
 func _tutorial() -> void:
 	tutorial = Tutorial.new()
 	tutorial.size = Vector2(1266,710)
@@ -309,6 +328,10 @@ func _load_session() -> void:
 	wins = maxi(0,int(cfg.get_value("stats","wins",0)))
 	losses = maxi(0,int(cfg.get_value("stats","losses",0)))
 	sector_number = maxi(1,int(cfg.get_value("run","sector",1)))
+	campaign=Campaign.new()
+	var raw_campaign: Variant = cfg.get_value("run","campaign",{})
+	if raw_campaign is Dictionary and not raw_campaign.is_empty():
+		if not campaign.restore(raw_campaign,sector_number): save_failed=true
 	pending_sector = bool(cfg.get_value("run","pending_sector",false))
 	sector_ready = bool(cfg.get_value("run","sector_ready",false)) and not pending_sector
 	profile = clampi(int(cfg.get_value("run","profile",1)),0,3)
@@ -372,6 +395,7 @@ func _save_session() -> void:
 	cfg.set_value("stats","wins",wins)
 	cfg.set_value("stats","losses",losses)
 	cfg.set_value("run","sector",sector_number)
+	cfg.set_value("run","campaign",campaign.snapshot())
 	cfg.set_value("run","pending_sector",pending_sector)
 	cfg.set_value("run","sector_ready",sector_ready)
 	cfg.set_value("run","profile",profile)
@@ -498,6 +522,7 @@ func _game() -> void:
 	var left := _panel(Rect2(80,180,284,608))
 	var right := _panel(Rect2(1062,180,284,608))
 	_label(tr("VIS_SECTOR")+" %02d" % sector_number,Rect2(16,17,252,50),left,32)
+	if campaign.active: _label("ACT %d // %s" % [campaign.act_index(sector_number)+1,Campaign.ACT_IDS[campaign.act_index(sector_number)]],Rect2(16,65,252,22),left,17,AMBER)
 	_label(tr("VIS_DIFFICULTY")+"\n"+tr("VIS_PROFILE_"+Profiles.IDS[profile].to_upper()),Rect2(16,85,252,84),left,30)
 	integrity = _label("",Rect2(16,189,252,105),left,33)
 	recovered = _label("",Rect2(16,315,252,93),left,31)
@@ -569,9 +594,9 @@ func _game() -> void:
 	next_button = _button(tr("CORE_NEW"),Rect2(430,844,470,60),page,func():
 		if pending_sector:
 			_advance_sector()
-			_show("shop")
+			if screen=="game": _show("shop")
 		elif _shop_available(): _show("shop")
-		else: _show("profiles"),28)
+		else: _show("modes"),28)
 	_button(tr("VIS_BACK"),Rect2(914,844,422,60),page,func(): _show("menu"),28)
 	_refresh()
 func _reset() -> void:
@@ -710,7 +735,8 @@ func _after_action(sound: String = "") -> void:
 		_refresh()
 	_save_session()
 func _refresh() -> void:
-	if is_instance_valid(next_button): next_button.text = tr("VIS_SHOP" if pending_sector or _shop_available() else "CORE_NEW")
+	if is_instance_valid(next_button):
+		next_button.text = tr("CAM_BOSS") if pending_sector and not campaign.boss_pending(sector_number).is_empty() else tr("VIS_SHOP" if pending_sector or _shop_available() else "CORE_NEW")
 	if is_instance_valid(credit_label): credit_label.text = "CR %d" % economy.credits
 	var max_hp: int = _max_hp()
 	var hp: int = run_hp if board == null else board.hp
@@ -1217,3 +1243,48 @@ func _challenge() -> void:
 	challenge.back.connect(func(): _show("challenges"))
 	challenge.clicked.connect(func(): audio.play_event("key"))
 	page.add_child(challenge)
+
+func _modes() -> void:
+	_label(tr("CAM_MODE"),Rect2(124,205,1170,65),page,42)
+	_label(tr("CAM_MODE_DESC"),Rect2(124,278,1170,94),page,27,DIM)
+	_button(tr("CAM_CAMPAIGN"),Rect2(124,392,1170,92),page,func():
+		campaign_selected=true
+		_show("profiles"),32)
+	_button(tr("CAM_FREE"),Rect2(124,510,1170,92),page,func():
+		campaign_selected=false
+		_show("profiles"),32)
+	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("menu"))
+func _campaign_intro() -> void:
+	var act: int=campaign.act_index(sector_number)
+	_label("ACT %d // %s" % [act+1,Campaign.ACT_IDS[act]],Rect2(124,215,1170,80),page,42,AMBER)
+	_label(tr("CAM_ACT_%d" % act),Rect2(124,320,1170,340),page,32)
+	_label(tr("CAM_RECORDS")+" %d / 3" % campaign.records.size(),Rect2(124,705,1170,52),page,27,DIM)
+	_button(tr("CAM_ENTER"),Rect2(124,810,570,60),page,func():
+		campaign.acknowledge(sector_number)
+		_save_session()
+		_show("shop" if _shop_available() else "game"))
+	_button(tr("VIS_BACK"),Rect2(714,810,570,60),page,func(): _show("menu"))
+func _campaign_boss() -> void:
+	var id: String=campaign.boss_pending(sector_number)
+	if not Challenge.KINDS.has(id):
+		_show("campaign_boundary")
+		return
+	var trial := ChallengeUI.new()
+	trial.kind=id
+	trial.campaign_encounter=true
+	trial.position=Vector2(80,180)
+	trial.size=Vector2(1266,710)
+	trial.theme=theme
+	trial.back.connect(func(): _show("menu"))
+	trial.clicked.connect(func(): audio.play_event("key"))
+	trial.encounter_won.connect(func():
+		if screen!="campaign_boss" or not pending_sector or not trial.model.won(): return
+		if not campaign.complete_boss(sector_number,id): return
+		_save_session()
+		_advance_sector()
+		if screen=="game": _show("shop"))
+	page.add_child(trial)
+func _campaign_boundary() -> void:
+	_label("ACT IV // ADMIN",Rect2(124,215,1170,80),page,42,AMBER)
+	_label(tr("CAM_BOUNDARY"),Rect2(124,320,1170,300),page,32)
+	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("menu"))

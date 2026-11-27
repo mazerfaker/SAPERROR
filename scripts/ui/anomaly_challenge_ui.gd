@@ -3,6 +3,9 @@ const Challenge = preload("res://scripts/board/anomaly_challenge.gd")
 const Board = preload("res://scripts/board/state.gd")
 signal back
 signal clicked
+signal encounter_won
+var campaign_encounter: bool = false
+var proceed_button: Button
 var kind: String = "LOOP"
 var model := Challenge.new()
 var body: Control
@@ -72,6 +75,9 @@ func restart() -> void:
 		label(tr("CH_INVALID"),Vector2(25,180),Vector2(1100,120),30)
 	button(tr("TUT_REPEAT"),Vector2(18,630),Vector2(300,60),restart)
 	button(tr("VIS_BACK"),Vector2(936,630),Vector2(300,60),func(): back.emit())
+	proceed_button=null
+	if campaign_encounter and model.valid:
+		proceed_button=button(tr("CAM_ENTER"),Vector2(350,630),Vector2(550,60),_proceed)
 	if model.valid: refresh()
 func _tile_input(event: InputEvent, i: int) -> void:
 	if event is InputEventMouseButton and event.pressed:
@@ -91,6 +97,8 @@ func _tile_input(event: InputEvent, i: int) -> void:
 func _move(i: int, flag: bool, chord: bool) -> void:
 	if model.act(i,flag,chord): clicked.emit()
 	refresh()
+func _proceed() -> void:
+	if campaign_encounter and model.won(): encounter_won.emit()
 func _select_sensor(index: int) -> void:
 	model.submit_sensor(index)
 	refresh()
@@ -110,6 +118,7 @@ func refresh() -> void:
 	if is_instance_valid(journal_button): journal_button.text=tr("VIS_JOURNAL")+": "+tr("CH_JOURNAL_OPEN" if model.journal_open else "CH_JOURNAL_CLOSED")
 	if not model.notice.is_empty(): readout.text += "\n"+tr(model.notice)
 	if model.done(): readout.text += "\n"+tr("CH_VICTORY" if model.won() else "CH_DEFEAT")
+	if is_instance_valid(proceed_button): proceed_button.disabled=not model.won()
 	for sensor in sensor_buttons: sensor.disabled=model.liar_solved or model.lost()
 	for i in range(tiles.size()):
 		var tile: Button=tiles[i]

@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 45
     env:
       GODOT_VERSION: '4.7.2-stable'
-      GAME_VERSION: '0.5.0-beta.1'
+      GAME_VERSION: '0.6.0-alpha.1'
     steps:
       - name: Windows prerequisites
         shell: pwsh
@@ -139,6 +139,8 @@ jobs:
           if (-not (Select-String -Path build/logs/portal-tests.txt -Pattern 'PORTAL_QA.*failures=0' -Quiet)) { throw 'Missing portal QA marker' }
           Invoke-Godot 'challenge-tests.txt' @('--headless','--path','.','--script','res://tests/challenge_test.gd')
           if (-not (Select-String -Path build/logs/challenge-tests.txt -Pattern 'CHALLENGE_QA.*failures=0' -Quiet)) { throw 'Missing authored challenge QA marker' }
+          Invoke-Godot 'campaign-tests.txt' @('--headless','--path','.','--script','res://tests/campaign_test.gd')
+          if (-not (Select-String -Path build/logs/campaign-tests.txt -Pattern 'CAMPAIGN_QA.*failures=0' -Quiet)) { throw 'Missing campaign QA marker' }
           Invoke-Godot 'export.txt' @('--headless','--path','.','--export-release','Windows Desktop','build/windows/SAPERROR.exe')
       - name: Native render and audio QA
         shell: pwsh

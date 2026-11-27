@@ -529,3 +529,39 @@ msgstr "ВІДКРИТО"
 
 msgid "CH_JOURNAL_CLOSED"
 msgstr "ЗАКРИТО"
+
+msgid "CAM_MODE"
+msgstr "ВИБІР ПРОТОКОЛУ"
+
+msgid "CAM_MODE_DESC"
+msgstr "Кампанія розкриває історію станції. Вільний забіг нескінченний. Новий режим замінює поточний забіг."
+
+msgid "CAM_CAMPAIGN"
+msgstr "КАМПАНІЯ // ІНЦИДЕНТ 17"
+
+msgid "CAM_FREE"
+msgstr "ВІЛЬНИЙ ЗАБІГ"
+
+msgid "CAM_RECORDS"
+msgstr "Записи пам'яті"
+
+msgid "CAM_ENTER"
+msgstr "ПРОДОВЖИТИ"
+
+msgid "CAM_BOSS"
+msgstr "ЗУСТРІЧ ІЗ БОСОМ"
+
+msgid "CAM_BOUNDARY"
+msgstr "Зустріч з ADMIN ще недоступна в цій версії. Завершення сектора збережено. Це не кінцівка."
+
+msgid "CAM_ACT_0"
+msgstr "ADMIN: Ваше завдання — очистити десять секторів. Відновіть архів.\n\nECHO: Ти вже очищав їх. Подивись на дату."
+
+msgid "CAM_ACT_1"
+msgstr "ADMIN: Виявлено пошкодження. Пройдіть сектори 04–06.\n\nECHO: Віднови те, що приховують датчики."
+
+msgid "CAM_ACT_2"
+msgstr "ECHO: Ці записи — наші. Сектори 07–09 містять повторюваний стан. Не дай системі його стерти."
+
+msgid "CAM_ACT_3"
+msgstr "ADMIN: Доступ до сектора 10 дозволено. Очікується фінальна авторизація."

@@ -529,3 +529,39 @@ msgstr "OPEN"
 
 msgid "CH_JOURNAL_CLOSED"
 msgstr "CLOSED"
+
+msgid "CAM_MODE"
+msgstr "SELECT PROTOCOL"
+
+msgid "CAM_MODE_DESC"
+msgstr "Campaign follows the station's story. Free Run is endless. Starting either replaces the current run."
+
+msgid "CAM_CAMPAIGN"
+msgstr "CAMPAIGN // INCIDENT 17"
+
+msgid "CAM_FREE"
+msgstr "FREE RUN // ENDLESS"
+
+msgid "CAM_RECORDS"
+msgstr "Memory records"
+
+msgid "CAM_ENTER"
+msgstr "CONTINUE"
+
+msgid "CAM_BOSS"
+msgstr "BOSS ENCOUNTER"
+
+msgid "CAM_BOUNDARY"
+msgstr "ADMIN encounter is not available in this development build. Sector completion is saved. This is not an ending."
+
+msgid "CAM_ACT_0"
+msgstr "ADMIN: Your task is to clear ten sectors. Recover the archive.\n\nECHO: You've cleared them before. Look at the date."
+
+msgid "CAM_ACT_1"
+msgstr "ADMIN: Corruption detected. Proceed through sectors 04-06.\n\nECHO: Recover what the sensors conceal."
+
+msgid "CAM_ACT_2"
+msgstr "ECHO: Those records are ours. Sectors 07-09 contain a repeated state. Do not let the system erase it."
+
+msgid "CAM_ACT_3"
+msgstr "ADMIN: Access to sector 10 granted. Final authorization pending."
