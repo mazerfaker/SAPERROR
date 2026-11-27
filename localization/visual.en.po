@@ -853,3 +853,9 @@ msgstr "Arrows: move focus · Tab: next control · Enter/Space: activate · F: f
 
 msgid "ACC_WARNING"
 msgstr "Horror, sudden sounds and flashing light. Clear CRT removes screen effects; the room lamp still flickers. Reduce motion and volume separately."
+
+msgid "SYNERGY_JOURNAL"
+msgstr "Press repeatedly to read each anomaly record. All records are free."
+
+msgid "SYNERGY_CLEANSE"
+msgstr "Clears PARASITE first, then PHANTOM. Blocked safe cells can always be freed when no charges remain."

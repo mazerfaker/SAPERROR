@@ -5,6 +5,7 @@ const Validator = preload("res://scripts/solver/validator.gd")
 const Rules = preload("res://scripts/board/rules.gd")
 const Phantom = preload("res://scripts/board/phantom.gd")
 const Parasite = preload("res://scripts/board/parasite.gd")
+const Synergy=preload("res://scripts/board/anomaly_synergy.gd")
 const PATH := "user://saperror_session.cfg"
 const VERSION := 1
 const SEAL := "; SAPERROR-SHA256 "
@@ -128,6 +129,15 @@ static func restore(data: Dictionary) -> Dictionary:
 	var parasite := Parasite.new()
 	var infection: Variant = data.get("parasite",{})
 	if not infection is Dictionary or not parasite.restore(infection,board): return {}
-	if phantom.active() and parasite.active(): return {}
-	if board.has_portal() and (phantom.active() or parasite.active()): return {}
-	return {"parasite":parasite,"phantom":phantom,"board":board,"profile":profile,"seed":data["seed"],"first":first,"certificate":proof,"start_hp":start_hp,"protected_hits":protected_hits}
+	var plan: Variant=data.get("anomaly_plan",Synergy.LEGACY)
+	if typeof(plan)!=TYPE_INT or not Synergy.valid(int(plan),profile): return {}
+	if plan==Synergy.LEGACY:
+		if phantom.active() and parasite.active(): return {}
+		if board.has_portal() and (phantom.active() or parasite.active()): return {}
+	else:
+		if board.has_portal()!=((int(plan)&Synergy.PORTAL)!=0): return {}
+		if phantom.triggered and (int(plan)&Synergy.PHANTOM)==0: return {}
+		if parasite.cell>=0 and (int(plan)&Synergy.PARASITE)==0: return {}
+		if board.has_portal() and phantom.cell>=0 and phantom.cell in [board.portal_pair.x,board.portal_pair.y]: return {}
+	if phantom.hotfix_used and parasite.hotfix_used: return {}
+	return {"anomaly_plan":int(plan),"parasite":parasite,"phantom":phantom,"board":board,"profile":profile,"seed":data["seed"],"first":first,"certificate":proof,"start_hp":start_hp,"protected_hits":protected_hits}

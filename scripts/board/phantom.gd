@@ -25,11 +25,12 @@ func advance(board: Board, enabled: bool, shielding: bool) -> String:
 		return "expired" if cell>=0 and actions==until_action else ""
 	if actions<TRIGGER_ACTION: return ""
 	for i in range(board.cells.size()):
-		if board.cells[i]==Board.Cell.OPEN and board.clue(i,board.rule)>0:
+		if board.cells[i]==Board.Cell.OPEN and board.clue(i,board.rule)>0 and (not board.has_portal() or i not in [board.portal_pair.x,board.portal_pair.y]):
 			return trigger(board,i,shielding)
 	return ""
 func trigger(board: Board, index: int, shielding: bool = false) -> String:
 	if triggered or board==null or board.finished() or index<0 or index>=board.cells.size() or board.cells[index]!=Board.Cell.OPEN: return ""
+	if board.has_portal() and index in [board.portal_pair.x,board.portal_pair.y]: return ""
 	triggered = true
 	if shielding:
 		shielded = true

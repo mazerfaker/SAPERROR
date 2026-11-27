@@ -13,6 +13,9 @@ const Economy = preload("res://scripts/run/economy.gd")
 const Phantom = preload("res://scripts/board/phantom.gd")
 var phantom := Phantom.new()
 const Parasite = preload("res://scripts/board/parasite.gd")
+const Synergy=preload("res://scripts/board/anomaly_synergy.gd")
+var anomaly_plan: int=Synergy.LEGACY
+var journal_index: int=0
 const ChallengeUI = preload("res://scripts/ui/anomaly_challenge_ui.gd")
 const BossEmblem = preload("res://scripts/ui/boss_emblem.gd")
 const ActPlate = preload("res://scripts/ui/act_plate.gd")
@@ -232,7 +235,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.8.0-b6",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.8.0-b7",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -440,6 +443,7 @@ func _load_session() -> void:
 			board = resumed["board"]
 			phantom = resumed["phantom"]
 			parasite = resumed["parasite"]
+			anomaly_plan=resumed["anomaly_plan"]
 			pending_sector = false
 			sector_ready = false
 			profile = resumed["profile"]
@@ -743,6 +747,7 @@ func _reveal(i: int) -> void:
 		sector_start_hp = clampi(run_hp,1,_max_hp())
 		protected_hits = 0
 		board = Board.new(Profiles.SIZES[profile],Profiles.SIZES[profile],generated["mask"],sector_start_hp)
+		anomaly_plan=Synergy.plan(profile,sector_number)
 		sessions += 1
 		sector_ready = false
 	if board.finished() or board.cells[i] != Board.Cell.CLOSED: return
@@ -755,7 +760,7 @@ func _reveal(i: int) -> void:
 	protected_this_move = 0
 	_guarded_reveal(i)
 	# Activate only after the certified initial reveal; the link is freely reversible.
-	if before==0 and sector_number>=5 and sector_number%3==2 and not board.finished():
+	if before==0 and (anomaly_plan&Synergy.PORTAL)!=0 and not board.finished():
 		board.configure_portal(0,board.cells.size()-1)
 	economy.observe(board.opened-before,board.hits==last_hits,board.clue(i,board.rule) if board.cells[i]==Board.Cell.OPEN else 0)
 	_remember_move(saved)
@@ -801,10 +806,17 @@ func _after_action(sound: String = "") -> void:
 	var anomaly_event: String = ""
 	var infection_event: String = ""
 	if not protocol_active:
-		# Alternate anomaly types for this conservative alpha; preserve legacy PHANTOM saves.
-		var parasite_sector: bool = sector_number>=4 and sector_number%2==0 and not phantom.triggered and not board.has_portal()
-		anomaly_event = phantom.advance(board,sector_number>=3 and not parasite_sector and parasite.cell<0 and not board.has_portal(),economy.owned.has("SHIELDING"))
-		infection_event = parasite.advance(board,parasite_sector,economy.owned.has("STABILIZER"))
+		var parasite_sector: bool=false
+		var phantom_sector: bool=false
+		if anomaly_plan==Synergy.LEGACY:
+			# Existing active saves keep their original single-anomaly schedule.
+			parasite_sector=sector_number>=4 and sector_number%2==0 and not phantom.triggered and not board.has_portal()
+			phantom_sector=sector_number>=3 and not parasite_sector and parasite.cell<0 and not board.has_portal()
+		else:
+			parasite_sector=(anomaly_plan&Synergy.PARASITE)!=0
+			phantom_sector=(anomaly_plan&Synergy.PHANTOM)!=0
+		anomaly_event=phantom.advance(board,phantom_sector,economy.owned.has("SHIELDING"))
+		infection_event=parasite.advance(board,parasite_sector,economy.owned.has("STABILIZER"))
 	_clear_inspection()
 	hint_cell = -1
 	hint_sources.clear()
@@ -864,7 +876,7 @@ func _refresh() -> void:
 	if not inspect_result.is_empty(): status.text = "> "+inspect_result
 	elif phantom.active() and not protocol_active and board!=null and not board.finished():
 		status.text += " // PHANTOM #%d [%d]" % [phantom.cell+1,phantom.until_action-phantom.actions]
-	elif parasite.active() and not protocol_active and board!=null and not board.finished():
+	if inspect_result.is_empty() and parasite.active() and not protocol_active and board!=null and not board.finished():
 		status.text += " // PARASITE #%d [%s]" % [parasite.cell+1,"LOCK" if parasite.blocked() else str(parasite.remaining())]
 	if board!=null and board.has_portal() and not protocol_active and not board.finished() and inspect_result.is_empty():
 		status.text += " // PORTAL %s [%d-%d]" % [_on_off(board.portal_enabled),board.portal_pair.x+1,board.portal_pair.y+1]
@@ -1007,6 +1019,8 @@ func _process(delta: float) -> void:
 func _reset_tools() -> void:
 	phantom = Phantom.new()
 	parasite = Parasite.new()
+	anomaly_plan=Synergy.LEGACY
+	journal_index=0
 	hints_left = _hint_limit()
 	rewinds_left = _rewind_limit()
 	rewind_data.clear()
@@ -1028,6 +1042,7 @@ func _rewind() -> void:
 	board = restored["board"]
 	phantom = restored["phantom"]
 	parasite = restored["parasite"]
+	anomaly_plan=restored["anomaly_plan"]
 	run_hp = board.hp
 	sector_start_hp = restored["start_hp"]
 	protected_hits = restored["protected_hits"]
@@ -1105,8 +1120,13 @@ func _refresh_tools() -> void:
 		portal_button.visible = board!=null and board.has_portal()
 		portal_button.disabled = not active
 		portal_button.text = "PORTAL: "+_on_off(board.portal_enabled) if board!=null else "PORTAL"
-	if is_instance_valid(journal_button): journal_button.disabled = not active or (phantom.cell<0 and parasite.cell<0 and not board.has_portal())
+	if is_instance_valid(journal_button):
+		var entries: Array[String]=_journal_entries()
+		journal_button.disabled=not active or entries.is_empty()
+		journal_button.text=tr("VIS_JOURNAL")+((" [%d]" % entries.size()) if entries.size()>1 else "")
+		journal_button.tooltip_text=tr("SYNERGY_JOURNAL")
 	if is_instance_valid(cleanse_button):
+		cleanse_button.tooltip_text=tr("SYNERGY_CLEANSE")
 		cleanse_button.disabled = not active or not (phantom.active() or parasite.active()) or (economy.stock<=0 and not _free_cleanse() and not parasite.blocked())
 	if is_instance_valid(rule_button):
 		rule_button.text = Tools.NAMES[board.rule] if board!=null else "CLASSIC"
@@ -1202,6 +1222,7 @@ func _snapshot_board() -> Dictionary:
 	if not data.is_empty():
 		data["phantom"] = phantom.snapshot()
 		data["parasite"] = parasite.snapshot()
+		if anomaly_plan!=Synergy.LEGACY: data["anomaly_plan"]=anomaly_plan
 	return data
 func _guarded_reveal(i: int) -> void:
 	if board.finished() or i<0 or i>=board.cells.size() or board.cells[i]!=Board.Cell.CLOSED or i==board.blocked_cell: return
@@ -1311,25 +1332,35 @@ func _inspect_target(i: int) -> void:
 
 func _free_cleanse() -> bool:
 	return economy.owned.has("HOTFIX") and not phantom.hotfix_used and not parasite.hotfix_used
+func _journal_entries() -> Array[String]:
+	var entries: Array[String]=[]
+	if board==null: return entries
+	if phantom.cell>=0: entries.append("PHANTOM")
+	if parasite.cell>=0: entries.append("PARASITE")
+	if board.has_portal(): entries.append("PORTAL")
+	return entries
 func _open_journal() -> void:
-	if protocol_active or board==null or board.finished() or (phantom.cell<0 and parasite.cell<0 and not board.has_portal()): return
+	if protocol_active or board==null or board.finished(): return
+	var entries: Array[String]=_journal_entries()
+	if entries.is_empty(): return
 	_clear_inspection()
-	if board.has_portal():
-		inspect_result = "PORTAL #%d <-> #%d / %s" % [board.portal_pair.x+1,board.portal_pair.y+1,tr("VIS_PORTAL_HELP")]
+	journal_index=posmod(journal_index,entries.size())
+	var entry: String=entries[journal_index]
+	var prefix: String="%d/%d " % [journal_index+1,entries.size()] if entries.size()>1 else ""
+	journal_index=posmod(journal_index+1,entries.size())
+	if entry=="PORTAL":
+		inspect_result=prefix+"PORTAL #%d <-> #%d / %s" % [board.portal_pair.x+1,board.portal_pair.y+1,tr("VIS_PORTAL_HELP")]
 		inspect_marks.assign([board.portal_pair.x,board.portal_pair.y])
-		_refresh()
-		return
-	if parasite.cell>=0:
-		inspect_result = "%s: PARASITE #%d / %s" % [tr("VIS_JOURNAL"),parasite.cell+1,tr("VIS_PARASITE_SAFE")]
+	elif entry=="PARASITE":
+		inspect_result=prefix+"PARASITE #%d / %s" % [parasite.cell+1,tr("VIS_PARASITE_SAFE")]
 		inspect_marks.append(parasite.cell)
-		audio.play_event("key")
-		_refresh()
-		return
-	inspect_result = "%s: #%d / %s = %d" % [tr("VIS_JOURNAL"),phantom.cell+1,Tools.NAMES[phantom.rule],phantom.value]
-	inspect_marks.assign(Rules.neighbors(board.width,board.height,phantom.cell,phantom.rule))
-	inspect_marks.append(phantom.cell)
+	else:
+		inspect_result=prefix+"PHANTOM #%d / %s = %d" % [phantom.cell+1,Tools.NAMES[phantom.rule],phantom.value]
+		inspect_marks.assign(Rules.neighbors(board.width,board.height,phantom.cell,phantom.rule))
+		inspect_marks.append(phantom.cell)
 	audio.play_event("key")
 	_refresh()
+
 func _cleanse() -> void:
 	if protocol_active or board==null or board.finished() or not (phantom.active() or parasite.active()): return
 	var infection: bool = parasite.active()

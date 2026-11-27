@@ -1,4 +1,7 @@
 # Changelog
+## 0.8.0-beta.7 — Anomaly Synergy candidate
+Persisted sector anomaly plans; Story single, Standard/Expert pairs after sector 5, Hardcore triple after sector 5. Separate free journal records, shared Hotfix limit, emergency blocked-cell cleanse, portal-independent Phantom clue selection, combined save validation and public-proof replay. Existing active saves retain legacy schedule. Authored challenge mechanics remain separate. CI pending.
+
 ## 0.8.0-beta.6 — Accessibility & UI Polish candidate
 Persistent high-contrast palette, larger cell symbols, clear CRT mode without altering stored CRT preferences, keyboard-focused grid navigation and layout-independent flag shortcut across all field UIs, visible transparent focus outline, Escape navigation and F11 fullscreen in CRT focus. Localized accessibility settings and content warning; unchanged original composition and mapped input. Automated checks added; manual readability, physical display testing and whole-UI text scaling pending.
 
