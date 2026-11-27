@@ -93,7 +93,7 @@ var page: Control
 var grid: GridContainer
 var message_key: String = "CORE_READY"
 var last_hits: int = 0
-var is_uk: bool = true
+var is_uk: bool = false
 var screen: String = "menu"
 var amount: float = 0.45
 var glass: bool = true
@@ -195,7 +195,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.5.0-a1-k30.1",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.5.0-a1-ui.1",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -223,7 +223,6 @@ func _menu() -> void:
 	_label(tr("VIS_STATS")+"\n"+tr("VIS_RUNS")+" "+str(sessions)+"\n"+tr("VIS_WINS")+" "+str(wins)+"\n"+tr("VIS_LOSSES")+" "+str(losses),Rect2(820,345,500,285),page,32)
 	_label(tr("VIS_LESSONS")+" %d / 9" % tutorial_done,Rect2(820,650,500,62),page,29,AMBER)
 	if save_failed: _label(tr("VIS_SAVE_ERROR"),Rect2(820,714,500,80),page,27,RED)
-	_button("EN" if is_uk else "UA",Rect2(1100,810,210,60),page,_language)
 func _profiles() -> void:
 	_label(tr("VIS_DIFFICULTY"),Rect2(124,190,1170,70),page,42)
 	if board != null and not board.finished():
@@ -289,7 +288,7 @@ func _tutorial() -> void:
 	page.add_child(tutorial)
 func _load_session() -> void:
 	if DisplayServer.get_name() != "headless": cfg = Store.load_config()
-	is_uk = bool(cfg.get_value("settings","uk",true))
+	is_uk = bool(cfg.get_value("settings","uk",false))
 	amount = clampf(float(cfg.get_value("settings","crt",0.45)),0.0,1.0)
 	glass = bool(cfg.get_value("settings","glass",true))
 	reduced = bool(cfg.get_value("settings","reduced",false))
@@ -424,7 +423,9 @@ func _show_outcome(won: bool) -> void:
 	if not reduced: tween.tween_property(banner,"modulate:a",0.0,0.35)
 	tween.tween_callback(banner.queue_free)
 func _language() -> void:
+	if screen!="settings" or protocol_active: return
 	is_uk = not is_uk
+	cfg.set_value("settings","uk",is_uk)
 	TranslationServer.set_locale("uk" if is_uk else "en")
 	_save_session()
 	_show(screen)
@@ -433,7 +434,8 @@ func _help() -> void:
 	_button(tr("VIS_BACK"),Rect2(124,790,350,62),page,func(): _show("menu"))
 func _settings() -> void:
 	_label(tr("VIS_SETTINGS"),Rect2(124,212,1150,60),page,41)
-	_button("EN" if is_uk else "UA",Rect2(124,305,300,62),page,_language)
+	var language_button := _button(tr("VIS_LANGUAGE")+": "+("Українська" if is_uk else "English"),Rect2(124,305,300,62),page,_language,22)
+	language_button.name = "LanguageSetting"
 	_button(tr("VIS_FULLSCREEN")+": "+_on_off(_fullscreen_active()),Rect2(444,305,720,62),page,func(): fullscreen_requested.emit(); _show("settings"))
 	var crt_readout := _label(tr("VIS_CRT")+": "+str(roundi(amount*100))+"%",Rect2(124,382,1040,35),page,28)
 	var crt_slider := HSlider.new()
@@ -552,13 +554,12 @@ func _game() -> void:
 	seed_input.text = str(active_seed) if board != null else seed_value
 	seed_input.editable = board == null
 	_place(seed_input,Rect2(184,844,230,60),page)
-	next_button = _button(tr("CORE_NEW"),Rect2(430,844,330,60),page,func():
+	next_button = _button(tr("CORE_NEW"),Rect2(430,844,470,60),page,func():
 		if pending_sector:
 			_advance_sector()
 			_show("shop")
 		elif _shop_available(): _show("shop")
 		else: _show("profiles"),28)
-	_button("EN" if is_uk else "UA",Rect2(774,844,126,60),page,_language,28)
 	_button(tr("VIS_BACK"),Rect2(914,844,422,60),page,func(): _show("menu"),28)
 	_refresh()
 func _reset() -> void:

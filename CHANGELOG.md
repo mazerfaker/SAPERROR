@@ -1,4 +1,7 @@
 # Changelog
+## 0.5.0-alpha.1-ui.1 — language settings
+- English is the default for new settings; saved language selections remain respected. The only language toggle is Settings, with localized current-language label and instant update. Remove menu and board language shortcuts, reclaim board footer space. K-30, PHANTOM and approved live assets unchanged. Add default, toggle, screen visibility and preference regression tests. Manual layout verification pending.
+
 ## 0.5.0-alpha.1-k30.1 — physical input hotfix
 - Recognize K-30 once in root Window input before GUI focus/CRT forwarding, reset partial sequence when window loses focus, preserve physical key precedence. Regression uses root.push_input with different focus targets and Ukrainian logical keycodes; no change to board or environment. Requires a generated unfinished field, after first reveal. Actual physical Windows keyboard verification still pending.
 

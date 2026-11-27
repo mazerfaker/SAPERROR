@@ -433,3 +433,6 @@ msgstr "The highlighted clue is hidden. Open Journal: the system has retained th
 
 msgid "TUT_HINT_8_1"
 msgstr "Journal: cell #2, CLASSIC = 1. Press Cleanse to restore the clue."
+
+msgid "VIS_LANGUAGE"
+msgstr "Language"
