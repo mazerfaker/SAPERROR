@@ -19,6 +19,9 @@ const ActPlate = preload("res://scripts/ui/act_plate.gd")
 const EndingPlate = preload("res://scripts/ui/ending_plate.gd")
 const Challenge = preload("res://scripts/board/anomaly_challenge.gd")
 const Campaign = preload("res://scripts/run/campaign.gd")
+const Collection = preload("res://scripts/run/collection.gd")
+var collection := Collection.new()
+var archive_preview: String = ""
 var campaign := Campaign.new()
 var campaign_selected: bool = false
 var finite_selected: bool = false
@@ -218,7 +221,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.7.0-a6",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.7.0-a7",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -244,6 +247,8 @@ func _show(next: String) -> void:
 	elif screen == "ending_scene": _ending_scene(campaign.ending)
 	elif screen == "credits": _credits()
 	elif screen == "gallery": _gallery()
+	elif screen == "archives": _archives()
+	elif screen == "archive_preview": _archive_preview()
 	elif screen == "gallery_preview": _ending_scene(gallery_preview)
 	elif screen == "tutorial": _tutorial()
 	elif screen == "shop": _shop()
@@ -266,7 +271,7 @@ func _menu() -> void:
 	_label(tr("VIS_LESSONS")+" %d / 9" % tutorial_done,Rect2(820,650,500,62),page,29,AMBER)
 	if save_failed: _label(tr("VIS_SAVE_ERROR"),Rect2(820,714,500,80),page,27,RED)
 	_button(tr("CH_MENU"),Rect2(820,810,245,60),page,func(): _show("challenges"),21)
-	_button(tr("CAM_GALLERY"),Rect2(1075,810,245,60),page,func(): _show("gallery"),21)
+	_button(tr("COLLECTION_MENU"),Rect2(1075,810,245,60),page,func(): _show("gallery"),21)
 func _profiles() -> void:
 	_label(tr("VIS_DIFFICULTY"),Rect2(124,190,1170,70),page,42)
 	if board != null and not board.finished():
@@ -383,6 +388,7 @@ func _load_session() -> void:
 	if saved_gallery is Array:
 		for id in saved_gallery:
 			if id in Campaign.ENDINGS and not ending_gallery.has(id): ending_gallery.append(id)
+	collection.restore(cfg,campaign.records)
 	campaign_failed=campaign.active and bool(cfg.get_value("run","campaign_failed",false))
 	pending_sector = bool(cfg.get_value("run","pending_sector",false))
 	sector_ready = bool(cfg.get_value("run","sector_ready",false)) and not pending_sector
@@ -448,6 +454,7 @@ func _save_session() -> void:
 	cfg.set_value("stats","wins",wins)
 	cfg.set_value("stats","losses",losses)
 	cfg.set_value("stats","endings",ending_gallery.duplicate())
+	collection.write(cfg)
 	cfg.set_value("run","sector",sector_number)
 	cfg.set_value("run","campaign",campaign.snapshot())
 	cfg.set_value("run","finite",finite_run)
@@ -1290,11 +1297,13 @@ func _toggle_portal() -> void:
 	_save_session()
 
 func _challenges() -> void:
-	_label(tr("CH_MENU"),Rect2(124,215,1170,70),page,40)
+	_label(tr("CH_MENU")+" %d/%d" % [collection.trials.size(),Challenge.KINDS.size()],Rect2(124,215,1170,70),page,40)
 	_label(tr("CH_MENU_INTRO"),Rect2(124,292,1170,90),page,28,DIM)
 	for i in range(Challenge.KINDS.size()):
 		var id: String = Challenge.KINDS[i]
-		_button(id,Rect2(124+float(i%2)*570,395+float(i/2)*97,540,76),page,_start_challenge.bind(id),30)
+		var completed: bool=collection.trials.has(id)
+		var item:=_button(id+("  ✓" if completed else ""),Rect2(124+float(i%2)*570,395+float(i/2)*97,540,76),page,_start_challenge.bind(id),30)
+		item.name="LabCard_"+id
 	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("menu"))
 func _start_challenge(id: String) -> void:
 	if not Challenge.KINDS.has(id): return
@@ -1309,6 +1318,8 @@ func _challenge() -> void:
 	challenge.theme=theme
 	challenge.back.connect(func(): _show("challenges"))
 	challenge.clicked.connect(func(): audio.play_event("key"))
+	challenge.trial_completed.connect(func(id: String):
+		if screen=="challenge" and challenge.model.won() and collection.finish_trial(id): _save_session())
 	page.add_child(challenge)
 
 func _modes() -> void:
@@ -1445,6 +1456,7 @@ func _campaign_archive() -> void:
 	trial.clicked.connect(func(): audio.play_event("key"))
 	trial.encounter_won.connect(func():
 		if screen!="campaign_archive" or not trial.model.won() or not campaign.choose_route(sector_number,true): return
+		collection.recover("MEMORY_%02d" % sector_number)
 		last_reward=economy.archive_reward()
 		_save_session()
 		_advance_sector()
@@ -1527,12 +1539,27 @@ func _credits() -> void:
 	_button(tr("CAM_GALLERY"),Rect2(124,810,570,60),page,func(): _show("gallery"))
 	_button(tr("VIS_BACK"),Rect2(714,810,570,60),page,func(): _show("menu"))
 func _gallery() -> void:
-	_label(tr("CAM_GALLERY")+" %d/3" % ending_gallery.size(),Rect2(124,205,1170,80),page,42)
+	_label(tr("CAM_GALLERY")+" %d/3" % ending_gallery.size(),Rect2(124,205,1170,70),page,42)
+	_label(tr("COLLECTION_DESC"),Rect2(124,280,1170,48),page,24,DIM)
 	for i in range(Campaign.ENDINGS.size()):
 		var id: String=Campaign.ENDINGS[i]
-		var item := _button(id+" // "+tr("CAM_UNLOCKED" if ending_gallery.has(id) else "CAM_LOCKED"),Rect2(124,320+i*118,1170,88),page,func(): _show_gallery_ending(id),30)
-		item.disabled=not ending_gallery.has(id)
+		var unlocked: bool=ending_gallery.has(id)
+		var y: float=340+i*135
+		var item:=_button(id+" // "+tr("CAM_UNLOCKED" if unlocked else "CAM_LOCKED"),Rect2(124,y,1170,112),page,_show_gallery_ending.bind(id),30)
+		item.name="EndingCard_"+id
+		item.disabled=not unlocked
+		item.alignment=HORIZONTAL_ALIGNMENT_LEFT
+		if unlocked:
+			var thumb:=TextureRect.new()
+			thumb.texture=EndingPlate.ART[id]
+			thumb.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+			thumb.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			thumb.mouse_filter=Control.MOUSE_FILTER_IGNORE
+			_place(thumb,Rect2(1010,6,148,100),item)
 	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("menu"))
+	_button(tr("COLLECTION_ARCHIVES")+" %d/3" % collection.archives.size(),Rect2(494,810,390,60),page,func(): _show("archives"),24)
+	_button(tr("CAM_CREDITS"),Rect2(904,810,390,60),page,func(): _show("credits"),24)
+
 func _show_gallery_ending(id: String) -> void:
 	if not ending_gallery.has(id): return
 	gallery_preview=id
@@ -1556,3 +1583,27 @@ func _update_music() -> void:
 	if not is_instance_valid(audio): return
 	var ending_id: String=gallery_preview if screen=="gallery_preview" else campaign.ending
 	audio.select_music(Atmosphere.scene_theme(screen,campaign.active,campaign.act_index(sector_number),campaign.boss_pending(sector_number),ending_id,challenge_kind))
+
+func _archives() -> void:
+	_label(tr("COLLECTION_ARCHIVES")+" %d/3" % collection.archives.size(),Rect2(124,205,1170,70),page,42)
+	_label(tr("COLLECTION_ARCHIVE_DESC"),Rect2(124,280,1170,80),page,25,DIM)
+	for i in range(Collection.RECORDS.size()):
+		var id: String=Collection.RECORDS[i]
+		var unlocked: bool=collection.archives.has(id)
+		var item:=_button(id+" // "+tr("COL_TITLE_"+id if unlocked else "CAM_LOCKED"),Rect2(124,380+i*120,1170,92),page,_open_archive.bind(id),28)
+		item.name="ArchiveCard_"+id
+		item.disabled=not unlocked
+	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("gallery"))
+func _open_archive(id: String) -> void:
+	if not collection.archives.has(id) or not Collection.RECORDS.has(id): return
+	archive_preview=id
+	_show("archive_preview")
+func _archive_preview() -> void:
+	if not Collection.RECORDS.has(archive_preview) or not collection.archives.has(archive_preview):
+		_show("archives")
+		return
+	_label(archive_preview+" // "+tr("COL_TITLE_"+archive_preview),Rect2(124,215,1170,90),page,38,AMBER)
+	var record:=_label(tr("COL_BODY_"+archive_preview),Rect2(124,345,1170,365),page,30)
+	record.name="ArchiveText"
+	_label(tr("COLLECTION_READ_ONLY"),Rect2(124,727,1170,50),page,24,DIM)
+	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("archives"))

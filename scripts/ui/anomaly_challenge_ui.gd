@@ -8,6 +8,8 @@ var emblem: BossEmblem
 signal back
 signal clicked
 signal encounter_won
+signal trial_completed(id: String)
+var completion_reported: bool=false
 var campaign_encounter: bool = false
 var encounter_title: String = ""
 var proceed_button: Button
@@ -49,6 +51,7 @@ func restart() -> void:
 	body.size=size
 	add_child(body)
 	tiles.clear()
+	completion_reported=false
 	model.start(kind)
 	var identity: String=boss_identity if not boss_identity.is_empty() else BossEmblem.resolve(kind)
 	emblem=null
@@ -164,3 +167,6 @@ func refresh() -> void:
 		tile.add_theme_stylebox_override("normal",style)
 		tile.add_theme_stylebox_override("disabled",style)
 		tile.tooltip_text="#%d %s" % [i+1,model.marker(i)]
+	if model.won() and not completion_reported and not campaign_encounter:
+		completion_reported=true
+		trial_completed.emit(kind)

@@ -766,3 +766,36 @@ msgstr "Music / atmosphere"
 
 msgid "VIS_MUSIC_TEST"
 msgstr "MUSIC PREVIEW / STOP"
+
+msgid "COLLECTION_MENU"
+msgstr "Collection"
+
+msgid "COLLECTION_DESC"
+msgstr "Recovered endings and records. Locked entries are hidden until discovered."
+
+msgid "COLLECTION_ARCHIVES"
+msgstr "Memory archive"
+
+msgid "COLLECTION_ARCHIVE_DESC"
+msgstr "Records recovered across runs remain here. Each new campaign must recover its own three keys."
+
+msgid "COLLECTION_READ_ONLY"
+msgstr "READ ONLY // No credits or campaign keys granted."
+
+msgid "COL_TITLE_MEMORY_02"
+msgstr "INCIDENT 17"
+
+msgid "COL_BODY_MEMORY_02"
+msgstr "MINE / INCIDENT REPORT 17\n\nThe damaged archive contains an operator signature identical to the current session. The previous clearance log predates today's authorization.\n\nADMIN: Duplicate signature classified as corrupted data.\nECHO: Compare the signatures. The operator never left."
+
+msgid "COL_TITLE_MEMORY_05"
+msgstr "CONTAINMENT LOG"
+
+msgid "COL_BODY_MEMORY_05"
+msgstr "MINE / INTERNAL SECURITY LOG\n\nADMIN isolated fragments of operator memory to preserve the experiment. The deletion command was rejected: archived records are required for recovery.\n\nECHO: What the system calls corruption may be the only record of what happened."
+
+msgid "COL_TITLE_MEMORY_08"
+msgstr "OPERATOR ECHO"
+
+msgid "COL_BODY_MEMORY_08"
+msgstr "MINE / RECOVERED OPERATOR RECORD\n\nThe same clearance procedure has been repeated under different authorization numbers. A voice persists between resets. Its origin matches the operator archive.\n\nECHO: Stop the cycle, or rewrite the instruction that keeps it running."

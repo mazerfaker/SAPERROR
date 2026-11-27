@@ -1,4 +1,7 @@
 # Changelog
+## 0.7.0-alpha.7 — collection and polish (CI deferred)
+Persistent read-only recovered archive collection (three new bilingual story records), unlocked ending thumbnails, locked states, credits link, and lab completion marks. Collection data validated and migrated from current campaign records; never grants run keys or rewards. Tests authored; full Beta QA next.
+
 ## 0.7.0-alpha.6 — narrative audio (CI deferred)
 Eleven original procedural quiet atmospheric cues: four act pads, four boss variations, three ending themes. 48 kHz native 32-second loops from phase-matched eight-second periods, fade-out/switch/fade-in, bounded three-stream cache, independent persistent Music slider and preview. Original hum synthesis, supplied MP3s and lamp audio unchanged. QA authored, listening and CI pending.
 
