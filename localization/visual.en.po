@@ -238,3 +238,42 @@ msgstr "OVERRIDING SECTOR..."
 
 msgid "K30_4"
 msgstr "SECTOR CLEARED"
+
+msgid "VIS_RULE_HOVER"
+msgstr "Cartridge / neighbors"
+
+msgid "VIS_HINT"
+msgstr "Scanner"
+
+msgid "VIS_REWIND"
+msgstr "Rewind"
+
+msgid "VIS_REWOUND"
+msgstr "Previous move restored"
+
+msgid "VIS_NO_PROOF"
+msgstr "No proof. Charge retained."
+
+msgid "VIS_PROVEN_SAFE"
+msgstr "Proven safe cell"
+
+msgid "VIS_RULE_CHANGED"
+msgstr "Neighbor rule changed"
+
+msgid "TUT_TITLE_5"
+msgstr "Damage and rewind"
+
+msgid "TUT_TITLE_6"
+msgstr "Cartridges"
+
+msgid "TUT_HINT_5_0"
+msgstr "Reveal the marked mine. This training board will lose 1 HP."
+
+msgid "TUT_HINT_5_1"
+msgstr "Press Rewind to restore the state before damage."
+
+msgid "TUT_HINT_6_0"
+msgstr "The center clue is 3. Press CLASSIC to read orthogonal neighbors."
+
+msgid "TUT_HINT_6_1"
+msgstr "CROSS shows 2. Switch to DIAGONAL to see 1."

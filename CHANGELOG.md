@@ -1,4 +1,9 @@
 # Changelog
+## 0.3.0-alpha.3 — tools and cartridges candidate
+- Public-constraint safe scanner (3/1/0/0), free CLASSIC/CROSS/DIAGONAL switching on the same certified board, hover/focus adjacency highlights. No charge without proof.
+- Temporary one nonfatal move rewind per Story/Standard sector, 0 for Expert/Hardcore; previous state and remaining charges persisted. No economy or final-outcome rollback yet. Lessons 6–7 use real damage, rewind and topology; remaining shop/anomaly lessons deferred.
+- Preserve K-30, official icon, fullscreen, immutable PNG and existing BoardState. New automated tests; manual UI acceptance pending.
+
 ### 0.3.0-alpha.2-k30 — fullscreen and approved icon follow-up
 - Start in fullscreen by default (Godot window mode 3), retaining the settings toggle to switch to windowed mode during the session. Preserve the existing aspect-ratio handling. Match the uploaded ICO filename exactly; both icon assets are mandatory in CI.
 

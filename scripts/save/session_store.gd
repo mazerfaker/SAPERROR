@@ -15,12 +15,14 @@ static func write_config(cfg: ConfigFile, path: String = PATH) -> Error:
 	return cfg.save(path)
 static func snapshot(board: Board, profile: int, seed_value: int, first: int) -> Dictionary:
 	if board == null or board.finished(): return {}
-	return {"profile":profile,"seed":seed_value,"first":first,"mask":board._mask.duplicate(),"cells":board.cells.duplicate(),"hp":board.hp}
+	return {"profile":profile,"seed":seed_value,"first":first,"mask":board._mask.duplicate(),"cells":board.cells.duplicate(),"hp":board.hp,"rule":board.rule}
 static func restore(data: Dictionary) -> Dictionary:
 	for key in ["profile","seed","first","mask","cells","hp"]:
 		if not data.has(key): return {}
 	if typeof(data["profile"]) != TYPE_INT or typeof(data["seed"]) != TYPE_INT or typeof(data["first"]) != TYPE_INT or typeof(data["hp"]) != TYPE_INT: return {}
 	if typeof(data["mask"]) != TYPE_PACKED_BYTE_ARRAY or typeof(data["cells"]) != TYPE_PACKED_INT32_ARRAY: return {}
+	var rule: Variant = data.get("rule",Rules.Rule.CLASSIC)
+	if typeof(rule)!=TYPE_INT or rule not in [Rules.Rule.CLASSIC,Rules.Rule.CROSS,Rules.Rule.DIAGONAL]: return {}
 	var profile: int = data["profile"]
 	if not Profiles.valid(profile): return {}
 	var w: int = Profiles.SIZES[profile]
@@ -49,6 +51,7 @@ static func restore(data: Dictionary) -> Dictionary:
 	var proof: Dictionary = Validator.certify(w,w,mask,first,rules)
 	if proof.is_empty(): return {}
 	var board := Board.new(w,w,mask,hp)
+	board.rule = int(rule)
 	board.cells = cells.duplicate()
 	board.opened = opened
 	board.hits = hits

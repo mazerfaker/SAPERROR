@@ -7,6 +7,8 @@ const Profiles = preload("res://scripts/board/profiles.gd")
 const Store = preload("res://scripts/save/session_store.gd")
 const Tutorial = preload("res://scripts/ui/tutorial.gd")
 const Protocol = preload("res://scripts/ui/protocol_k30.gd")
+const Tools = preload("res://scripts/board/onboarding_tools.gd")
+const Rules = preload("res://scripts/board/rules.gd")
 signal effects_changed(amount: float, glass: bool, reduced: bool, flicker: bool, global_amount: float, glitches: bool)
 signal protocol_triggered
 signal fault_triggered
@@ -24,6 +26,16 @@ var boot_percent: Label
 var outcome_banner: Control
 var audio: TerminalAudio
 var board: Board
+var hints_left: int = 1
+var rewinds_left: int = 1
+var rewind_data: Dictionary = {}
+var hint_cell: int = -1
+var hint_sources: Array[int] = []
+var rule_button: Button
+var hint_button: Button
+var rewind_button: Button
+var marks: Array[Panel] = []
+var hover_cell: int = -1
 var sector_number: int = 1
 var pending_sector: bool = false
 var sector_ready: bool = false
@@ -157,8 +169,10 @@ func _show(next: String) -> void:
 	page.size = size
 	add_child(page)
 	buttons.clear()
+	marks.clear()
+	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.3.0-a2",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.3.0-a3",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -182,7 +196,7 @@ func _menu() -> void:
 	_button(tr("VIS_SETTINGS"),Rect2(124,657,640,65),page,func(): _show("settings"))
 	_button(tr("VIS_EXIT"),Rect2(124,735,640,65),page,func(): _save_session(); shutdown_requested.emit())
 	_label(tr("VIS_STATS")+"\n"+tr("VIS_RUNS")+" "+str(sessions)+"\n"+tr("VIS_WINS")+" "+str(wins)+"\n"+tr("VIS_LOSSES")+" "+str(losses),Rect2(820,345,500,285),page,32)
-	_label(tr("VIS_LESSONS")+" %d / 5" % tutorial_done,Rect2(820,650,500,62),page,29,AMBER)
+	_label(tr("VIS_LESSONS")+" %d / 7" % tutorial_done,Rect2(820,650,500,62),page,29,AMBER)
 	if save_failed: _label(tr("VIS_SAVE_ERROR"),Rect2(820,714,500,80),page,27,RED)
 	_button("EN" if is_uk else "UA",Rect2(1100,810,210,60),page,_language)
 func _profiles() -> void:
@@ -199,6 +213,7 @@ func _start_profile(next_profile: int) -> void:
 	pending_sector = false
 	sector_ready = true
 	profile = next_profile
+	_reset_tools()
 	board = null
 	certificate.clear()
 	first_cell = -1
@@ -215,6 +230,7 @@ func _advance_sector() -> void:
 	pending_sector = false
 	sector_ready = true
 	sector_number += 1
+	_reset_tools()
 	active_seed = 0 if active_seed == 9223372036854775807 else active_seed+1
 	if is_instance_valid(seed_input):
 		seed_input.text = str(active_seed)
@@ -231,7 +247,7 @@ func _tutorial() -> void:
 	tutorial.size = Vector2(1266,710)
 	tutorial.position = Vector2(80,180)
 	tutorial.theme = theme
-	tutorial.start_at = mini(tutorial_done,4)
+	tutorial.start_at = mini(tutorial_done,6)
 	tutorial.completed.connect(func(step: int):
 		tutorial_done = maxi(tutorial_done,step+1)
 		_save_session())
@@ -246,7 +262,7 @@ func _load_session() -> void:
 	flicker = bool(cfg.get_value("settings","flicker_v2",true))
 	glitches = bool(cfg.get_value("settings","glitches",true))
 	global_amount = clampf(float(cfg.get_value("settings","grade",0.0)),0.0,1.0)
-	tutorial_done = clampi(int(cfg.get_value("stats","tutorial",0)),0,5)
+	tutorial_done = clampi(int(cfg.get_value("stats","tutorial",0)),0,7)
 	sessions = maxi(0,int(cfg.get_value("stats","sessions",0)))
 	wins = maxi(0,int(cfg.get_value("stats","wins",0)))
 	losses = maxi(0,int(cfg.get_value("stats","losses",0)))
@@ -256,6 +272,7 @@ func _load_session() -> void:
 	profile = clampi(int(cfg.get_value("run","profile",1)),0,3)
 	active_seed = int(cfg.get_value("run","seed",1701))
 	seed_value = str(active_seed)
+	_reset_tools()
 	var raw: Variant = cfg.get_value("run","data",{})
 	if raw is Dictionary and not raw.is_empty():
 		var resumed: Dictionary = Store.restore(raw)
@@ -272,6 +289,14 @@ func _load_session() -> void:
 			certificate = resumed["certificate"]
 			last_hits = board.hits
 			message_key = "CORE_ACTIVE"
+			hints_left = clampi(int(cfg.get_value("run","hints",Tools.HINT_LIMITS[profile])),0,Tools.HINT_LIMITS[profile])
+			rewinds_left = clampi(int(cfg.get_value("run","rewinds",Tools.REWIND_LIMITS[profile])),0,Tools.REWIND_LIMITS[profile])
+			var previous: Variant = cfg.get_value("run","rewind_data",{})
+			if previous is Dictionary and rewinds_left>0 and not previous.is_empty():
+				var checked: Dictionary = Store.restore(previous)
+				if not checked.is_empty() and checked["profile"]==profile and checked["seed"]==active_seed and checked["first"]==first_cell:
+					var prior: Board = checked["board"]
+					if prior._mask==board._mask: rewind_data = previous.duplicate(true)
 func _save_session() -> void:
 	if DisplayServer.get_name() == "headless": return
 	cfg.set_value("settings","uk",is_uk)
@@ -295,6 +320,9 @@ func _save_session() -> void:
 	cfg.set_value("run","profile",profile)
 	cfg.set_value("run","seed",active_seed)
 	cfg.set_value("run","data",Store.snapshot(board,profile,active_seed,first_cell))
+	cfg.set_value("run","hints",hints_left)
+	cfg.set_value("run","rewinds",rewinds_left)
+	cfg.set_value("run","rewind_data",rewind_data if board!=null and not board.finished() else {})
 	save_failed = Store.write_config(cfg) != OK
 func begin_boot() -> void:
 	boot_overlay = ColorRect.new()
@@ -421,10 +449,11 @@ func _game() -> void:
 	_place(progress_fill,Rect2(0,0,0,10),track)
 	flag_count = _label("",Rect2(16,475,252,99),left,31)
 	_label(tr("VIS_RULE"),Rect2(16,17,252,44),right,30,DIM)
-	_label("CLASSIC",Rect2(16,64,252,52),right,40)
-	_label(tr("VIS_CONTROL_HEADER"),Rect2(16,160,252,44),right,29,DIM)
-	_label(tr("VIS_CONTROL_SHORT"),Rect2(16,216,252,208),right,28)
-	_label(tr("VIS_ANOMALY")+"\n"+tr("VIS_NONE"),Rect2(16,464,252,105),right,29)
+	rule_button = _button("CLASSIC",Rect2(16,64,252,56),right,_cycle_rule,28)
+	_label(tr("VIS_RULE_HOVER"),Rect2(16,132,252,82),right,24,DIM)
+	hint_button = _button("",Rect2(16,232,252,62),right,_request_hint,25)
+	rewind_button = _button("",Rect2(16,310,252,62),right,_rewind,25)
+	_label(tr("VIS_CONTROL_SHORT"),Rect2(16,390,252,198),right,24)
 	grid = GridContainer.new()
 	var w: int = Profiles.SIZES[profile] if board == null else board.width
 	var h: int = Profiles.SIZES[profile] if board == null else board.height
@@ -451,6 +480,16 @@ func _game() -> void:
 		btn.gui_input.connect(_cell_input.bind(i))
 		grid.add_child(btn)
 		buttons.append(btn)
+		var mark := Panel.new()
+		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		btn.add_child(mark)
+		mark.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		mark.hide()
+		marks.append(mark)
+		btn.mouse_entered.connect(_inspect_cell.bind(i))
+		btn.mouse_exited.connect(_leave_cell.bind(i))
+		btn.focus_entered.connect(_inspect_cell.bind(i))
+		btn.focus_exited.connect(_leave_cell.bind(i))
 		last_states.append(-1)
 	status = _label("",Rect2(86,794,1250,46),page,31)
 	_label(tr("CORE_SEED"),Rect2(86,850,100,54),page,28)
@@ -468,6 +507,7 @@ func _reset() -> void:
 	if protocol_active: return
 	pending_sector = false
 	sector_ready = true
+	_reset_tools()
 	if is_instance_valid(outcome_banner): outcome_banner.queue_free()
 	board = null
 	certificate.clear()
@@ -499,8 +539,10 @@ func _reveal(i: int) -> void:
 		sessions += 1
 		sector_ready = false
 	if board.finished() or board.cells[i] != Board.Cell.CLOSED: return
+	var saved: Dictionary = _before_move()
 	var before: int = board.opened
 	board.reveal(i)
+	_remember_move(saved)
 	_after_action("flood" if board.opened-before > 1 else ("reveal" if board.opened > before else ""))
 func _cell_input(event: InputEvent, i: int) -> void:
 	if protocol_active or board == null or board.finished(): return
@@ -520,18 +562,25 @@ func _cell_input(event: InputEvent, i: int) -> void:
 			buttons[i].accept_event()
 func _flag_action(i: int) -> void:
 	if protocol_active or board == null or board.finished(): return
+	var saved: Dictionary = _before_move()
 	var previous: int = board.cells[i]
 	board.flag(i)
 	if previous != board.cells[i]:
+		_remember_move(saved)
 		_after_action("flag" if board.cells[i] == Board.Cell.FLAG else "unflag")
 func _chord_action(i: int) -> void:
 	if protocol_active or board == null or board.finished(): return
+	var saved: Dictionary = _before_move()
 	var before: int = board.opened
 	var hits: int = board.hits
 	board.chord(i)
 	if board.opened != before or board.hits != hits:
+		_remember_move(saved)
 		_after_action("flood" if board.opened-before > 1 else "reveal")
 func _after_action(sound: String = "") -> void:
+	hint_cell = -1
+	hint_sources.clear()
+	if board.finished(): rewind_data.clear()
 	message_key = "CORE_ACTIVE"
 	if board.hits > last_hits:
 		message_key = "CORE_HIT"
@@ -568,6 +617,7 @@ func _refresh() -> void:
 	progress_fill.size.x = 252.0 * float(opened) / float(maxi(total,1))
 	var flags: int = 0
 	status.text = "> " + tr(message_key)
+	if hint_cell >= 0: status.text += "  #%d" % (hint_cell+1)
 	status.add_theme_color_override("font_color",RED if message_key == "CORE_LOSS" else (AMBER if message_key in ["CORE_HIT","CORE_FAIL","CORE_SEED_BAD"] else GREEN))
 	for i in range(buttons.size()):
 		var b: Button = buttons[i]
@@ -610,6 +660,7 @@ func _refresh() -> void:
 			b.add_theme_color_override(key,color)
 		b.tooltip_text = "%s %d: %s" % [tr("CORE_CELL"),i+1,desc]
 	flag_count.text = tr("VIS_FLAGS")+"\n%d / %d" % [flags,Profiles.MINES[profile] if board == null else board.mine_total]
+	_refresh_tools()
 
 # Hidden input is intercepted before forwarding normal UI key events.
 func protocol_input(event: InputEventKey) -> bool:
@@ -624,6 +675,8 @@ func protocol_input(event: InputEventKey) -> bool:
 func _begin_protocol() -> void:
 	if protocol_active or screen != "game" or not protocol.prepare(board): return
 	protocol_active = true
+	hint_cell = -1
+	hint_sources.clear()
 	protocol_elapsed = 0.0
 	protocol_finished = false
 	protocol_finish_elapsed = 0.0
@@ -671,3 +724,85 @@ func _process(delta: float) -> void:
 		protocol_scan = -1.0
 		_protocol_lines(5)
 		_after_action()
+
+func _reset_tools() -> void:
+	hints_left = Tools.HINT_LIMITS[profile]
+	rewinds_left = Tools.REWIND_LIMITS[profile]
+	rewind_data.clear()
+	hint_cell = -1
+	hint_sources.clear()
+func _before_move() -> Dictionary:
+	if rewinds_left<=0 or board==null: return {}
+	return Store.snapshot(board,profile,active_seed,first_cell)
+func _remember_move(previous: Dictionary) -> void:
+	if rewinds_left>0 and not previous.is_empty() and not board.finished(): rewind_data = previous
+func _rewind() -> void:
+	if protocol_active or board==null or board.finished() or rewinds_left<=0 or rewind_data.is_empty(): return
+	var restored: Dictionary = Store.restore(rewind_data)
+	if restored.is_empty(): return
+	board = restored["board"]
+	last_hits = board.hits
+	rewinds_left -= 1
+	rewind_data.clear()
+	hint_cell = -1
+	hint_sources.clear()
+	message_key = "VIS_REWOUND"
+	audio.play_event("boot")
+	_refresh()
+	_save_session()
+func _request_hint() -> void:
+	if protocol_active or board==null or board.finished() or hints_left<=0 or hint_cell>=0: return
+	var available: Array[int] = [board.rule]
+	var result: Dictionary = Tools.safe_hint(board.observation(available))
+	if result.is_empty():
+		message_key = "VIS_NO_PROOF"
+	else:
+		hints_left -= 1
+		hint_cell = result["cell"]
+		hint_sources.clear()
+		for item in result["proof"]["premises"]:
+			var source: int = item["source"]
+			if source>=0 and not hint_sources.has(source): hint_sources.append(source)
+		message_key = "VIS_PROVEN_SAFE"
+	audio.play_event("key")
+	_refresh()
+	_save_session()
+func _cycle_rule() -> void:
+	if protocol_active or board==null or board.finished(): return
+	board.rule = (board.rule+1)%Tools.NAMES.size()
+	hint_cell = -1
+	hint_sources.clear()
+	message_key = "VIS_RULE_CHANGED"
+	_refresh()
+	_save_session()
+func _inspect_cell(i: int) -> void:
+	hover_cell = i
+	_refresh_marks()
+func _leave_cell(i: int) -> void:
+	if hover_cell==i:
+		hover_cell = -1
+		_refresh_marks()
+func _refresh_tools() -> void:
+	var active: bool = board!=null and not board.finished() and not protocol_active
+	if is_instance_valid(rule_button):
+		rule_button.text = Tools.NAMES[board.rule] if board!=null else "CLASSIC"
+		rule_button.disabled = not active
+	if is_instance_valid(hint_button):
+		hint_button.text = tr("VIS_HINT")+" [%d]" % hints_left
+		hint_button.disabled = not active or hints_left<=0 or hint_cell>=0
+	if is_instance_valid(rewind_button):
+		rewind_button.text = tr("VIS_REWIND")+" [%d]" % rewinds_left
+		rewind_button.disabled = not active or rewinds_left<=0 or rewind_data.is_empty()
+	_refresh_marks()
+func _refresh_marks() -> void:
+	var neighbors: Array[int] = []
+	if board!=null and hover_cell>=0 and hover_cell<board.cells.size() and board.cells[hover_cell]==Board.Cell.OPEN and not protocol_active:
+		neighbors = Rules.neighbors(board.width,board.height,hover_cell,board.rule)
+	for i in range(marks.size()):
+		if not is_instance_valid(marks[i]): continue
+		var target: bool = i==hint_cell
+		var premise: bool = hint_sources.has(i)
+		var adjacent: bool = neighbors.has(i)
+		marks[i].visible = not protocol_active and (target or premise or adjacent)
+		if marks[i].visible:
+			marks[i].add_theme_stylebox_override("panel",_style(Color(0,0,0,0),GREEN if target else (AMBER if premise else Color("81b6a6")),5 if target else 3))

@@ -1,6 +1,9 @@
 extends Control
 const Board = preload("res://scripts/board/state.gd")
 const Rules = preload("res://scripts/board/rules.gd")
+const Tools = preload("res://scripts/board/onboarding_tools.gd")
+var prior: Dictionary = {}
+var tool_button: Button
 signal completed(step: int)
 signal back
 var start_at: int = 0
@@ -13,7 +16,7 @@ var tiles: Array[Button] = []
 var hint: Label
 var next_button: Button
 func _ready() -> void:
-	step = clampi(start_at,0,4)
+	step = clampi(start_at,0,6)
 	_build()
 func _label(value: String, p: Vector2, extent: Vector2, font_size: int) -> Label:
 	var l := Label.new()
@@ -47,14 +50,28 @@ func _build() -> void:
 	mask[3] = 1
 	mask[15] = 1
 	board = Board.new(4,4,mask,3)
-	if step >= 1: board.reveal(1)
+	if step>=1 and step<=4: board.reveal(1)
+	prior.clear()
+	if step==5:
+		board.reveal(1)
+		prior = Tools.capture(board)
+	if step==6:
+		mask.fill(0)
+		mask[0]=1
+		mask[1]=1
+		mask[4]=1
+		board = Board.new(4,4,mask,3)
+		board.reveal(5)
 	if step == 3: board.reveal(2)
 	if step == 4:
 		board.reveal(4)
 		board.flag(0)
-	_label(tr("VIS_TUTORIAL")+" %d / 5" % (step+1),Vector2(0,0),Vector2(1266,60),40)
+	_label(tr("VIS_TUTORIAL")+" %d / 7" % (step+1),Vector2(0,0),Vector2(1266,60),40)
 	_label(tr("TUT_TITLE_"+str(step)),Vector2(0,76),Vector2(1266,65),35)
 	hint = _label("",Vector2(550,158),Vector2(700,360),33)
+	tool_button = null
+	if step>=5:
+		tool_button = _button(tr("VIS_REWIND") if step==5 else "CLASSIC",Vector2(550,530),Vector2(700,64),_lesson_tool)
 	var grid := GridContainer.new()
 	grid.columns = 4
 	grid.position = Vector2(45,158)
@@ -117,10 +134,14 @@ func _action(i: int, kind: String) -> void:
 				var before: int = board.opened
 				board.reveal(i)
 				solved = board.opened > before or board.cells[i] == Board.Cell.OPEN
+		5:
+			if phase==0 and i==0 and kind=="reveal":
+				board.reveal(i)
+				if board.hp==2: phase=1
 	if solved: completed.emit(step)
 	_refresh()
 func _next() -> void:
-	if step >= 4:
+	if step >= 6:
 		back.emit()
 		return
 	step += 1
@@ -129,14 +150,29 @@ func _refresh() -> void:
 	var key: String = "TUT_HINT_"+str(step)+"_"+str(phase)
 	hint.text = tr("TUT_COMPLETE") if solved else tr(key)
 	next_button.disabled = not solved
+	if is_instance_valid(tool_button):
+		tool_button.disabled = solved or (step==5 and phase==0)
+		if step==6: tool_button.text = Tools.NAMES[board.rule]
 	for i in range(tiles.size()):
 		var state: int = board.cells[i]
 		var b: Button = tiles[i]
-		b.text = str(board.clue(i,Rules.Rule.CLASSIC)) if state == Board.Cell.OPEN else ("⚑" if state == Board.Cell.FLAG else "·")
+		b.text = str(board.clue(i,board.rule)) if state == Board.Cell.OPEN else ("⚑" if state == Board.Cell.FLAG else ("×" if state==Board.Cell.NEUTRALIZED else "·"))
 		var marked: bool = (step==0 and i==1) or (step==1 and (i==1 or Rules.neighbors(4,4,1).has(i))) or (step==2 and i==0) or (step==3 and i in [0,1,2]) or (step==4 and i==(4 if phase==0 else 8))
+		marked = marked or (step==5 and i==0) or (step==6 and (i==5 or Rules.neighbors(4,4,5,board.rule).has(i)))
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color("081a11") if state == Board.Cell.OPEN else Color("183b27")
 		style.border_color = Color("f0c37b") if marked else Color("53775d")
 		style.set_border_width_all(4 if marked else 2)
 		b.add_theme_stylebox_override("normal",style)
 		b.tooltip_text = "%s %d" % [tr("CORE_CELL"),i+1]
+
+func _lesson_tool() -> void:
+	if solved: return
+	if step==5 and phase==1:
+		solved = Tools.restore_action(board,prior) and board.hp==3 and board.cells[0]==Board.Cell.CLOSED
+	elif step==6:
+		board.rule = (board.rule+1)%3
+		phase += 1
+		if phase>=2: solved = board.clue(5,Rules.Rule.DIAGONAL)==1
+	if solved: completed.emit(step)
+	_refresh()

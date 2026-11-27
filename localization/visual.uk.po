@@ -238,3 +238,42 @@ msgstr "ПЕРЕХОПЛЕННЯ КЕРУВАННЯ СЕКТОРОМ..."
 
 msgid "K30_4"
 msgstr "СЕКТОР ОЧИЩЕНО"
+
+msgid "VIS_RULE_HOVER"
+msgstr "Картридж / сусіди"
+
+msgid "VIS_HINT"
+msgstr "Сканер"
+
+msgid "VIS_REWIND"
+msgstr "Відкат"
+
+msgid "VIS_REWOUND"
+msgstr "Попередню дію скасовано"
+
+msgid "VIS_NO_PROOF"
+msgstr "Доказу немає. Заряд збережено."
+
+msgid "VIS_PROVEN_SAFE"
+msgstr "Доведено: безпечна клітинка"
+
+msgid "VIS_RULE_CHANGED"
+msgstr "Правило сусідства змінено"
+
+msgid "TUT_TITLE_5"
+msgstr "Пошкодження та відкат"
+
+msgid "TUT_TITLE_6"
+msgstr "Картриджі"
+
+msgid "TUT_HINT_5_0"
+msgstr "Відкрий позначену міну. Це навчальне поле: ти втратиш 1 HP."
+
+msgid "TUT_HINT_5_1"
+msgstr "Натисни Відкат, щоб повернути стан до пошкодження."
+
+msgid "TUT_HINT_6_0"
+msgstr "У центрі число 3. Натисни CLASSIC, щоб прочитати ортогональних сусідів."
+
+msgid "TUT_HINT_6_1"
+msgstr "CROSS показує 2. Перемкни на DIAGONAL, щоб побачити 1."
