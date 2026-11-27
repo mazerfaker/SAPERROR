@@ -11,6 +11,7 @@ func check(ok: bool, message: String) -> void:
 func _initialize() -> void:
 	call_deferred("run")
 func run() -> void:
+	check(int(ProjectSettings.get_setting("display/window/size/mode",0))==3,"fullscreen startup default")
 	var texture: Texture2D = load(ART) as Texture2D
 	check(texture != null and texture.get_size() == Geometry.CANVAS,"original texture import")
 	var poly: PackedVector2Array = Geometry.mask_points()

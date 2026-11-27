@@ -1,4 +1,7 @@
 # Changelog
+### 0.3.0-alpha.2-k30 — fullscreen and approved icon follow-up
+- Start in fullscreen by default (Godot window mode 3), retaining the settings toggle to switch to windowed mode during the session. Preserve the existing aspect-ratio handling. Match the uploaded ICO filename exactly; both icon assets are mandatory in CI.
+
 ## 0.3.0-alpha.2-k30 — icon integration, secret protocol and CRT signal candidate
 - Fixed approved 25% legacy bulge coefficient 0.04 independent of CRT strength; matched click mapping. Subtle flicker and infrequent short video faults with separate toggle and reduced-motion suppression.
 - Hidden physical-key sequence, staged administrator reveal/flag animation, localized CRT log and synthetic confirmation tone. Shared classic sector completion/advance path, persisted sector index and pending transition, one win per activation. No rewrite of BoardState or solver.

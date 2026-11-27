@@ -356,7 +356,7 @@ func _help() -> void:
 func _settings() -> void:
 	_label(tr("VIS_SETTINGS"),Rect2(124,212,1150,60),page,41)
 	_button("EN" if is_uk else "UA",Rect2(124,305,300,62),page,_language)
-	_button(tr("VIS_FULLSCREEN"),Rect2(444,305,720,62),page,func(): fullscreen_requested.emit())
+	_button(tr("VIS_FULLSCREEN")+": "+_on_off(_fullscreen_active()),Rect2(444,305,720,62),page,func(): fullscreen_requested.emit(); _show("settings"))
 	var crt_readout := _label(tr("VIS_CRT")+": "+str(roundi(amount*100))+"%",Rect2(124,382,1040,35),page,28)
 	var crt_slider := HSlider.new()
 	crt_slider.min_value = 0.0
@@ -395,6 +395,10 @@ func _audio_slider(caption: String, value: float, y: float, sfx: bool) -> void:
 		if sfx: audio.set_levels(v,audio.hum_level,audio.enabled)
 		else: audio.set_levels(audio.sfx_level,v,audio.enabled)
 		_save_session())
+func _fullscreen_active() -> bool:
+	if DisplayServer.get_name() == "headless": return int(ProjectSettings.get_setting("display/window/size/mode",0)) == 3
+	var mode: int = DisplayServer.window_get_mode()
+	return mode == DisplayServer.WINDOW_MODE_FULLSCREEN or mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
 func _on_off(value: bool) -> String:
 	return tr("VIS_ON" if value else "VIS_OFF")
 func _apply() -> void:

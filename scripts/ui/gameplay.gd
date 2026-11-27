@@ -155,7 +155,8 @@ func _process(delta: float) -> void:
 func _toggle_fullscreen() -> void:
 	if DisplayServer.get_name() == "headless": return
 	var mode: int = DisplayServer.window_get_mode()
-	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if mode == DisplayServer.WINDOW_MODE_FULLSCREEN else DisplayServer.WINDOW_MODE_FULLSCREEN)
+	var fullscreen: bool = mode == DisplayServer.WINDOW_MODE_FULLSCREEN or mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if fullscreen else DisplayServer.WINDOW_MODE_FULLSCREEN)
 func _crt_input(event: InputEvent) -> void:
 	if not lifecycle.accepts_input():
 		if lifecycle.phase == Lifecycle.Phase.BOOT and event is InputEventKey and event.pressed and not event.echo:

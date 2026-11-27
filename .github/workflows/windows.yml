@@ -68,25 +68,17 @@ jobs:
         shell: pwsh
         run: |
           $png = 'assets/icon/saperror.png'
-          $ico = 'assets/icon/saperror.ico'
-          if ((Test-Path $png) -xor (Test-Path $ico)) { throw 'Upload both approved icon files together' }
-          if (!(Test-Path $png)) {
-            Write-Warning 'PROVISIONAL BUILD: approved icon assets are not yet uploaded; no icon certification.'
-            'SAPERROR_ICON_READY=false' | Add-Content $env:GITHUB_ENV
-            'ICON_QA pending manual asset upload' | Set-Content build/logs/icon-qa.txt
-            (Get-Content project.godot) | Where-Object { $_ -notmatch '^config/(icon|windows_native_icon)=' } | Set-Content project.godot -Encoding utf8
-            (Get-Content export_presets.cfg) | Where-Object { $_ -notmatch '^application/icon=' } | ForEach-Object { $_ -replace '^application/modify_resources=true','application/modify_resources=false' } | Set-Content export_presets.cfg -Encoding utf8
-          } else {
-            if ((Get-FileHash $png -Algorithm SHA256).Hash.ToLower() -ne '25e8ffa77a10ef61ff4fd8bdca4d709f8026b2a0084543f767ee744a0228e52f') { throw 'Approved icon PNG hash mismatch' }
-            if ((Get-FileHash $ico -Algorithm SHA256).Hash.ToLower() -ne '356fd921fa4c9de6b7a8f8ddbaa53d89ba8919e37d0fc1aac11cbd6e8c965d44') { throw 'Approved ICO hash mismatch' }
-            $b = [IO.File]::ReadAllBytes((Resolve-Path $ico))
-            $count = [BitConverter]::ToUInt16($b,4)
-            if ([BitConverter]::ToUInt16($b,2) -ne 1 -or $count -ne 7) { throw 'ICO header mismatch' }
-            $sizes = @(for ($i=0; $i -lt $count; $i++) { $n = [int]$b[6+16*$i]; if ($n -eq 0) {256} else {$n} })
-            if (($sizes | Sort-Object) -join ',' -ne '16,24,32,48,64,128,256') { throw 'ICO sizes mismatch' }
-            'SAPERROR_ICON_READY=true' | Add-Content $env:GITHUB_ENV
-            'ICON_QA approved PNG and 7 ICO sizes verified' | Set-Content build/logs/icon-qa.txt
-          }
+          $ico = 'assets/icon/SAPERROR.ico'
+          if (!(Test-Path $png) -or !(Test-Path $ico)) { throw 'Both approved icon assets are required' }
+          if ((Get-FileHash $png -Algorithm SHA256).Hash.ToLower() -ne '25e8ffa77a10ef61ff4fd8bdca4d709f8026b2a0084543f767ee744a0228e52f') { throw 'Approved icon PNG hash mismatch' }
+          if ((Get-FileHash $ico -Algorithm SHA256).Hash.ToLower() -ne '356fd921fa4c9de6b7a8f8ddbaa53d89ba8919e37d0fc1aac11cbd6e8c965d44') { throw 'Approved ICO hash mismatch' }
+          $b = [IO.File]::ReadAllBytes((Resolve-Path $ico))
+          $count = [BitConverter]::ToUInt16($b,4)
+          if ([BitConverter]::ToUInt16($b,2) -ne 1 -or $count -ne 7) { throw 'ICO header mismatch' }
+          $sizes = @(for ($i=0; $i -lt $count; $i++) { $n = [int]$b[6+16*$i]; if ($n -eq 0) {256} else {$n} })
+          if (($sizes | Sort-Object) -join ',' -ne '16,24,32,48,64,128,256') { throw 'ICO sizes mismatch' }
+          'SAPERROR_ICON_READY=true' | Add-Content $env:GITHUB_ENV
+          'ICON_QA approved PNG and 7 ICO sizes verified' | Set-Content build/logs/icon-qa.txt
       - name: Import and tests
         shell: pwsh
         run: |
@@ -130,7 +122,7 @@ jobs:
           Add-Type -AssemblyName System.Drawing
           $exe = [System.Drawing.Icon]::ExtractAssociatedIcon((Resolve-Path build/windows/SAPERROR.exe))
           if ($null -eq $exe) { throw 'EXE icon missing' }
-          $expected = [System.Drawing.Icon]::new((Resolve-Path assets/icon/saperror.ico).Path,$exe.Width,$exe.Height)
+          $expected = [System.Drawing.Icon]::new((Resolve-Path assets/icon/SAPERROR.ico).Path,$exe.Width,$exe.Height)
           $actualBmp = $exe.ToBitmap()
           $expectedBmp = $expected.ToBitmap()
           try {
@@ -149,7 +141,7 @@ jobs:
         shell: pwsh
         run: |
           Copy-Item README.md build/windows/README.md
-          if ($env:SAPERROR_ICON_READY -eq 'true') { Copy-Item assets/icon/saperror.ico build/windows/SAPERROR.ico }
+          if ($env:SAPERROR_ICON_READY -eq 'true') { Copy-Item assets/icon/SAPERROR.ico build/windows/SAPERROR.ico }
           Compress-Archive -Path build/windows/* -DestinationPath "build/dist/SAPERROR_v${env:GAME_VERSION}_Windows_x64.zip"
           git archive --format=zip -o "build/dist/SAPERROR_v${env:GAME_VERSION}_Source.zip" HEAD
           if ($LASTEXITCODE -ne 0) { throw 'Source archive failed' }
