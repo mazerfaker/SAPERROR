@@ -277,3 +277,48 @@ msgstr "The center clue is 3. Press CLASSIC to read orthogonal neighbors."
 
 msgid "TUT_HINT_6_1"
 msgstr "CROSS shows 2. Switch to DIAGONAL to see 1."
+
+msgid "VIS_SHOP"
+msgstr "Shop"
+
+msgid "VIS_STOCK"
+msgstr "Charges"
+
+msgid "VIS_MODULES"
+msgstr "Modules"
+
+msgid "VIS_BUY_CHARGE"
+msgstr "Buy charge"
+
+msgid "VIS_REROLL"
+msgstr "Refresh"
+
+msgid "MOD_XRAY"
+msgstr "X-Ray"
+
+msgid "MOD_CHAIN"
+msgstr "Chain Reaction"
+
+msgid "MOD_CAPACITOR"
+msgstr "Capacitor"
+
+msgid "MOD_ASSISTANT"
+msgstr "Assistant"
+
+msgid "MOD_CHRONOMANCER"
+msgstr "Chronomancer"
+
+msgid "DESC_XRAY"
+msgstr "+1 charge per 10 clean reveals, up to 2 per sector."
+
+msgid "DESC_CHAIN"
+msgstr "Flood 8+ cells: +1 charge, up to 2 per sector."
+
+msgid "DESC_CAPACITOR"
+msgstr "Capacity +2; one charge on purchase."
+
+msgid "DESC_ASSISTANT"
+msgstr "One additional free hint per sector."
+
+msgid "DESC_CHRONOMANCER"
+msgstr "One additional rewind per sector."

@@ -1,4 +1,9 @@
 # Changelog
+## 0.4.0-alpha.1 — Run & Builds foundation
+- Persistent credits, bounded scanner inventory, once-per-sector reward, deterministic intersector shop, five passive modules and charge purchases. Standard starts with 30 CR and 2 stocked scanner charges in addition to the existing free hint allowance. Other profiles start with 30 CR and no stock (provisional balance).
+- Module effects and earned scanner charges are restored on a nonfatal move rewind; spent hints invalidate rewind to avoid refunds. K-30 uses the same reward path and auto-advances; shop remains available before the next first click. No per-move module rewards from K-30.
+- Deferred: HP carry/repair, module replacement, other 10 modules, remaining active tools, anomaly and campaign interactions. No change to original art, icon, fullscreen, BoardState or solver. CI and manual QA pending.
+
 ## 0.3.0-alpha.3 — tools and cartridges candidate
 - Public-constraint safe scanner (3/1/0/0), free CLASSIC/CROSS/DIAGONAL switching on the same certified board, hover/focus adjacency highlights. No charge without proof.
 - Temporary one nonfatal move rewind per Story/Standard sector, 0 for Expert/Hardcore; previous state and remaining charges persisted. No economy or final-outcome rollback yet. Lessons 6–7 use real damage, rewind and topology; remaining shop/anomaly lessons deferred.

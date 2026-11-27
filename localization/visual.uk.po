@@ -277,3 +277,48 @@ msgstr "У центрі число 3. Натисни CLASSIC, щоб прочи�
 
 msgid "TUT_HINT_6_1"
 msgstr "CROSS показує 2. Перемкни на DIAGONAL, щоб побачити 1."
+
+msgid "VIS_SHOP"
+msgstr "Магазин"
+
+msgid "VIS_STOCK"
+msgstr "Заряди"
+
+msgid "VIS_MODULES"
+msgstr "Модулі"
+
+msgid "VIS_BUY_CHARGE"
+msgstr "Купити заряд"
+
+msgid "VIS_REROLL"
+msgstr "Оновити"
+
+msgid "MOD_XRAY"
+msgstr "Рентген"
+
+msgid "MOD_CHAIN"
+msgstr "Ланцюгова реакція"
+
+msgid "MOD_CAPACITOR"
+msgstr "Конденсатор"
+
+msgid "MOD_ASSISTANT"
+msgstr "Помічник"
+
+msgid "MOD_CHRONOMANCER"
+msgstr "Хрономант"
+
+msgid "DESC_XRAY"
+msgstr "+1 заряд за 10 чистих відкриттів, до 2 за сектор."
+
+msgid "DESC_CHAIN"
+msgstr "Flood 8+ клітинок: +1 заряд, до 2 за сектор."
+
+msgid "DESC_CAPACITOR"
+msgstr "Місткість +2, один заряд при купівлі."
+
+msgid "DESC_ASSISTANT"
+msgstr "Одна додаткова безкоштовна підказка за сектор."
+
+msgid "DESC_CHRONOMANCER"
+msgstr "Один додатковий відкат за сектор."

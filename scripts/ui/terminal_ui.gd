@@ -8,6 +8,7 @@ const Store = preload("res://scripts/save/session_store.gd")
 const Tutorial = preload("res://scripts/ui/tutorial.gd")
 const Protocol = preload("res://scripts/ui/protocol_k30.gd")
 const Tools = preload("res://scripts/board/onboarding_tools.gd")
+const Economy = preload("res://scripts/run/economy.gd")
 const Rules = preload("res://scripts/board/rules.gd")
 signal effects_changed(amount: float, glass: bool, reduced: bool, flicker: bool, global_amount: float, glitches: bool)
 signal protocol_triggered
@@ -26,6 +27,10 @@ var boot_percent: Label
 var outcome_banner: Control
 var audio: TerminalAudio
 var board: Board
+var economy := Economy.new()
+var credit_label: Label
+var shop_notice: String = ""
+var last_reward: int = 0
 var hints_left: int = 1
 var rewinds_left: int = 1
 var rewind_data: Dictionary = {}
@@ -172,7 +177,7 @@ func _show(next: String) -> void:
 	marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.3.0-a3",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.4.0-a1",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -184,6 +189,7 @@ func _show(next: String) -> void:
 	elif screen == "audio": _audio_settings()
 	elif screen == "profiles": _profiles()
 	elif screen == "tutorial": _tutorial()
+	elif screen == "shop": _shop()
 	else: _menu()
 func _menu() -> void:
 	_label(tr("VIS_BOOT"),Rect2(124,190,1170,80),page,36)
@@ -213,6 +219,8 @@ func _start_profile(next_profile: int) -> void:
 	pending_sector = false
 	sector_ready = true
 	profile = next_profile
+	economy.reset(profile)
+	last_reward = 0
 	_reset_tools()
 	board = null
 	certificate.clear()
@@ -230,8 +238,10 @@ func _advance_sector() -> void:
 	pending_sector = false
 	sector_ready = true
 	sector_number += 1
+	economy.begin_sector(sector_number)
 	_reset_tools()
 	active_seed = 0 if active_seed == 9223372036854775807 else active_seed+1
+	seed_value = str(active_seed)
 	if is_instance_valid(seed_input):
 		seed_input.text = str(active_seed)
 	seed_value = str(active_seed)
@@ -272,6 +282,12 @@ func _load_session() -> void:
 	profile = clampi(int(cfg.get_value("run","profile",1)),0,3)
 	active_seed = int(cfg.get_value("run","seed",1701))
 	seed_value = str(active_seed)
+	economy.reset(profile)
+	var econ: Variant = cfg.get_value("run","economy",{})
+	if econ is Dictionary and not econ.is_empty(): economy.restore(econ,sector_number,pending_sector)
+	else:
+		economy.begin_sector(sector_number)
+		economy.rewarded_sector = sector_number if pending_sector else sector_number-1
 	_reset_tools()
 	var raw: Variant = cfg.get_value("run","data",{})
 	if raw is Dictionary and not raw.is_empty():
@@ -289,8 +305,8 @@ func _load_session() -> void:
 			certificate = resumed["certificate"]
 			last_hits = board.hits
 			message_key = "CORE_ACTIVE"
-			hints_left = clampi(int(cfg.get_value("run","hints",Tools.HINT_LIMITS[profile])),0,Tools.HINT_LIMITS[profile])
-			rewinds_left = clampi(int(cfg.get_value("run","rewinds",Tools.REWIND_LIMITS[profile])),0,Tools.REWIND_LIMITS[profile])
+			hints_left = clampi(int(cfg.get_value("run","hints",_hint_limit())),0,_hint_limit())
+			rewinds_left = clampi(int(cfg.get_value("run","rewinds",_rewind_limit())),0,_rewind_limit())
 			var previous: Variant = cfg.get_value("run","rewind_data",{})
 			if previous is Dictionary and rewinds_left>0 and not previous.is_empty():
 				var checked: Dictionary = Store.restore(previous)
@@ -320,6 +336,7 @@ func _save_session() -> void:
 	cfg.set_value("run","profile",profile)
 	cfg.set_value("run","seed",active_seed)
 	cfg.set_value("run","data",Store.snapshot(board,profile,active_seed,first_cell))
+	cfg.set_value("run","economy",economy.snapshot())
 	cfg.set_value("run","hints",hints_left)
 	cfg.set_value("run","rewinds",rewinds_left)
 	cfg.set_value("run","rewind_data",rewind_data if board!=null and not board.finished() else {})
@@ -447,7 +464,8 @@ func _game() -> void:
 	progress_fill.color = GREEN
 	progress_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_place(progress_fill,Rect2(0,0,0,10),track)
-	flag_count = _label("",Rect2(16,475,252,99),left,31)
+	flag_count = _label("",Rect2(16,450,252,80),left,27)
+	credit_label = _label("",Rect2(16,535,252,60),left,27,AMBER)
 	_label(tr("VIS_RULE"),Rect2(16,17,252,44),right,30,DIM)
 	rule_button = _button("CLASSIC",Rect2(16,64,252,56),right,_cycle_rule,28)
 	_label(tr("VIS_RULE_HOVER"),Rect2(16,132,252,82),right,24,DIM)
@@ -498,7 +516,10 @@ func _game() -> void:
 	seed_input.editable = board == null
 	_place(seed_input,Rect2(184,844,230,60),page)
 	next_button = _button(tr("CORE_NEW"),Rect2(430,844,330,60),page,func():
-		if pending_sector: _advance_sector()
+		if pending_sector:
+			_advance_sector()
+			_show("shop")
+		elif _shop_available(): _show("shop")
 		else: _show("profiles"),28)
 	_button("EN" if is_uk else "UA",Rect2(774,844,126,60),page,_language,28)
 	_button(tr("VIS_BACK"),Rect2(914,844,422,60),page,func(): _show("menu"),28)
@@ -542,6 +563,7 @@ func _reveal(i: int) -> void:
 	var saved: Dictionary = _before_move()
 	var before: int = board.opened
 	board.reveal(i)
+	economy.observe(board.opened-before,board.hits==last_hits)
 	_remember_move(saved)
 	_after_action("flood" if board.opened-before > 1 else ("reveal" if board.opened > before else ""))
 func _cell_input(event: InputEvent, i: int) -> void:
@@ -575,6 +597,7 @@ func _chord_action(i: int) -> void:
 	var hits: int = board.hits
 	board.chord(i)
 	if board.opened != before or board.hits != hits:
+		economy.observe(board.opened-before,board.hits==hits)
 		_remember_move(saved)
 		_after_action("flood" if board.opened-before > 1 else "reveal")
 func _after_action(sound: String = "") -> void:
@@ -599,6 +622,7 @@ func _after_action(sound: String = "") -> void:
 		sector_ready = false
 		if board.won():
 			wins += 1
+			last_reward = economy.reward(sector_number,board.opened,board.hits)
 			pending_sector = true
 		else: losses += 1
 		outcome_triggered.emit(board.won())
@@ -606,7 +630,8 @@ func _after_action(sound: String = "") -> void:
 		_refresh()
 	_save_session()
 func _refresh() -> void:
-	if is_instance_valid(next_button): next_button.text = tr("VIS_NEXT_SECTOR" if pending_sector else "CORE_NEW")
+	if is_instance_valid(next_button): next_button.text = tr("VIS_SHOP" if pending_sector or _shop_available() else "CORE_NEW")
+	if is_instance_valid(credit_label): credit_label.text = "CR %d" % economy.credits
 	var max_hp: int = Profiles.HP[profile]
 	var hp: int = max_hp if board == null else board.hp
 	integrity.text = tr("CORE_HP")+"\n%d / %d" % [hp,max_hp]
@@ -618,6 +643,7 @@ func _refresh() -> void:
 	var flags: int = 0
 	status.text = "> " + tr(message_key)
 	if hint_cell >= 0: status.text += "  #%d" % (hint_cell+1)
+	if pending_sector and last_reward>0: status.text += "  +%d CR" % last_reward
 	status.add_theme_color_override("font_color",RED if message_key == "CORE_LOSS" else (AMBER if message_key in ["CORE_HIT","CORE_FAIL","CORE_SEED_BAD"] else GREEN))
 	for i in range(buttons.size()):
 		var b: Button = buttons[i]
@@ -726,15 +752,17 @@ func _process(delta: float) -> void:
 		_after_action()
 
 func _reset_tools() -> void:
-	hints_left = Tools.HINT_LIMITS[profile]
-	rewinds_left = Tools.REWIND_LIMITS[profile]
+	hints_left = _hint_limit()
+	rewinds_left = _rewind_limit()
 	rewind_data.clear()
 	hint_cell = -1
 	hint_sources.clear()
 func _before_move() -> Dictionary:
 	if rewinds_left<=0 or board==null or first_cell<0 or first_cell>=board.cells.size(): return {}
 	if board.cells[first_cell]!=Board.Cell.OPEN: return {}
-	return Store.snapshot(board,profile,active_seed,first_cell)
+	var state: Dictionary = Store.snapshot(board,profile,active_seed,first_cell)
+	if not state.is_empty(): state["economy_move"] = economy.move_state()
+	return state
 func _remember_move(previous: Dictionary) -> void:
 	if rewinds_left>0 and not previous.is_empty() and not board.finished(): rewind_data = previous
 func _rewind() -> void:
@@ -742,6 +770,7 @@ func _rewind() -> void:
 	var restored: Dictionary = Store.restore(rewind_data)
 	if restored.is_empty(): return
 	board = restored["board"]
+	if rewind_data.has("economy_move") and rewind_data["economy_move"] is Dictionary: economy.restore_move(rewind_data["economy_move"])
 	last_hits = board.hits
 	rewinds_left -= 1
 	rewind_data.clear()
@@ -752,13 +781,16 @@ func _rewind() -> void:
 	_refresh()
 	_save_session()
 func _request_hint() -> void:
-	if protocol_active or board==null or board.finished() or hints_left<=0 or hint_cell>=0: return
+	if protocol_active or board==null or board.finished() or (hints_left<=0 and economy.stock<=0) or hint_cell>=0: return
 	var available: Array[int] = [board.rule]
 	var result: Dictionary = Tools.safe_hint(board.observation(available))
 	if result.is_empty():
 		message_key = "VIS_NO_PROOF"
 	else:
-		hints_left -= 1
+		if hints_left>0: hints_left -= 1
+		else: economy.stock -= 1
+		# A spent hint is never refunded by restoring an earlier move.
+		rewind_data.clear()
 		hint_cell = result["cell"]
 		hint_sources.clear()
 		for item in result["proof"]["premises"]:
@@ -789,8 +821,8 @@ func _refresh_tools() -> void:
 		rule_button.text = Tools.NAMES[board.rule] if board!=null else "CLASSIC"
 		rule_button.disabled = not active
 	if is_instance_valid(hint_button):
-		hint_button.text = tr("VIS_HINT")+" [%d]" % hints_left
-		hint_button.disabled = not active or hints_left<=0 or hint_cell>=0
+		hint_button.text = tr("VIS_HINT")+" [%d]" % (hints_left+economy.stock)
+		hint_button.disabled = not active or (hints_left<=0 and economy.stock<=0) or hint_cell>=0
 	if is_instance_valid(rewind_button):
 		rewind_button.text = tr("VIS_REWIND")+" [%d]" % rewinds_left
 		rewind_button.disabled = not active or rewinds_left<=0 or rewind_data.is_empty()
@@ -807,3 +839,47 @@ func _refresh_marks() -> void:
 		marks[i].visible = not protocol_active and (target or premise or adjacent)
 		if marks[i].visible:
 			marks[i].add_theme_stylebox_override("panel",_style(Color(0,0,0,0),GREEN if target else (AMBER if premise else Color("81b6a6")),5 if target else 3))
+
+func _hint_limit() -> int:
+	return Tools.HINT_LIMITS[profile]+(1 if economy.owned.has("ASSISTANT") else 0)
+func _rewind_limit() -> int:
+	return Tools.REWIND_LIMITS[profile]+(1 if economy.owned.has("CHRONOMANCER") else 0)
+func _shop_available() -> bool:
+	return sector_number>1 and sector_ready and board==null and not protocol_active
+func _shop() -> void:
+	if not _shop_available():
+		_show("game")
+		return
+	_label(tr("VIS_SHOP")+" // %02d" % sector_number,Rect2(124,185,1160,65),page,40)
+	_label("CR %d   |   %s %d/%d   |   %s %d/4" % [economy.credits,tr("VIS_STOCK"),economy.stock,economy.capacity(),tr("VIS_MODULES"),economy.owned.size()],Rect2(124,256,1170,60),page,30,AMBER)
+	var offers: Array[String] = economy.offers()
+	for i in range(offers.size()):
+		var id: String = offers[i]
+		var y: int = 340+i*110
+		var buy := _button(tr("MOD_"+id)+"  /  "+str(economy.price(id))+" CR",Rect2(124,y,510,86),page,_buy_module.bind(id),26)
+		buy.disabled = economy.owned.size()>=Economy.MAX_MODULES or economy.credits<economy.price(id)
+		_label(tr("DESC_"+id),Rect2(654,y,630,100),page,25)
+	var charge := _button(tr("VIS_BUY_CHARGE")+" / 12 CR",Rect2(124,684,540,60),page,_buy_charge,25)
+	charge.disabled = economy.stock>=economy.capacity() or economy.credits<12
+	var reroll := _button(tr("VIS_REROLL")+" / %d CR" % economy.reroll_price(),Rect2(684,684,600,60),page,_reroll_shop,25)
+	reroll.disabled = economy.credits<economy.reroll_price() or economy.owned.size()>=Economy.MAX_MODULES or economy.rerolls>=100
+	var installed := PackedStringArray()
+	for id in economy.owned: installed.append(tr("MOD_"+id))
+	_label(tr("VIS_MODULES")+": "+(", ".join(installed) if not installed.is_empty() else "—"),Rect2(124,754,1160,68),page,24,DIM)
+	_button(tr("VIS_NEXT_SECTOR"),Rect2(124,836,570,64),page,func(): _show("game"),28)
+	_button(tr("VIS_BACK"),Rect2(714,836,570,64),page,func(): _show("menu"),28)
+func _buy_module(id: String) -> void:
+	if not _shop_available() or screen!="shop": return
+	if economy.buy(id):
+		hints_left = _hint_limit()
+		rewinds_left = _rewind_limit()
+		_save_session()
+		_show("shop")
+func _buy_charge() -> void:
+	if _shop_available() and screen=="shop" and economy.buy_charge():
+		_save_session()
+		_show("shop")
+func _reroll_shop() -> void:
+	if _shop_available() and screen=="shop" and economy.reroll():
+		_save_session()
+		_show("shop")

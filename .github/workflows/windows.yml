@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 45
     env:
       GODOT_VERSION: '4.7.2-stable'
-      GAME_VERSION: '0.3.0-alpha.3'
+      GAME_VERSION: '0.4.0-alpha.1'
     steps:
       - name: Windows prerequisites
         shell: pwsh
@@ -104,6 +104,8 @@ jobs:
           if (-not (Select-String -Path build/logs/protocol-tests.txt -Pattern 'PROTOCOL_QA.*failures=0' -Quiet)) { throw 'Missing protocol QA marker' }
           Invoke-Godot 'tools-tests.txt' @('--headless','--path','.','--script','res://tests/tools_test.gd')
           if (-not (Select-String -Path build/logs/tools-tests.txt -Pattern 'TOOLS_QA.*failures=0' -Quiet)) { throw 'Missing tools QA marker' }
+          Invoke-Godot 'economy-tests.txt' @('--headless','--path','.','--script','res://tests/economy_test.gd')
+          if (-not (Select-String -Path build/logs/economy-tests.txt -Pattern 'ECONOMY_QA.*failures=0' -Quiet)) { throw 'Missing economy QA marker' }
           Invoke-Godot 'export.txt' @('--headless','--path','.','--export-release','Windows Desktop','build/windows/SAPERROR.exe')
       - name: Verify and headless smoke
         shell: pwsh
