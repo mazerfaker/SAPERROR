@@ -2,6 +2,9 @@ extends Control
 const Board = preload("res://scripts/board/state.gd")
 const Rules = preload("res://scripts/board/rules.gd")
 const Tools = preload("res://scripts/board/onboarding_tools.gd")
+const Economy = preload("res://scripts/run/economy.gd")
+var practice := Economy.new()
+var practice_label: Label
 var prior: Dictionary = {}
 var tool_button: Button
 signal completed(step: int)
@@ -16,7 +19,7 @@ var tiles: Array[Button] = []
 var hint: Label
 var next_button: Button
 func _ready() -> void:
-	step = clampi(start_at,0,6)
+	step = clampi(start_at,0,7)
 	_build()
 func _label(value: String, p: Vector2, extent: Vector2, font_size: int) -> Label:
 	var l := Label.new()
@@ -66,12 +69,17 @@ func _build() -> void:
 	if step == 4:
 		board.reveal(4)
 		board.flag(0)
-	_label(tr("VIS_TUTORIAL")+" %d / 7" % (step+1),Vector2(0,0),Vector2(1266,60),40)
+	_label(tr("VIS_TUTORIAL")+" %d / 8" % (step+1),Vector2(0,0),Vector2(1266,60),40)
 	_label(tr("TUT_TITLE_"+str(step)),Vector2(0,76),Vector2(1266,65),35)
 	hint = _label("",Vector2(550,158),Vector2(700,360),33)
 	tool_button = null
 	if step>=5:
-		tool_button = _button(tr("VIS_REWIND") if step==5 else "CLASSIC",Vector2(550,530),Vector2(700,64),_lesson_tool)
+		tool_button = _button(tr("VIS_REWIND") if step==5 else ("CLASSIC" if step==6 else tr("MOD_CAPACITOR")+" / 28 CR"),Vector2(550,530),Vector2(700,64),_lesson_tool)
+	if step==7:
+		practice.reset(1)
+		practice.reward(1,54,0)
+		practice.begin_sector(2)
+		practice_label = _label("",Vector2(45,185),Vector2(470,300),32)
 	var grid := GridContainer.new()
 	grid.columns = 4
 	grid.position = Vector2(45,158)
@@ -79,7 +87,7 @@ func _build() -> void:
 	grid.add_theme_constant_override("v_separation",5)
 	body.add_child(grid)
 	tiles.clear()
-	for i in range(16):
+	for i in range(0 if step==7 else 16):
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(104,104)
 		b.add_theme_font_size_override("font_size",46)
@@ -141,7 +149,7 @@ func _action(i: int, kind: String) -> void:
 	if solved: completed.emit(step)
 	_refresh()
 func _next() -> void:
-	if step >= 6:
+	if step >= 7:
 		back.emit()
 		return
 	step += 1
@@ -153,6 +161,8 @@ func _refresh() -> void:
 	if is_instance_valid(tool_button):
 		tool_button.disabled = solved or (step==5 and phase==0)
 		if step==6: tool_button.text = Tools.NAMES[board.rule]
+		if step==7:
+			practice_label.text = "CR %d\n%s %d/%d\n%s %d/4" % [practice.credits,tr("VIS_STOCK"),practice.stock,practice.capacity(),tr("VIS_MODULES"),practice.owned.size()]
 	for i in range(tiles.size()):
 		var state: int = board.cells[i]
 		var b: Button = tiles[i]
@@ -174,5 +184,7 @@ func _lesson_tool() -> void:
 		board.rule = (board.rule+1)%3
 		phase += 1
 		if phase>=2: solved = board.clue(5,Rules.Rule.DIAGONAL)==1
+	elif step==7:
+		solved = practice.buy("CAPACITOR") and practice.capacity()==6 and practice.credits==47
 	if solved: completed.emit(step)
 	_refresh()

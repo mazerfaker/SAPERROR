@@ -322,3 +322,45 @@ msgstr "Одна додаткова безкоштовна підказка за
 
 msgid "DESC_CHRONOMANCER"
 msgstr "Один додатковий відкат за сектор."
+
+msgid "VIS_PROTECTED"
+msgstr "Захист поглинув пошкодження"
+
+msgid "VIS_SHIELD"
+msgstr "Екран"
+
+msgid "VIS_ARMED"
+msgstr "Екран активний"
+
+msgid "VIS_REPAIR"
+msgstr "Ремонт +1 HP"
+
+msgid "VIS_REPLACE_MODULE"
+msgstr "Заміна модуля"
+
+msgid "VIS_REPLACE_WARN"
+msgstr "Обери модуль для незворотної заміни. Старий модуль буде втрачено без компенсації."
+
+msgid "MOD_SECOND_LIFE"
+msgstr "Друге життя"
+
+msgid "MOD_FUSE"
+msgstr "Запобіжник"
+
+msgid "MOD_AUDITOR"
+msgstr "Аудитор"
+
+msgid "DESC_SECOND_LIFE"
+msgstr "Поглинає перший підрив у секторі."
+
+msgid "DESC_FUSE"
+msgstr "Після 12 чистих відкриттів поглинає один підрив."
+
+msgid "DESC_AUDITOR"
+msgstr "+6 CR за 15 чистих відкриттів, до двох разів за сектор."
+
+msgid "TUT_TITLE_7"
+msgstr "Магазин та модулі"
+
+msgid "TUT_HINT_7_0"
+msgstr "Навчальний магазин: придбай Конденсатор за 28 CR. Перевір місткість сканера та баланс. Реальний прогрес не зміниться."

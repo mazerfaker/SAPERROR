@@ -13,9 +13,9 @@ static func load_config(path: String = PATH) -> ConfigFile:
 static func write_config(cfg: ConfigFile, path: String = PATH) -> Error:
 	cfg.set_value("meta","version",VERSION)
 	return cfg.save(path)
-static func snapshot(board: Board, profile: int, seed_value: int, first: int) -> Dictionary:
+static func snapshot(board: Board, profile: int, seed_value: int, first: int, start_hp: int = -1, protected_hits: int = 0) -> Dictionary:
 	if board == null or board.finished(): return {}
-	return {"profile":profile,"seed":seed_value,"first":first,"mask":board._mask.duplicate(),"cells":board.cells.duplicate(),"hp":board.hp,"rule":board.rule}
+	return {"profile":profile,"seed":seed_value,"first":first,"mask":board._mask.duplicate(),"cells":board.cells.duplicate(),"hp":board.hp,"rule":board.rule,"start_hp":Profiles.HP[profile] if start_hp<0 else start_hp,"protected_hits":protected_hits}
 static func restore(data: Dictionary) -> Dictionary:
 	for key in ["profile","seed","first","mask","cells","hp"]:
 		if not data.has(key): return {}
@@ -32,6 +32,9 @@ static func restore(data: Dictionary) -> Dictionary:
 	var hp: int = data["hp"]
 	if mask.size()!=w*w or cells.size()!=w*w or first<0 or first>=w*w: return {}
 	if hp<=0 or hp>Profiles.HP[profile]: return {}
+	var start_hp: Variant = data.get("start_hp",Profiles.HP[profile])
+	var protected_hits: Variant = data.get("protected_hits",0)
+	if typeof(start_hp)!=TYPE_INT or typeof(protected_hits)!=TYPE_INT or start_hp<1 or start_hp>Profiles.HP[profile] or protected_hits<0: return {}
 	var mines: int = 0
 	var opened: int = 0
 	var hits: int = 0
@@ -44,7 +47,7 @@ static func restore(data: Dictionary) -> Dictionary:
 		elif cells[i] == Board.Cell.NEUTRALIZED:
 			if mask[i]!=1: return {}
 			hits += 1
-	if mines!=Profiles.MINES[profile] or hp!=Profiles.HP[profile]-hits or cells[first]!=Board.Cell.OPEN: return {}
+	if mines!=Profiles.MINES[profile] or protected_hits>hits or hp!=start_hp-hits+protected_hits or cells[first]!=Board.Cell.OPEN: return {}
 	for i in Rules.neighbors(w,w,first):
 		if mask[i]!=0: return {}
 	var rules: Array[int] = [Rules.Rule.CLASSIC]
@@ -56,4 +59,4 @@ static func restore(data: Dictionary) -> Dictionary:
 	board.opened = opened
 	board.hits = hits
 	if board.finished(): return {}
-	return {"board":board,"profile":profile,"seed":data["seed"],"first":first,"certificate":proof}
+	return {"board":board,"profile":profile,"seed":data["seed"],"first":first,"certificate":proof,"start_hp":start_hp,"protected_hits":protected_hits}

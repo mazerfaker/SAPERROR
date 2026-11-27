@@ -1,7 +1,7 @@
 extends RefCounted
 # Deterministic, bounded run economy. No random state, no access to hidden board data.
-const MODULES := ["XRAY","CHAIN","CAPACITOR","ASSISTANT","CHRONOMANCER"]
-const PRICES := [32,36,28,30,34]
+const MODULES := ["XRAY","CHAIN","CAPACITOR","ASSISTANT","CHRONOMANCER","SECOND_LIFE","FUSE","AUDITOR"]
+const PRICES := [32,36,28,30,34,40,35,34]
 const MAX_MODULES := 4
 const MAX_CREDITS := 1000000
 var credits: int = 30
@@ -13,12 +13,19 @@ var safe_count: int = 0
 var rerolls: int = 0
 var offer_sector: int = 1
 var rewarded_sector: int = 0
+var shield_stock: int = 0
+var shield_armed: bool = false
+var second_used: bool = false
+var fuse_used: bool = false
+var clean_streak: int = 0
+var auditor_awards: int = 0
 func capacity() -> int:
 	return 4+(2 if owned.has("CAPACITOR") else 0)
 func reset(profile: int) -> void:
 	credits = 30
 	stock = 2 if profile==1 else 0
 	owned.clear()
+	shield_stock = 0
 	rewarded_sector = 0
 	begin_sector(1)
 func begin_sector(sector: int) -> void:
@@ -27,6 +34,11 @@ func begin_sector(sector: int) -> void:
 	safe_count = 0
 	xray_awards = 0
 	chain_awards = 0
+	shield_armed = false
+	second_used = false
+	fuse_used = false
+	clean_streak = 0
+	auditor_awards = 0
 func add_stock(n: int) -> void:
 	stock = mini(capacity(),stock+maxi(0,n))
 func reward(sector: int, opened: int, hits: int) -> int:
@@ -36,8 +48,17 @@ func reward(sector: int, opened: int, hits: int) -> int:
 	rewarded_sector = sector
 	return amount
 func observe(opened: int, clean: bool) -> void:
-	if opened<=0 or not clean: return
+	if not clean:
+		clean_streak = 0
+		return
+	if opened<=0: return
 	safe_count += opened
+	clean_streak += opened
+	if owned.has("AUDITOR"):
+		while clean_streak>=15 and auditor_awards<2:
+			clean_streak -= 15
+			auditor_awards += 1
+			credits = mini(MAX_CREDITS,credits+6)
 	if owned.has("XRAY"):
 		var target: int = mini(2,safe_count/10)
 		add_stock(maxi(0,target-xray_awards))
@@ -47,7 +68,7 @@ func observe(opened: int, clean: bool) -> void:
 		add_stock(1)
 func offers() -> Array[String]:
 	var out: Array[String] = []
-	var start: int = posmod(posmod(offer_sector,5)+rerolls,5)
+	var start: int = posmod(posmod(offer_sector,MODULES.size())+rerolls,MODULES.size())
 	for i in range(MODULES.size()):
 		var id: String = MODULES[(start+i)%MODULES.size()]
 		if not owned.has(id): out.append(id)
@@ -70,17 +91,24 @@ func buy_charge() -> bool:
 func reroll_price() -> int:
 	return 8+4*rerolls
 func reroll() -> bool:
-	if rerolls>=100 or credits<reroll_price() or owned.size()>=MAX_MODULES: return false
+	if rerolls>=100 or credits<reroll_price(): return false
 	credits -= reroll_price()
 	rerolls += 1
 	return true
 func move_state() -> Dictionary:
-	return {"stock":stock,"safe":safe_count,"xray":xray_awards,"chain":chain_awards}
+	return {"stock":stock,"safe":safe_count,"xray":xray_awards,"chain":chain_awards,"credits":credits,"shield_stock":shield_stock,"armed":shield_armed,"second":second_used,"fuse":fuse_used,"streak":clean_streak,"auditor":auditor_awards}
 func restore_move(data: Dictionary) -> void:
 	stock = clampi(int(data.get("stock",stock)),0,capacity())
 	safe_count = clampi(int(data.get("safe",safe_count)),0,10000)
 	xray_awards = clampi(int(data.get("xray",xray_awards)),0,2)
 	chain_awards = clampi(int(data.get("chain",chain_awards)),0,2)
+	credits = clampi(int(data.get("credits",credits)),0,MAX_CREDITS)
+	shield_stock = clampi(int(data.get("shield_stock",shield_stock)),0,1)
+	shield_armed = bool(data.get("armed",false))
+	second_used = bool(data.get("second",false))
+	fuse_used = bool(data.get("fuse",false))
+	clean_streak = clampi(int(data.get("streak",0)),0,10000)
+	auditor_awards = clampi(int(data.get("auditor",0)),0,2)
 func snapshot() -> Dictionary:
 	var data := move_state()
 	data.merge({"credits":credits,"owned":owned.duplicate(),"sector":offer_sector,"rewarded":rewarded_sector,"rerolls":rerolls})
@@ -99,3 +127,39 @@ func restore(data: Dictionary, sector: int, pending: bool) -> void:
 	if int(data.get("sector",0))==sector:
 		rerolls = clampi(int(data.get("rerolls",0)),0,100)
 		restore_move(data)
+
+func repair(hp: int, maximum: int) -> int:
+	if hp<1 or hp>=maximum or credits<30: return hp
+	credits -= 30
+	return hp+1
+func buy_shield() -> bool:
+	if credits<18 or shield_stock>=1 or shield_armed: return false
+	credits -= 18
+	shield_stock = 1
+	return true
+func arm_shield() -> bool:
+	if shield_stock<=0 or shield_armed: return false
+	shield_stock -= 1
+	shield_armed = true
+	return true
+func can_protect() -> bool:
+	return shield_armed or (owned.has("SECOND_LIFE") and not second_used) or (owned.has("FUSE") and not fuse_used and safe_count>=12)
+func consume_protection() -> String:
+	if shield_armed:
+		shield_armed = false
+		return "SHIELD"
+	if owned.has("SECOND_LIFE") and not second_used:
+		second_used = true
+		return "SECOND_LIFE"
+	if owned.has("FUSE") and not fuse_used and safe_count>=12:
+		fuse_used = true
+		return "FUSE"
+	return ""
+func replace_module(old_id: String, new_id: String) -> bool:
+	if owned.size()!=MAX_MODULES or not owned.has(old_id) or not offers().has(new_id) or credits<price(new_id): return false
+	var index: int = owned.find(old_id)
+	credits -= price(new_id)
+	owned[index] = new_id
+	stock = mini(stock,capacity())
+	if new_id=="CAPACITOR": add_stock(1)
+	return true

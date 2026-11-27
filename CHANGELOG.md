@@ -1,4 +1,8 @@
 # Changelog
+## 0.4.0-alpha.2 — survival and upgrades candidate
+- Carry HP across sectors, 30 CR repair, one purchased/armed shield (18 CR provisional), Second Life, Fuse and Auditor. Protection uses the existing board reveal and chord topology; protected hits still count as hits for clean reward. Sector start HP and protected hit count validated in saves, with legacy defaults.
+- Confirm module replacement (no refund); rollback move rewards and protection state with nonfatal rewind. Eight of nine guided lessons, isolated practice shop. Old alpha.1 pending runs without persisted HP migrate to full profile HP. Prices and limits provisional. Remaining seven modules, anomaly tools, analyzer, terminal rewind and campaign deferred. Core board/solver, icon, CRT and original PNG unchanged.
+
 ## 0.4.0-alpha.1 — Run & Builds foundation
 - Persistent credits, bounded scanner inventory, once-per-sector reward, deterministic intersector shop, five passive modules and charge purchases. Standard starts with 30 CR and 2 stocked scanner charges in addition to the existing free hint allowance. Other profiles start with 30 CR and no stock (provisional balance).
 - Module effects and earned scanner charges are restored on a nonfatal move rewind; spent hints invalidate rewind to avoid refunds. K-30 uses the same reward path and auto-advances; shop remains available before the next first click. No per-move module rewards from K-30.

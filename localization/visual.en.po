@@ -322,3 +322,45 @@ msgstr "One additional free hint per sector."
 
 msgid "DESC_CHRONOMANCER"
 msgstr "One additional rewind per sector."
+
+msgid "VIS_PROTECTED"
+msgstr "Protection absorbed damage"
+
+msgid "VIS_SHIELD"
+msgstr "Shield"
+
+msgid "VIS_ARMED"
+msgstr "Shield armed"
+
+msgid "VIS_REPAIR"
+msgstr "Repair +1 HP"
+
+msgid "VIS_REPLACE_MODULE"
+msgstr "Replace module"
+
+msgid "VIS_REPLACE_WARN"
+msgstr "Choose a module to replace permanently. The old module is lost without refund."
+
+msgid "MOD_SECOND_LIFE"
+msgstr "Second Life"
+
+msgid "MOD_FUSE"
+msgstr "Fuse"
+
+msgid "MOD_AUDITOR"
+msgstr "Auditor"
+
+msgid "DESC_SECOND_LIFE"
+msgstr "Absorbs the first mine hit per sector."
+
+msgid "DESC_FUSE"
+msgstr "Absorbs one hit after 12 clean reveals."
+
+msgid "DESC_AUDITOR"
+msgstr "+6 CR per 15 clean reveals, up to twice per sector."
+
+msgid "TUT_TITLE_7"
+msgstr "Shop and modules"
+
+msgid "TUT_HINT_7_0"
+msgstr "Training store: buy Capacitor for 28 CR. Check scanner capacity and balance. Real progress is unchanged."

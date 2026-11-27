@@ -28,6 +28,12 @@ var outcome_banner: Control
 var audio: TerminalAudio
 var board: Board
 var economy := Economy.new()
+var run_hp: int = 3
+var sector_start_hp: int = 3
+var protected_hits: int = 0
+var protected_this_move: int = 0
+var shield_button: Button
+var replace_id: String = ""
 var credit_label: Label
 var shop_notice: String = ""
 var last_reward: int = 0
@@ -177,7 +183,7 @@ func _show(next: String) -> void:
 	marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.4.0-a1",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.4.0-a2",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -190,6 +196,7 @@ func _show(next: String) -> void:
 	elif screen == "profiles": _profiles()
 	elif screen == "tutorial": _tutorial()
 	elif screen == "shop": _shop()
+	elif screen == "replace": _replacement()
 	else: _menu()
 func _menu() -> void:
 	_label(tr("VIS_BOOT"),Rect2(124,190,1170,80),page,36)
@@ -202,7 +209,7 @@ func _menu() -> void:
 	_button(tr("VIS_SETTINGS"),Rect2(124,657,640,65),page,func(): _show("settings"))
 	_button(tr("VIS_EXIT"),Rect2(124,735,640,65),page,func(): _save_session(); shutdown_requested.emit())
 	_label(tr("VIS_STATS")+"\n"+tr("VIS_RUNS")+" "+str(sessions)+"\n"+tr("VIS_WINS")+" "+str(wins)+"\n"+tr("VIS_LOSSES")+" "+str(losses),Rect2(820,345,500,285),page,32)
-	_label(tr("VIS_LESSONS")+" %d / 7" % tutorial_done,Rect2(820,650,500,62),page,29,AMBER)
+	_label(tr("VIS_LESSONS")+" %d / 8" % tutorial_done,Rect2(820,650,500,62),page,29,AMBER)
 	if save_failed: _label(tr("VIS_SAVE_ERROR"),Rect2(820,714,500,80),page,27,RED)
 	_button("EN" if is_uk else "UA",Rect2(1100,810,210,60),page,_language)
 func _profiles() -> void:
@@ -220,6 +227,9 @@ func _start_profile(next_profile: int) -> void:
 	sector_ready = true
 	profile = next_profile
 	economy.reset(profile)
+	run_hp = Profiles.HP[profile]
+	sector_start_hp = run_hp
+	protected_hits = 0
 	last_reward = 0
 	_reset_tools()
 	board = null
@@ -239,6 +249,8 @@ func _advance_sector() -> void:
 	sector_ready = true
 	sector_number += 1
 	economy.begin_sector(sector_number)
+	sector_start_hp = run_hp
+	protected_hits = 0
 	_reset_tools()
 	active_seed = 0 if active_seed == 9223372036854775807 else active_seed+1
 	seed_value = str(active_seed)
@@ -257,7 +269,7 @@ func _tutorial() -> void:
 	tutorial.size = Vector2(1266,710)
 	tutorial.position = Vector2(80,180)
 	tutorial.theme = theme
-	tutorial.start_at = mini(tutorial_done,6)
+	tutorial.start_at = mini(tutorial_done,7)
 	tutorial.completed.connect(func(step: int):
 		tutorial_done = maxi(tutorial_done,step+1)
 		_save_session())
@@ -272,7 +284,7 @@ func _load_session() -> void:
 	flicker = bool(cfg.get_value("settings","flicker_v2",true))
 	glitches = bool(cfg.get_value("settings","glitches",true))
 	global_amount = clampf(float(cfg.get_value("settings","grade",0.0)),0.0,1.0)
-	tutorial_done = clampi(int(cfg.get_value("stats","tutorial",0)),0,7)
+	tutorial_done = clampi(int(cfg.get_value("stats","tutorial",0)),0,8)
 	sessions = maxi(0,int(cfg.get_value("stats","sessions",0)))
 	wins = maxi(0,int(cfg.get_value("stats","wins",0)))
 	losses = maxi(0,int(cfg.get_value("stats","losses",0)))
@@ -283,6 +295,9 @@ func _load_session() -> void:
 	active_seed = int(cfg.get_value("run","seed",1701))
 	seed_value = str(active_seed)
 	economy.reset(profile)
+	run_hp = clampi(int(cfg.get_value("run","hp",Profiles.HP[profile])),1,Profiles.HP[profile])
+	sector_start_hp = run_hp
+	protected_hits = 0
 	var econ: Variant = cfg.get_value("run","economy",{})
 	if econ is Dictionary and not econ.is_empty(): economy.restore(econ,sector_number,pending_sector)
 	else:
@@ -304,6 +319,9 @@ func _load_session() -> void:
 			first_cell = resumed["first"]
 			certificate = resumed["certificate"]
 			last_hits = board.hits
+			run_hp = board.hp
+			sector_start_hp = resumed["start_hp"]
+			protected_hits = resumed["protected_hits"]
 			message_key = "CORE_ACTIVE"
 			hints_left = clampi(int(cfg.get_value("run","hints",_hint_limit())),0,_hint_limit())
 			rewinds_left = clampi(int(cfg.get_value("run","rewinds",_rewind_limit())),0,_rewind_limit())
@@ -335,7 +353,8 @@ func _save_session() -> void:
 	cfg.set_value("run","sector_ready",sector_ready)
 	cfg.set_value("run","profile",profile)
 	cfg.set_value("run","seed",active_seed)
-	cfg.set_value("run","data",Store.snapshot(board,profile,active_seed,first_cell))
+	cfg.set_value("run","hp",run_hp)
+	cfg.set_value("run","data",_snapshot_board())
 	cfg.set_value("run","economy",economy.snapshot())
 	cfg.set_value("run","hints",hints_left)
 	cfg.set_value("run","rewinds",rewinds_left)
@@ -471,7 +490,8 @@ func _game() -> void:
 	_label(tr("VIS_RULE_HOVER"),Rect2(16,132,252,82),right,24,DIM)
 	hint_button = _button("",Rect2(16,232,252,62),right,_request_hint,25)
 	rewind_button = _button("",Rect2(16,310,252,62),right,_rewind,25)
-	_label(tr("VIS_CONTROL_SHORT"),Rect2(16,390,252,198),right,24)
+	shield_button = _button("",Rect2(16,388,252,62),right,_arm_shield,24)
+	_label(tr("VIS_CONTROL_SHORT"),Rect2(16,463,252,132),right,20)
 	grid = GridContainer.new()
 	var w: int = Profiles.SIZES[profile] if board == null else board.width
 	var h: int = Profiles.SIZES[profile] if board == null else board.height
@@ -556,13 +576,16 @@ func _reveal(i: int) -> void:
 		active_seed = seed_input.text.to_int()
 		first_cell = i
 		seed_input.editable = false
-		board = Board.new(Profiles.SIZES[profile],Profiles.SIZES[profile],generated["mask"],Profiles.HP[profile])
+		sector_start_hp = clampi(run_hp,1,Profiles.HP[profile])
+		protected_hits = 0
+		board = Board.new(Profiles.SIZES[profile],Profiles.SIZES[profile],generated["mask"],sector_start_hp)
 		sessions += 1
 		sector_ready = false
 	if board.finished() or board.cells[i] != Board.Cell.CLOSED: return
 	var saved: Dictionary = _before_move()
 	var before: int = board.opened
-	board.reveal(i)
+	protected_this_move = 0
+	_guarded_reveal(i)
 	economy.observe(board.opened-before,board.hits==last_hits)
 	_remember_move(saved)
 	_after_action("flood" if board.opened-before > 1 else ("reveal" if board.opened > before else ""))
@@ -595,7 +618,8 @@ func _chord_action(i: int) -> void:
 	var saved: Dictionary = _before_move()
 	var before: int = board.opened
 	var hits: int = board.hits
-	board.chord(i)
+	protected_this_move = 0
+	_guarded_chord(i)
 	if board.opened != before or board.hits != hits:
 		economy.observe(board.opened-before,board.hits==hits)
 		_remember_move(saved)
@@ -606,10 +630,12 @@ func _after_action(sound: String = "") -> void:
 	if board.finished(): rewind_data.clear()
 	message_key = "CORE_ACTIVE"
 	if board.hits > last_hits:
-		message_key = "CORE_HIT"
+		message_key = "VIS_PROTECTED" if protected_this_move==board.hits-last_hits else "CORE_HIT"
 		fault_triggered.emit()
 		sound = "fault"
 	last_hits = board.hits
+	run_hp = board.hp
+	protected_this_move = 0
 	if board.won():
 		message_key = "CORE_WIN"
 		sound = "win"
@@ -633,7 +659,7 @@ func _refresh() -> void:
 	if is_instance_valid(next_button): next_button.text = tr("VIS_SHOP" if pending_sector or _shop_available() else "CORE_NEW")
 	if is_instance_valid(credit_label): credit_label.text = "CR %d" % economy.credits
 	var max_hp: int = Profiles.HP[profile]
-	var hp: int = max_hp if board == null else board.hp
+	var hp: int = run_hp if board == null else board.hp
 	integrity.text = tr("CORE_HP")+"\n%d / %d" % [hp,max_hp]
 	integrity.add_theme_color_override("font_color",RED if hp < 2 else (AMBER if hp == 2 else GREEN))
 	var opened: int = 0 if board == null else board.opened
@@ -760,7 +786,7 @@ func _reset_tools() -> void:
 func _before_move() -> Dictionary:
 	if rewinds_left<=0 or board==null or first_cell<0 or first_cell>=board.cells.size(): return {}
 	if board.cells[first_cell]!=Board.Cell.OPEN: return {}
-	var state: Dictionary = Store.snapshot(board,profile,active_seed,first_cell)
+	var state: Dictionary = _snapshot_board()
 	if not state.is_empty(): state["economy_move"] = economy.move_state()
 	return state
 func _remember_move(previous: Dictionary) -> void:
@@ -770,6 +796,9 @@ func _rewind() -> void:
 	var restored: Dictionary = Store.restore(rewind_data)
 	if restored.is_empty(): return
 	board = restored["board"]
+	run_hp = board.hp
+	sector_start_hp = restored["start_hp"]
+	protected_hits = restored["protected_hits"]
 	if rewind_data.has("economy_move") and rewind_data["economy_move"] is Dictionary: economy.restore_move(rewind_data["economy_move"])
 	last_hits = board.hits
 	rewinds_left -= 1
@@ -823,6 +852,9 @@ func _refresh_tools() -> void:
 	if is_instance_valid(hint_button):
 		hint_button.text = tr("VIS_HINT")+" [%d]" % (hints_left+economy.stock)
 		hint_button.disabled = not active or (hints_left<=0 and economy.stock<=0) or hint_cell>=0
+	if is_instance_valid(shield_button):
+		shield_button.text = tr("VIS_ARMED") if economy.shield_armed else tr("VIS_SHIELD")+" [%d]" % economy.shield_stock
+		shield_button.disabled = not active or economy.shield_stock<=0 or economy.shield_armed
 	if is_instance_valid(rewind_button):
 		rewind_button.text = tr("VIS_REWIND")+" [%d]" % rewinds_left
 		rewind_button.disabled = not active or rewinds_left<=0 or rewind_data.is_empty()
@@ -851,18 +883,22 @@ func _shop() -> void:
 		_show("game")
 		return
 	_label(tr("VIS_SHOP")+" // %02d" % sector_number,Rect2(124,185,1160,65),page,40)
-	_label("CR %d   |   %s %d/%d   |   %s %d/4" % [economy.credits,tr("VIS_STOCK"),economy.stock,economy.capacity(),tr("VIS_MODULES"),economy.owned.size()],Rect2(124,256,1170,60),page,30,AMBER)
+	_label("CR %d  |  HP %d/%d  |  %s %d/%d  |  %s %d/4" % [economy.credits,run_hp,Profiles.HP[profile],tr("VIS_STOCK"),economy.stock,economy.capacity(),tr("VIS_MODULES"),economy.owned.size()],Rect2(124,256,1170,60),page,27,AMBER)
 	var offers: Array[String] = economy.offers()
 	for i in range(offers.size()):
 		var id: String = offers[i]
 		var y: int = 340+i*110
 		var buy := _button(tr("MOD_"+id)+"  /  "+str(economy.price(id))+" CR",Rect2(124,y,510,86),page,_buy_module.bind(id),26)
-		buy.disabled = economy.owned.size()>=Economy.MAX_MODULES or economy.credits<economy.price(id)
+		buy.disabled = economy.credits<economy.price(id)
 		_label(tr("DESC_"+id),Rect2(654,y,630,100),page,25)
-	var charge := _button(tr("VIS_BUY_CHARGE")+" / 12 CR",Rect2(124,684,540,60),page,_buy_charge,25)
+	var charge := _button(tr("VIS_BUY_CHARGE")+" / 12",Rect2(124,684,275,60),page,_buy_charge,21)
 	charge.disabled = economy.stock>=economy.capacity() or economy.credits<12
-	var reroll := _button(tr("VIS_REROLL")+" / %d CR" % economy.reroll_price(),Rect2(684,684,600,60),page,_reroll_shop,25)
-	reroll.disabled = economy.credits<economy.reroll_price() or economy.owned.size()>=Economy.MAX_MODULES or economy.rerolls>=100
+	var repair := _button(tr("VIS_REPAIR")+" / 30",Rect2(419,684,275,60),page,_repair,21)
+	repair.disabled = run_hp>=Profiles.HP[profile] or economy.credits<30
+	var shield := _button(tr("VIS_SHIELD")+" / 18",Rect2(714,684,275,60),page,_buy_shield,21)
+	shield.disabled = economy.shield_stock>=1 or economy.credits<18
+	var reroll := _button(tr("VIS_REROLL")+" / %d" % economy.reroll_price(),Rect2(1009,684,275,60),page,_reroll_shop,21)
+	reroll.disabled = economy.credits<economy.reroll_price() or economy.rerolls>=100
 	var installed := PackedStringArray()
 	for id in economy.owned: installed.append(tr("MOD_"+id))
 	_label(tr("VIS_MODULES")+": "+(", ".join(installed) if not installed.is_empty() else "—"),Rect2(124,754,1160,68),page,24,DIM)
@@ -870,6 +906,10 @@ func _shop() -> void:
 	_button(tr("VIS_BACK"),Rect2(714,836,570,64),page,func(): _show("menu"),28)
 func _buy_module(id: String) -> void:
 	if not _shop_available() or screen!="shop": return
+	if economy.owned.size()>=Economy.MAX_MODULES and economy.offers().has(id) and economy.credits>=economy.price(id):
+		replace_id = id
+		_show("replace")
+		return
 	if economy.buy(id):
 		hints_left = _hint_limit()
 		rewinds_left = _rewind_limit()
@@ -881,5 +921,68 @@ func _buy_charge() -> void:
 		_show("shop")
 func _reroll_shop() -> void:
 	if _shop_available() and screen=="shop" and economy.reroll():
+		_save_session()
+		_show("shop")
+
+func _snapshot_board() -> Dictionary:
+	return Store.snapshot(board,profile,active_seed,first_cell,sector_start_hp,protected_hits)
+func _guarded_reveal(i: int) -> void:
+	if board.finished() or i<0 or i>=board.cells.size() or board.cells[i]!=Board.Cell.CLOSED: return
+	if not economy.can_protect():
+		board.reveal(i)
+		return
+	# Temporarily reserve one integrity point; only consume protection on a real hit.
+	var hp: int = board.hp
+	var hits: int = board.hits
+	board.hp += 1
+	board.reveal(i)
+	if board.hits>hits:
+		economy.consume_protection()
+		protected_hits += 1
+		protected_this_move += 1
+	else:
+		board.hp = hp
+func _guarded_chord(i: int) -> void:
+	if board.finished() or board.cells[i]!=Board.Cell.OPEN: return
+	var neighbors: Array[int] = Rules.neighbors(board.width,board.height,i,board.rule)
+	var count: int = 0
+	for n in neighbors:
+		if board.cells[n] in [Board.Cell.FLAG,Board.Cell.NEUTRALIZED]: count += 1
+	if count!=Rules.mine_count(board.clue(i,board.rule),neighbors.size(),board.rule): return
+	for n in neighbors:
+		if board.finished(): break
+		_guarded_reveal(n)
+func _arm_shield() -> void:
+	if protocol_active or board==null or board.finished() or not economy.arm_shield(): return
+	rewind_data.clear()
+	message_key = "VIS_ARMED"
+	_refresh()
+	_save_session()
+func _repair() -> void:
+	if not _shop_available() or screen!="shop": return
+	run_hp = economy.repair(run_hp,Profiles.HP[profile])
+	sector_start_hp = run_hp
+	_save_session()
+	_show("shop")
+func _buy_shield() -> void:
+	if _shop_available() and screen=="shop" and economy.buy_shield():
+		_save_session()
+		_show("shop")
+func _replacement() -> void:
+	if not _shop_available() or not economy.offers().has(replace_id):
+		_show("shop")
+		return
+	_label(tr("VIS_REPLACE_MODULE"),Rect2(124,194,1170,65),page,38,AMBER)
+	_label(tr("VIS_REPLACE_WARN")+"\n"+tr("MOD_"+replace_id)+" / %d CR" % economy.price(replace_id),Rect2(124,270,1170,110),page,28)
+	for i in range(economy.owned.size()):
+		var id: String = economy.owned[i]
+		_button(tr("MOD_"+id)+"  →  "+tr("MOD_"+replace_id),Rect2(124,400+i*90,1170,70),page,_confirm_replace.bind(id),27)
+	_button(tr("VIS_BACK"),Rect2(124,820,570,65),page,func(): _show("shop"),28)
+func _confirm_replace(id: String) -> void:
+	if not _shop_available() or screen!="replace": return
+	if economy.replace_module(id,replace_id):
+		hints_left = _hint_limit()
+		rewinds_left = _rewind_limit()
+		replace_id = ""
 		_save_session()
 		_show("shop")
