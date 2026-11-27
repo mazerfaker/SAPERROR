@@ -1,4 +1,7 @@
 # Changelog
+## 0.7.0-alpha.2 — Classic and Free Run (CI deferred)
+Independent Classic 6/8/10 square fields, one HP, optional timer, seed and retry; no anomalies, economy or modules. Finite Free Run ten sectors unlocked after any ending. Preserve legacy Endless and campaign save. Classic session is in-memory only. Tests deferred.
+
 ## 0.7.0-alpha.1 — extended anomaly lab (CI deferred)
 MIMIC cosmetic closed-cell distortion, NULL voluntary scanner restriction, INSTABILITY announced third-action CROSS shift and free classic fallback, MAGNET explicit one-shot closed-cell exchange with both states gated by classic certification. Four authored lab trials, no campaign topology change. New tests authored; CI deferred.
 

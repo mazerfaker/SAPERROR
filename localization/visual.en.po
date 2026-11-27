@@ -700,3 +700,36 @@ msgstr "Exchange complete. Topology fixed."
 
 msgid "CH_MAGNET_APPLY"
 msgstr "APPLY EXCHANGE"
+
+msgid "MODE_DESC"
+msgstr "Campaign and run modes replace the current run. Free Run unlocks after any ending. Classic is independent."
+
+msgid "MODE_FREE_TEN"
+msgstr "FREE RUN // 10 SECTORS"
+
+msgid "MODE_ENDLESS"
+msgstr "ENDLESS // UNBOUNDED"
+
+msgid "MODE_FREE_COMPLETE"
+msgstr "FREE RUN COMPLETE"
+
+msgid "MODE_FREE_RESULT"
+msgstr "All ten sectors recovered."
+
+msgid "CLASSIC_TITLE"
+msgstr "MINESWEEPER"
+
+msgid "CLASSIC_READY"
+msgstr "Reveal the first safe tile. One mine ends the game."
+
+msgid "CLASSIC_MINES"
+msgstr "Flags / mines"
+
+msgid "CLASSIC_TIMER"
+msgstr "Timer"
+
+msgid "CLASSIC_ON"
+msgstr "ON"
+
+msgid "CLASSIC_OFF"
+msgstr "OFF"

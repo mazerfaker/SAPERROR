@@ -17,6 +17,11 @@ const Challenge = preload("res://scripts/board/anomaly_challenge.gd")
 const Campaign = preload("res://scripts/run/campaign.gd")
 var campaign := Campaign.new()
 var campaign_selected: bool = false
+var finite_selected: bool = false
+var finite_run: bool = false
+const Classic = preload("res://scripts/board/classic_game.gd")
+const ClassicUI = preload("res://scripts/ui/classic_ui.gd")
+var classic := Classic.new()
 var act_checkpoint: Dictionary = {}
 var campaign_failed: bool = false
 var ending_gallery: Array[String] = []
@@ -208,7 +213,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.7.0-a1",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.7.0-a2",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -220,6 +225,8 @@ func _show(next: String) -> void:
 	elif screen == "audio": _audio_settings()
 	elif screen == "profiles": _profiles()
 	elif screen == "modes": _modes()
+	elif screen == "classic": _classic()
+	elif screen == "free_complete": _free_complete()
 	elif screen == "campaign_intro": _campaign_intro()
 	elif screen == "campaign_boss": _campaign_boss()
 	elif screen == "campaign_boundary": _campaign_boundary()
@@ -260,12 +267,14 @@ func _profiles() -> void:
 		_label(tr("VIS_REPLACE_RUN"),Rect2(124,265,1170,80),page,29,AMBER)
 	for i in range(4):
 		var label: String = tr("VIS_PROFILE_"+Profiles.IDS[i].to_upper())+"  //  %d×%d  ·  %d  ·  HP %d" % [Profiles.SIZES[i],Profiles.SIZES[i],Profiles.MINES[i],Profiles.HP[i]]
-		_button(label,Rect2(124,350+i*100,1170,74),page,_start_profile.bind(i,campaign_selected),32)
+		_button(label,Rect2(124,350+i*100,1170,74),page,_start_profile.bind(i,campaign_selected,finite_selected),32)
 	_button(tr("VIS_BACK"),Rect2(124,803,350,57),page,func(): _show("menu"))
-func _start_profile(next_profile: int, story: bool = false) -> void:
+func _start_profile(next_profile: int, story: bool = false, finite: bool = false) -> void:
 	if protocol_active: return
 	campaign=Campaign.new()
 	campaign.active=story
+	finite_run=finite and not story
+	finite_selected=false
 	campaign_selected=false
 	act_checkpoint.clear()
 	campaign_failed=false
@@ -295,6 +304,9 @@ func _continue_run() -> void:
 	else: _show("game")
 func _advance_sector() -> void:
 	if protocol_active or not pending_sector: return
+	if finite_run and sector_number>=10:
+		_show("free_complete")
+		return
 	if campaign.active:
 		if campaign.archive_pending(sector_number):
 			_show("campaign_route")
@@ -353,9 +365,11 @@ func _load_session() -> void:
 	losses = maxi(0,int(cfg.get_value("stats","losses",0)))
 	sector_number = maxi(1,int(cfg.get_value("run","sector",1)))
 	campaign=Campaign.new()
+	finite_run=bool(cfg.get_value("run","finite",false)) and sector_number<=10
 	var raw_campaign: Variant = cfg.get_value("run","campaign",{})
 	if raw_campaign is Dictionary and not raw_campaign.is_empty():
 		if not campaign.restore(raw_campaign,sector_number): save_failed=true
+	if campaign.active: finite_run=false
 	var saved_checkpoint: Variant=cfg.get_value("run","act_checkpoint",{})
 	act_checkpoint=saved_checkpoint.duplicate(true) if saved_checkpoint is Dictionary else {}
 	ending_gallery.clear()
@@ -429,6 +443,7 @@ func _save_session() -> void:
 	cfg.set_value("stats","endings",ending_gallery.duplicate())
 	cfg.set_value("run","sector",sector_number)
 	cfg.set_value("run","campaign",campaign.snapshot())
+	cfg.set_value("run","finite",finite_run)
 	cfg.set_value("run","act_checkpoint",act_checkpoint)
 	cfg.set_value("run","campaign_failed",campaign_failed)
 	cfg.set_value("run","pending_sector",pending_sector)
@@ -1284,14 +1299,23 @@ func _challenge() -> void:
 
 func _modes() -> void:
 	_label(tr("CAM_MODE"),Rect2(124,205,1170,65),page,42)
-	_label(tr("CAM_MODE_DESC"),Rect2(124,278,1170,94),page,27,DIM)
-	_button(tr("CAM_CAMPAIGN"),Rect2(124,392,1170,92),page,func():
+	_label(tr("MODE_DESC"),Rect2(124,278,1170,94),page,26,DIM)
+	_button(tr("CAM_CAMPAIGN"),Rect2(124,390,1170,80),page,func():
 		campaign_selected=true
-		_show("profiles"),32)
-	_button(tr("CAM_FREE"),Rect2(124,510,1170,92),page,func():
+		finite_selected=false
+		_show("profiles"),30)
+	var free := _button(tr("MODE_FREE_TEN"),Rect2(124,490,1170,80),page,func():
 		campaign_selected=false
-		_show("profiles"),32)
+		finite_selected=true
+		_show("profiles"),30)
+	free.disabled=ending_gallery.is_empty()
+	_button(tr("MODE_ENDLESS"),Rect2(124,590,1170,80),page,func():
+		campaign_selected=false
+		finite_selected=false
+		_show("profiles"),30)
+	_button("CLASSIC",Rect2(124,690,1170,80),page,func(): _show("classic"),30)
 	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("menu"))
+
 func _campaign_intro() -> void:
 	var act: int=campaign.act_index(sector_number)
 	_label("ACT %d // %s" % [act+1,Campaign.ACT_IDS[act]],Rect2(124,215,1170,80),page,42,AMBER)
@@ -1473,3 +1497,17 @@ func _show_gallery_ending(id: String) -> void:
 	if not ending_gallery.has(id): return
 	gallery_preview=id
 	_show("gallery_preview")
+
+func _classic() -> void:
+	var view:=ClassicUI.new()
+	view.model=classic
+	view.position=Vector2(80,180)
+	view.size=Vector2(1266,710)
+	view.theme=theme
+	view.back.connect(func(): _show("modes"))
+	view.clicked.connect(func(): audio.play_event("key"))
+	page.add_child(view)
+func _free_complete() -> void:
+	_label(tr("MODE_FREE_COMPLETE"),Rect2(124,215,1170,100),page,42,AMBER)
+	_label(tr("MODE_FREE_RESULT")+"\nCR %d / HP %d" % [economy.credits,run_hp],Rect2(124,350,1170,300),page,32)
+	_button(tr("VIS_BACK"),Rect2(124,810,570,60),page,func(): _show("menu"))

@@ -53,3 +53,5 @@ Alpha.7 LIAR authored boss trial, no intermediate CI. Full combined v0.5 Beta ga
 0.6 Beta.1: first combined campaign regression, including all three routes and ending scenes, boss phases, retry and exact ADMIN asset. Human visual/audio acceptance and campaign balancing remain open. Existing background unchanged.
 
 0.7 alpha.1: four remaining GDD anomalies as isolated authored trials (MIMIC, NULL, INSTABILITY, MAGNET). MAGNET refuses start unless both pre/post masks certify and opened states match. No intermediate CI; campaign Beta d259856 preserved.
+
+0.7 alpha.2: Classic and finite Free Run, preserve Endless. Classic uses existing certified profiles and separate transient state. No intermediate CI.
