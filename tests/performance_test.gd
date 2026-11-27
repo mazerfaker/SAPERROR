@@ -5,7 +5,7 @@ const Classic=preload("res://scripts/board/classic_game.gd")
 const ClassicUI=preload("res://scripts/ui/classic_ui.gd")
 const ChallengeUI=preload("res://scripts/ui/anomaly_challenge_ui.gd")
 const StyleBank=preload("res://scripts/ui/style_bank.gd")
-const Panel=preload("res://scripts/ui/performance_panel.gd")
+const PerformanceReadout=preload("res://scripts/ui/performance_panel.gd")
 var checks: int=0
 var failures: int=0
 func check(ok: bool,message: String) -> void:
@@ -65,7 +65,7 @@ func run() -> void:
 		check(env.audio_gain_writes==writes+1,"changed mixer level")
 	else: check(false,"live assets present")
 	ui._show("performance")
-	var panel:=ui.page.find_child("PerformanceReadout",true,false) as Panel
+	var panel:=ui.page.find_child("PerformanceReadout",true,false) as PerformanceReadout
 	check(is_instance_valid(panel),"diagnostic panel")
 	if is_instance_valid(panel):
 		var samples: int=panel.samples

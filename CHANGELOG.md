@@ -1,4 +1,7 @@
 # Changelog
+## 0.8.0-beta.2 — performance QA parser repair
+CI 46037036515 passed every prior test suite (217226 checks), but the new test script could not parse because its preload alias Panel shadowed a native Godot class. Rename the alias to PerformanceReadout, retain all assertions. Rerun full CI before accepting performance changes.
+
 ## 0.8.0-beta.2 — conservative performance candidate
 Bounded shared tile/mark styles for all field UIs; unchanged main-grid styles/text/tooltip not rewritten; Classic timer samples on integer seconds; idle CRT and audio mixer writes suppressed; zero-strength grade hidden and inactive chromatic distortion sampling skipped. Local diagnostics under Help. No changes to assets, raster dimensions, CRT contour/bulge or score samples. Actual FPS/RAM/GPU gains not measured; new regression and native QA pending.
 
