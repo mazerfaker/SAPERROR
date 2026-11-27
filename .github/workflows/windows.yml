@@ -1,55 +1,41 @@
 name: Windows Core + Visual QA
 on:
   push:
-  pull_request:
+    branches: [visual-foundation]
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   core:
-    runs-on: windows-2022
+    if: github.ref == 'refs/heads/visual-foundation'
+    runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 35
-    permissions:
-      contents: write
     env:
       GODOT_VERSION: '4.7.2-stable'
       GAME_VERSION: '0.3.0-alpha.1-crt.1'
     steps:
+      - name: Local Windows prerequisites
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw 'Install Git for Windows and restart the runner so git is on PATH.' }
+          git --version
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Reconstruct and verify approved PNG
-        shell: pwsh
+          persist-credentials: false
+      - name: Verify immutable approved PNG
+        shell: powershell
         run: |
           $asset = 'assets/art/terminal_original.png'
           $expected = '510b492cf7ef1bb83e912858570b2f2755c3dfcd907b3c063eff8a22be291bfd'
-          if (Test-Path '.asset-transfer') {
-            if ('${{ github.ref }}' -ne 'refs/heads/visual-foundation') { throw 'Asset reconstruction is restricted to visual-foundation' }
-            $parts = @(Get-ChildItem '.asset-transfer/part-*.b64' | Sort-Object Name)
-            if ($parts.Count -ne 6) { throw 'Missing asset transfer part' }
-            $encoded = ($parts | ForEach-Object { [IO.File]::ReadAllText($_.FullName) }) -join ''
-            New-Item -ItemType Directory -Force assets/art | Out-Null
-            [IO.File]::WriteAllBytes((Join-Path $PWD $asset),[Convert]::FromBase64String($encoded))
-            if ((Get-FileHash $asset -Algorithm SHA256).Hash.ToLower() -ne $expected) { throw 'Approved PNG hash mismatch' }
-            if ((git hash-object $asset) -ne '4c06dba23194f5178373a34a472377fbf77b2274') { throw 'Git blob hash mismatch' }
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add -- $asset
-            if ($LASTEXITCODE -ne 0) { throw 'Asset staging failed' }
-            git rm -r -- .asset-transfer
-            if ($LASTEXITCODE -ne 0) { throw 'Transfer cleanup failed' }
-            git commit -m 'assets: store byte-identical approved SAPERROR terminal PNG'
-            if ($LASTEXITCODE -ne 0) { throw 'Asset commit failed' }
-            git push origin HEAD:refs/heads/visual-foundation
-            if ($LASTEXITCODE -ne 0) { throw 'Asset commit push failed' }
-          }
           if (!(Test-Path $asset)) { throw 'Approved PNG missing' }
           if ((Get-FileHash $asset -Algorithm SHA256).Hash.ToLower() -ne $expected) { throw 'Approved PNG hash mismatch' }
           New-Item -ItemType Directory -Force build/logs | Out-Null
           "Approved PNG SHA256: $expected" | Tee-Object -FilePath build/logs/asset-integrity.txt
           "Source commit: $(git rev-parse HEAD)" | Tee-Object -FilePath build/logs/source-commit.txt
       - name: Install pinned Godot and templates (release SHA-512 verification)
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
           New-Item -ItemType Directory -Force build/logs, build/windows, build/dist | Out-Null
@@ -59,9 +45,9 @@ jobs:
           $templates = "Godot_v${v}_export_templates.tpz"
           $dir = Join-Path $env:RUNNER_TEMP 'godot-pinned'
           New-Item -ItemType Directory -Force $dir | Out-Null
-          Invoke-WebRequest "$base/SHA512-SUMS.txt" -OutFile "$dir/SHA512-SUMS.txt"
+          Invoke-WebRequest -UseBasicParsing "$base/SHA512-SUMS.txt" -OutFile "$dir/SHA512-SUMS.txt"
           foreach ($file in @($editor,$templates)) {
-            Invoke-WebRequest "$base/$file" -OutFile "$dir/$file"
+            Invoke-WebRequest -UseBasicParsing "$base/$file" -OutFile "$dir/$file"
             $line = Get-Content "$dir/SHA512-SUMS.txt" | Where-Object { $_ -match ('\s\*?' + [regex]::Escape($file) + '$') } | Select-Object -First 1
             if (-not $line) { throw "Missing checksum: $file" }
             $expected = ($line -split '\s+')[0]
@@ -79,7 +65,7 @@ jobs:
           if (-not $exe) { throw 'Console Godot executable missing' }
           "GODOT_EXE=$($exe.FullName)" | Add-Content $env:GITHUB_ENV
       - name: Import and tests
-        shell: pwsh
+        shell: powershell
         run: |
           function Invoke-Godot([string]$log, [string[]]$params) {
             & $env:GODOT_EXE --no-header @params 2>&1 | Tee-Object -FilePath "build/logs/$log"
@@ -101,7 +87,7 @@ jobs:
           if (-not (Select-String -Path build/logs/onboarding-tests.txt -Pattern 'ONBOARDING_QA.*failures=0' -Quiet)) { throw 'Missing onboarding QA marker' }
           Invoke-Godot 'export.txt' @('--headless','--path','.','--export-release','Windows Desktop','build/windows/SAPERROR.exe')
       - name: Verify and headless smoke
-        shell: pwsh
+        shell: powershell
         run: |
           foreach ($f in @('build/windows/SAPERROR.exe','build/windows/SAPERROR.pck')) {
             if (!(Test-Path $f) -or (Get-Item $f).Length -le 0) { throw "Missing $f" }
@@ -113,7 +99,7 @@ jobs:
           if (!(Test-Path build/logs/smoke.txt)) { throw 'Smoke log absent' }
           if (Select-String -Path build/logs/smoke.txt -Pattern 'SCRIPT ERROR|Parse Error|ERROR:' -Quiet) { throw 'Smoke errors' }
       - name: Package portable and source
-        shell: pwsh
+        shell: powershell
         run: |
           Copy-Item README.md build/windows/README.md
           Compress-Archive -Path build/windows/* -DestinationPath "build/dist/SAPERROR_v${env:GAME_VERSION}_Windows_x64.zip"
@@ -142,13 +128,15 @@ jobs:
             } finally { $zip.Dispose() }
             Get-FileHash $path | Out-File -Append build/logs/artifact-hashes.txt
           }
-      - uses: actions/upload-artifact@v4
+      - name: Upload build ZIPs (local copies remain in build/dist)
+        uses: actions/upload-artifact@v4
         if: success()
         with:
           name: SAPERROR-packages
           path: build/dist/*.zip
           if-no-files-found: error
-      - uses: actions/upload-artifact@v4
+      - name: Upload QA logs
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: SAPERROR-QA-logs
