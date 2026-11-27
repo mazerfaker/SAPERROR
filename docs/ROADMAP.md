@@ -41,3 +41,5 @@ Alpha.5 DOUBLE and PARALLEL trial, no intermediate CI.
 Alpha.6 WATCHER authored boss trial, no intermediate CI.
 
 Alpha.7 LIAR authored boss trial, no intermediate CI. Full combined v0.5 Beta gate next.
+
+0.5 Beta.1: first combined Windows regression after [skip ci] alpha.3–alpha.7. The Anomaly Lab contains LOOP, DOUBLE/PARALLEL, WATCHER, LIAR. PHANTOM/PARASITE/PORTAL are in normal run sectors. No claim of full GDD milestone until tests and manual acceptance; persistent campaign encounters, routes/rewards, Archivist and full balance remain open. Scope is Anomaly Beta, not v0.8 product Beta.

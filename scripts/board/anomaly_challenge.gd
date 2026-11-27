@@ -20,7 +20,7 @@ var loop_done: bool = false
 var loop_zone: Array[int] = [0,1,2,3,4,5,6,7,8,9]
 var checkpoint: PackedInt32Array
 var notice: String = ""
-var watcher_groups: Array[Array] = []
+var watcher_groups: Array[PackedInt32Array] = []
 var watcher_log: Dictionary = {}
 var watcher_closed: bool = false
 var journal_open: bool = false
@@ -59,7 +59,10 @@ func start(next_kind: String) -> bool:
 	liar_solved=false
 	valid=false
 	if kind not in KINDS or not add_board(MASK_A): return false
-	if kind=="DOUBLE" and not add_board(MASK_B): return false
+	if kind=="DOUBLE":
+		if not add_board(MASK_B): return false
+		for link in DOUBLE_LINKS:
+			if boards[0].cells[link.x]!=Board.Cell.OPEN or boards[1].cells[link.y]!=Board.Cell.OPEN: return false
 	checkpoint=board().cells.duplicate()
 	if kind=="WATCHER":
 		var open_ids: Array[int] = []
@@ -67,7 +70,7 @@ func start(next_kind: String) -> bool:
 			if board().cells[i]==Board.Cell.OPEN: open_ids.append(i)
 		if open_ids.size()<6: return false
 		for group in range(3):
-			var pair: Array[int] = [open_ids[group*2],open_ids[group*2+1]]
+			var pair := PackedInt32Array([open_ids[group*2],open_ids[group*2+1]])
 			watcher_groups.append(pair)
 			for index in pair: watcher_log[index]=board().clue(index,0)
 	if kind=="LIAR":

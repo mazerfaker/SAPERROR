@@ -107,7 +107,7 @@ func refresh() -> void:
 	if is_instance_valid(layer_button):
 		layer_button.text="PARALLEL: "+("A → B" if model.active_layer==0 else "B → A")
 		layer_button.disabled=model.done()
-	if is_instance_valid(journal_button): journal_button.text=tr("VIS_JOURNAL")+": "+("OPEN" if model.journal_open else "CLOSED")
+	if is_instance_valid(journal_button): journal_button.text=tr("VIS_JOURNAL")+": "+tr("CH_JOURNAL_OPEN" if model.journal_open else "CH_JOURNAL_CLOSED")
 	if not model.notice.is_empty(): readout.text += "\n"+tr(model.notice)
 	if model.done(): readout.text += "\n"+tr("CH_VICTORY" if model.won() else "CH_DEFEAT")
 	for sensor in sensor_buttons: sensor.disabled=model.liar_solved or model.lost()

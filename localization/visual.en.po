@@ -523,3 +523,9 @@ msgstr "That sensor agrees with the checksums. Recheck the sums."
 
 msgid "CH_LIAR_CORRECT"
 msgstr "Sensor corrected. Ordinary clues unchanged."
+
+msgid "CH_JOURNAL_OPEN"
+msgstr "OPEN"
+
+msgid "CH_JOURNAL_CLOSED"
+msgstr "CLOSED"

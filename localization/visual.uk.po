@@ -523,3 +523,9 @@ msgstr "Цей датчик узгоджується із сумами. Пере
 
 msgid "CH_LIAR_CORRECT"
 msgstr "Датчик виправлено. Звичайні підказки незмінні."
+
+msgid "CH_JOURNAL_OPEN"
+msgstr "ВІДКРИТО"
+
+msgid "CH_JOURNAL_CLOSED"
+msgstr "ЗАКРИТО"

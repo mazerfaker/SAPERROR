@@ -1,4 +1,7 @@
 # Changelog
+## 0.5.0-beta.1 — combined Anomaly QA candidate
+- First combined CI after all five deferred alpha commits. Full previous regression, exact audio/live resources, portal topology, four authored trials and public-deduction replay through each trial, real UI creation/retry/controls. Candidate, not accepted release. Campaign routes/rewards, persistent lab completion, remaining Archivist, full anomaly combinations, balance and manual QA remain open.
+
 ## 0.5.0-alpha.7 — LIAR (CI deferred)
 Three distinct marked row sensors, exactly one false reading, three true pair sums. Identifying the corrupted sensor and clearing the authored field are both required. Ordinary tile clues unchanged. Retry and feedback. Campaign encounter and reward deferred.
 

@@ -1,6 +1,8 @@
 extends SceneTree
 const Challenge = preload("res://scripts/board/anomaly_challenge.gd")
 const Board = preload("res://scripts/board/state.gd")
+const Tools = preload("res://scripts/board/onboarding_tools.gd")
+const ChallengeUI = preload("res://scripts/ui/anomaly_challenge_ui.gd")
 var checks: int = 0
 var failures: int = 0
 func check(ok: bool, msg: String) -> void:
@@ -16,9 +18,7 @@ func run() -> void:
 	if model.valid:
 		var b: Board=model.board()
 		var hp: int=b.hp
-		model.act(0,true)
-		model.act(1,true)
-		model.act(2,true)
+		for i in range(3): model.act(0,true)
 		check(model.loop_done and model.actions==3 and b.cells[0]==model.checkpoint[0] and b.cells[1]==model.checkpoint[1],"local flag reset on third move")
 		check(b.hp==hp and b._mask==model.make_mask(Challenge.MASK_A),"no health or mine reset")
 		model.act(0,true)
@@ -59,5 +59,41 @@ func run() -> void:
 		check(not model.submit_sensor(0) and not model.liar_solved,"wrong sensor rejected")
 		check(model.submit_sensor(1) and model.liar_solved,"correct sensor decoded")
 		check(not model.won(),"sensor alone is not victory")
+	# Replay public safe deductions through the actual challenge action path.
+	# No mine mask used to select moves. Every authored puzzle must remain finishable.
+	for kind in Challenge.KINDS:
+		check(model.start(kind),"full route setup "+kind)
+		if not model.valid: continue
+		if kind=="WATCHER": model.toggle_journal()
+		if kind=="LIAR":
+			var truth: Array[int]=model.decoded_sensors()
+			for i in range(3):
+				if truth[i]!=model.sensor_values[i]: model.submit_sensor(i)
+		for step in range(120):
+			if model.done(): break
+			if model.board().won() and kind=="DOUBLE": model.switch_layer()
+			var proof: Dictionary=Tools.safe_hint(model.board().observation([0]))
+			if proof.is_empty(): break
+			if not model.act(int(proof["cell"])): break
+		check(model.won() and not model.lost(),"public deductions complete "+kind)
+		for board in model.boards: check(board.hp==3,"no damage during certified route")
+		var view := ChallengeUI.new()
+		view.kind=kind
+		view.size=Vector2(1266,710)
+		root.add_child(view)
+		check(view.model.valid and view.tiles.size()==25,"real UI builds "+kind)
+		if view.model.valid:
+			if kind=="DOUBLE":
+				view._switch_layer()
+				check(view.model.active_layer==1,"real layer switch")
+			if kind=="WATCHER":
+				view._journal()
+				check(view.model.journal_open,"real journal switch")
+			if kind=="LIAR":
+				view._select_sensor(1)
+				check(view.model.liar_solved,"real sensor selection")
+			view.restart()
+			check(view.model.actions==0 and view.tiles.size()==25,"retry reconstructs UI")
+		view.queue_free()
 	print("CHALLENGE_QA checks=",checks," failures=",failures)
 	quit(0 if failures==0 else 1)
