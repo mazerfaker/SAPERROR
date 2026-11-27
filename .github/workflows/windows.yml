@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 45
     env:
       GODOT_VERSION: '4.7.2-stable'
-      GAME_VERSION: '0.4.0-alpha.2'
+      GAME_VERSION: '0.4.0-alpha.3'
     steps:
       - name: Windows prerequisites
         shell: pwsh
@@ -108,6 +108,8 @@ jobs:
           if (-not (Select-String -Path build/logs/economy-tests.txt -Pattern 'ECONOMY_QA.*failures=0' -Quiet)) { throw 'Missing economy QA marker' }
           Invoke-Godot 'survival-tests.txt' @('--headless','--path','.','--script','res://tests/survival_test.gd')
           if (-not (Select-String -Path build/logs/survival-tests.txt -Pattern 'SURVIVAL_QA.*failures=0' -Quiet)) { throw 'Missing survival QA marker' }
+          Invoke-Godot 'advanced-tests.txt' @('--headless','--path','.','--script','res://tests/advanced_builds_test.gd')
+          if (-not (Select-String -Path build/logs/advanced-tests.txt -Pattern 'ADVANCED_QA.*failures=0' -Quiet)) { throw 'Missing advanced QA marker' }
           Invoke-Godot 'export.txt' @('--headless','--path','.','--export-release','Windows Desktop','build/windows/SAPERROR.exe')
       - name: Verify and headless smoke
         shell: pwsh

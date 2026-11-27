@@ -1,4 +1,8 @@
 # Changelog
+## 0.4.0-alpha.3 — advanced builds candidate
+- Three new modules: Resonance (+4 CR per three matching nonzero clean action clues; flood counts once), Profit Parasite (+50% rounded down; max HP -1, no free healing on removal), Third Eye (one bounded 3x3 count per sector). Analyzer spends stocked scanner charge for an alternate clue on an open tile. Selection does not reveal tiles. Tool expenditure invalidates previous rewind to avoid refunds; move rewards/counters rewind together.
+- Enable INVERT, RANGE II, WRAP using existing topology, preserve classic generation certificate and saves. Persist earned/spent credits for future statistics UI. Additional regression tests. Prices provisional. Remaining anomaly-dependent modules, cleansing, ninth lesson and full statistics presentation deferred. Manual playtest pending.
+
 ## 0.4.0-alpha.2 — survival and upgrades candidate
 - Carry HP across sectors, 30 CR repair, one purchased/armed shield (18 CR provisional), Second Life, Fuse and Auditor. Protection uses the existing board reveal and chord topology; protected hits still count as hits for clean reward. Sector start HP and protected hit count validated in saves, with legacy defaults.
 - Confirm module replacement (no refund); rollback move rewards and protection state with nonfatal rewind. Eight of nine guided lessons, isolated practice shop. Old alpha.1 pending runs without persisted HP migrate to full profile HP. Prices and limits provisional. Remaining seven modules, anomaly tools, analyzer, terminal rewind and campaign deferred. Core board/solver, icon, CRT and original PNG unchanged.

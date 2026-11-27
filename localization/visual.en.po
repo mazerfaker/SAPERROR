@@ -364,3 +364,33 @@ msgstr "Shop and modules"
 
 msgid "TUT_HINT_7_0"
 msgstr "Training store: buy Capacitor for 28 CR. Check scanner capacity and balance. Real progress is unchanged."
+
+msgid "MOD_RESONANCE"
+msgstr "Resonance"
+
+msgid "MOD_PROFIT"
+msgstr "Profit Parasite"
+
+msgid "MOD_THIRD_EYE"
+msgstr "Third Eye"
+
+msgid "DESC_RESONANCE"
+msgstr "+4 CR for three consecutive clean actions with the same nonzero clue."
+
+msgid "DESC_PROFIT"
+msgstr "+50% sector reward, −1 maximum HP (min. 1)."
+
+msgid "DESC_THIRD_EYE"
+msgstr "One 3×3 group scan per sector, including center."
+
+msgid "VIS_ANALYZER"
+msgstr "Analyzer"
+
+msgid "VIS_SELECT_OPEN"
+msgstr "Select an open cell for an additional clue."
+
+msgid "VIS_SELECT_GROUP"
+msgstr "Select the center of a 3×3 group."
+
+msgid "VIS_GROUP_MINES"
+msgstr "mines in group"

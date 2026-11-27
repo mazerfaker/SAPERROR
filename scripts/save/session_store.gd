@@ -22,7 +22,7 @@ static func restore(data: Dictionary) -> Dictionary:
 	if typeof(data["profile"]) != TYPE_INT or typeof(data["seed"]) != TYPE_INT or typeof(data["first"]) != TYPE_INT or typeof(data["hp"]) != TYPE_INT: return {}
 	if typeof(data["mask"]) != TYPE_PACKED_BYTE_ARRAY or typeof(data["cells"]) != TYPE_PACKED_INT32_ARRAY: return {}
 	var rule: Variant = data.get("rule",Rules.Rule.CLASSIC)
-	if typeof(rule)!=TYPE_INT or rule not in [Rules.Rule.CLASSIC,Rules.Rule.CROSS,Rules.Rule.DIAGONAL]: return {}
+	if typeof(rule)!=TYPE_INT or rule not in [Rules.Rule.CLASSIC,Rules.Rule.CROSS,Rules.Rule.DIAGONAL,Rules.Rule.INVERT,Rules.Rule.RANGE_II,Rules.Rule.WRAP]: return {}
 	var profile: int = data["profile"]
 	if not Profiles.valid(profile): return {}
 	var w: int = Profiles.SIZES[profile]

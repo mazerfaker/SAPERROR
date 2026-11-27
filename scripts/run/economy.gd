@@ -1,7 +1,7 @@
 extends RefCounted
 # Deterministic, bounded run economy. No random state, no access to hidden board data.
-const MODULES := ["XRAY","CHAIN","CAPACITOR","ASSISTANT","CHRONOMANCER","SECOND_LIFE","FUSE","AUDITOR"]
-const PRICES := [32,36,28,30,34,40,35,34]
+const MODULES := ["XRAY","CHAIN","CAPACITOR","ASSISTANT","CHRONOMANCER","SECOND_LIFE","FUSE","AUDITOR","RESONANCE","PROFIT","THIRD_EYE"]
+const PRICES := [32,36,28,30,34,40,35,34,32,45,30]
 const MAX_MODULES := 4
 const MAX_CREDITS := 1000000
 var credits: int = 30
@@ -19,6 +19,11 @@ var second_used: bool = false
 var fuse_used: bool = false
 var clean_streak: int = 0
 var auditor_awards: int = 0
+var resonance_value: int = 0
+var resonance_streak: int = 0
+var third_used: bool = false
+var earned: int = 0
+var spent: int = 0
 func capacity() -> int:
 	return 4+(2 if owned.has("CAPACITOR") else 0)
 func reset(profile: int) -> void:
@@ -26,6 +31,8 @@ func reset(profile: int) -> void:
 	stock = 2 if profile==1 else 0
 	owned.clear()
 	shield_stock = 0
+	earned = 0
+	spent = 0
 	rewarded_sector = 0
 	begin_sector(1)
 func begin_sector(sector: int) -> void:
@@ -39,26 +46,44 @@ func begin_sector(sector: int) -> void:
 	fuse_used = false
 	clean_streak = 0
 	auditor_awards = 0
+	resonance_value = 0
+	resonance_streak = 0
+	third_used = false
 func add_stock(n: int) -> void:
 	stock = mini(capacity(),stock+maxi(0,n))
 func reward(sector: int, opened: int, hits: int) -> int:
 	if sector<=rewarded_sector or sector!=offer_sector: return 0
 	var amount: int = 25+maxi(0,opened)/5+(10 if hits==0 else 0)
-	credits = mini(MAX_CREDITS,credits+amount)
+	if owned.has("PROFIT"): amount = amount*3/2
+	_gain(amount)
 	rewarded_sector = sector
 	return amount
-func observe(opened: int, clean: bool) -> void:
+func observe(opened: int, clean: bool, clue: int = 0) -> void:
 	if not clean:
 		clean_streak = 0
+		resonance_value = 0
+		resonance_streak = 0
 		return
 	if opened<=0: return
+	if owned.has("RESONANCE"):
+		if clue<=0:
+			resonance_value = 0
+			resonance_streak = 0
+		elif clue==resonance_value:
+			resonance_streak += 1
+		else:
+			resonance_value = clue
+			resonance_streak = 1
+		if resonance_streak>=3:
+			_gain(4)
+			resonance_streak = 0
 	safe_count += opened
 	clean_streak += opened
 	if owned.has("AUDITOR"):
 		while clean_streak>=15 and auditor_awards<2:
 			clean_streak -= 15
 			auditor_awards += 1
-			credits = mini(MAX_CREDITS,credits+6)
+			_gain(6)
 	if owned.has("XRAY"):
 		var target: int = mini(2,safe_count/10)
 		add_stock(maxi(0,target-xray_awards))
@@ -79,24 +104,24 @@ func price(id: String) -> int:
 	return PRICES[i] if i>=0 else MAX_CREDITS+1
 func buy(id: String) -> bool:
 	if owned.size()>=MAX_MODULES or not offers().has(id) or credits<price(id): return false
-	credits -= price(id)
+	_spend(price(id))
 	owned.append(id)
 	if id=="CAPACITOR": add_stock(1)
 	return true
 func buy_charge() -> bool:
 	if stock>=capacity() or credits<12: return false
-	credits -= 12
+	_spend(12)
 	add_stock(1)
 	return true
 func reroll_price() -> int:
 	return 8+4*rerolls
 func reroll() -> bool:
 	if rerolls>=100 or credits<reroll_price(): return false
-	credits -= reroll_price()
+	_spend(reroll_price())
 	rerolls += 1
 	return true
 func move_state() -> Dictionary:
-	return {"stock":stock,"safe":safe_count,"xray":xray_awards,"chain":chain_awards,"credits":credits,"shield_stock":shield_stock,"armed":shield_armed,"second":second_used,"fuse":fuse_used,"streak":clean_streak,"auditor":auditor_awards}
+	return {"stock":stock,"safe":safe_count,"xray":xray_awards,"chain":chain_awards,"credits":credits,"shield_stock":shield_stock,"armed":shield_armed,"second":second_used,"fuse":fuse_used,"streak":clean_streak,"auditor":auditor_awards,"res_value":resonance_value,"res_streak":resonance_streak,"third":third_used,"earned":earned,"spent":spent}
 func restore_move(data: Dictionary) -> void:
 	stock = clampi(int(data.get("stock",stock)),0,capacity())
 	safe_count = clampi(int(data.get("safe",safe_count)),0,10000)
@@ -109,6 +134,11 @@ func restore_move(data: Dictionary) -> void:
 	fuse_used = bool(data.get("fuse",false))
 	clean_streak = clampi(int(data.get("streak",0)),0,10000)
 	auditor_awards = clampi(int(data.get("auditor",0)),0,2)
+	resonance_value = clampi(int(data.get("res_value",0)),0,24)
+	resonance_streak = clampi(int(data.get("res_streak",0)),0,2)
+	third_used = bool(data.get("third",false))
+	earned = maxi(0,int(data.get("earned",earned)))
+	spent = maxi(0,int(data.get("spent",spent)))
 func snapshot() -> Dictionary:
 	var data := move_state()
 	data.merge({"credits":credits,"owned":owned.duplicate(),"sector":offer_sector,"rewarded":rewarded_sector,"rerolls":rerolls})
@@ -130,11 +160,11 @@ func restore(data: Dictionary, sector: int, pending: bool) -> void:
 
 func repair(hp: int, maximum: int) -> int:
 	if hp<1 or hp>=maximum or credits<30: return hp
-	credits -= 30
+	_spend(30)
 	return hp+1
 func buy_shield() -> bool:
 	if credits<18 or shield_stock>=1 or shield_armed: return false
-	credits -= 18
+	_spend(18)
 	shield_stock = 1
 	return true
 func arm_shield() -> bool:
@@ -158,8 +188,26 @@ func consume_protection() -> String:
 func replace_module(old_id: String, new_id: String) -> bool:
 	if owned.size()!=MAX_MODULES or not owned.has(old_id) or not offers().has(new_id) or credits<price(new_id): return false
 	var index: int = owned.find(old_id)
-	credits -= price(new_id)
+	_spend(price(new_id))
 	owned[index] = new_id
 	stock = mini(stock,capacity())
 	if new_id=="CAPACITOR": add_stock(1)
+	return true
+
+func _gain(amount: int) -> void:
+	var old: int = credits
+	credits = mini(MAX_CREDITS,credits+maxi(0,amount))
+	earned += credits-old
+func _spend(amount: int) -> void:
+	credits -= amount
+	spent += amount
+func max_hp(base: int) -> int:
+	return maxi(1,base-(1 if owned.has("PROFIT") else 0))
+func use_third() -> bool:
+	if not owned.has("THIRD_EYE") or third_used: return false
+	third_used = true
+	return true
+func use_analyzer() -> bool:
+	if stock<=0: return false
+	stock -= 1
 	return true

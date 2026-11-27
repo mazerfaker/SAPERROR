@@ -4,7 +4,7 @@ const Rules = preload("res://scripts/board/rules.gd")
 const Solver = preload("res://scripts/solver/solver.gd")
 const HINT_LIMITS := [3,1,0,0]
 const REWIND_LIMITS := [1,1,0,0]
-const NAMES := ["CLASSIC","CROSS","DIAGONAL"]
+const NAMES := ["CLASSIC","CROSS","DIAGONAL","INVERT","RANGE II","WRAP"]
 static func safe_hint(observation: Dictionary) -> Dictionary:
 	var known: Array[int] = []
 	var trace: Array[Dictionary] = []
@@ -33,3 +33,17 @@ static func restore_action(board: Board, before: Dictionary) -> bool:
 	board.opened = before["opened"]
 	board.rule = before["rule"]
 	return true
+
+# Analyzer reads an additional real clue from an already open cell.
+static func analyzer(board: Board, index: int) -> Dictionary:
+	if board==null or board.finished() or index<0 or index>=board.cells.size() or board.cells[index]!=Board.Cell.OPEN: return {}
+	var rule: int = Rules.Rule.CLASSIC if board.rule!=Rules.Rule.CLASSIC else Rules.Rule.CROSS
+	return {"rule":rule,"value":board.clue(index,rule),"cells":Rules.neighbors(board.width,board.height,index,rule)}
+# Third Eye reads an explicitly bounded, non-wrapping 3x3 group including its center.
+static func third_eye(board: Board, index: int) -> Dictionary:
+	if board==null or board.finished() or index<0 or index>=board.cells.size(): return {}
+	var cells: Array[int] = Rules.neighbors(board.width,board.height,index,Rules.Rule.CLASSIC)
+	cells.append(index)
+	cells.sort()
+	var count: int = board.count_mines(index,Rules.Rule.CLASSIC)+int(board._mask[index])
+	return {"cells":cells,"value":count}

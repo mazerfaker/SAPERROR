@@ -364,3 +364,33 @@ msgstr "Магазин та модулі"
 
 msgid "TUT_HINT_7_0"
 msgstr "Навчальний магазин: придбай Конденсатор за 28 CR. Перевір місткість сканера та баланс. Реальний прогрес не зміниться."
+
+msgid "MOD_RESONANCE"
+msgstr "Резонанс"
+
+msgid "MOD_PROFIT"
+msgstr "Паразит прибутку"
+
+msgid "MOD_THIRD_EYE"
+msgstr "Третє око"
+
+msgid "DESC_RESONANCE"
+msgstr "+4 CR за три послідовні чисті дії з однаковою ненульовою підказкою."
+
+msgid "DESC_PROFIT"
+msgstr "+50% за сектор, −1 до максимуму HP (мін. 1)."
+
+msgid "DESC_THIRD_EYE"
+msgstr "Одна перевірка групи 3×3 за сектор, включно з центром."
+
+msgid "VIS_ANALYZER"
+msgstr "Аналізатор"
+
+msgid "VIS_SELECT_OPEN"
+msgstr "Обери відкриту клітинку для додаткової підказки."
+
+msgid "VIS_SELECT_GROUP"
+msgstr "Обери центр групи 3×3."
+
+msgid "VIS_GROUP_MINES"
+msgstr "мін у групі"

@@ -23,3 +23,5 @@ Alpha.3: scanner, nonfatal charged rewind, three free cartridges, lessons 6–7.
 0.4 alpha.1 economy foundation: credits, shop, scanner stock, five real modules; provisional prices/capacity. Repair and HP carry, replacement, remaining modules and active tools planned in subsequent alpha versions. Shop tutorial not yet implemented.
 
 0.4 alpha.2: HP carry, repair, shield, Second Life/Fuse/Auditor, confirmed replacement and lesson 8. Eight real modules of fifteen; balance and manual QA pending. Remaining systems split into later alpha releases.
+
+0.4 alpha.3: 11/15 modules, 4/5 active tools, six cartridges, extended persistent counters. Four anomaly/archive-dependent modules and cleansing deferred until their mechanics exist; no fake effects. Statistics UI and balance pass pending.

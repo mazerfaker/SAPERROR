@@ -33,6 +33,11 @@ var sector_start_hp: int = 3
 var protected_hits: int = 0
 var protected_this_move: int = 0
 var shield_button: Button
+var analyzer_button: Button
+var third_button: Button
+var inspect_mode: String = ""
+var inspect_result: String = ""
+var inspect_marks: Array[int] = []
 var replace_id: String = ""
 var credit_label: Label
 var shop_notice: String = ""
@@ -181,9 +186,12 @@ func _show(next: String) -> void:
 	add_child(page)
 	buttons.clear()
 	marks.clear()
+	inspect_mode = ""
+	inspect_result = ""
+	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.4.0-a2",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.4.0-a3",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -303,6 +311,7 @@ func _load_session() -> void:
 	else:
 		economy.begin_sector(sector_number)
 		economy.rewarded_sector = sector_number if pending_sector else sector_number-1
+	_apply_hp_cap()
 	_reset_tools()
 	var raw: Variant = cfg.get_value("run","data",{})
 	if raw is Dictionary and not raw.is_empty():
@@ -491,7 +500,8 @@ func _game() -> void:
 	hint_button = _button("",Rect2(16,232,252,62),right,_request_hint,25)
 	rewind_button = _button("",Rect2(16,310,252,62),right,_rewind,25)
 	shield_button = _button("",Rect2(16,388,252,62),right,_arm_shield,24)
-	_label(tr("VIS_CONTROL_SHORT"),Rect2(16,463,252,132),right,20)
+	analyzer_button = _button("",Rect2(16,466,252,56),right,_select_inspection.bind("analyzer"),22)
+	third_button = _button("",Rect2(16,538,252,56),right,_select_inspection.bind("third"),22)
 	grid = GridContainer.new()
 	var w: int = Profiles.SIZES[profile] if board == null else board.width
 	var h: int = Profiles.SIZES[profile] if board == null else board.height
@@ -560,6 +570,9 @@ func _reset() -> void:
 	_refresh()
 func _reveal(i: int) -> void:
 	if protocol_active or pending_sector: return
+	if not inspect_mode.is_empty():
+		_inspect_target(i)
+		return
 	if board == null:
 		if not seed_input.text.is_valid_int():
 			message_key = "CORE_SEED_BAD"
@@ -576,7 +589,7 @@ func _reveal(i: int) -> void:
 		active_seed = seed_input.text.to_int()
 		first_cell = i
 		seed_input.editable = false
-		sector_start_hp = clampi(run_hp,1,Profiles.HP[profile])
+		sector_start_hp = clampi(run_hp,1,_max_hp())
 		protected_hits = 0
 		board = Board.new(Profiles.SIZES[profile],Profiles.SIZES[profile],generated["mask"],sector_start_hp)
 		sessions += 1
@@ -586,7 +599,7 @@ func _reveal(i: int) -> void:
 	var before: int = board.opened
 	protected_this_move = 0
 	_guarded_reveal(i)
-	economy.observe(board.opened-before,board.hits==last_hits)
+	economy.observe(board.opened-before,board.hits==last_hits,board.clue(i,board.rule) if board.cells[i]==Board.Cell.OPEN else 0)
 	_remember_move(saved)
 	_after_action("flood" if board.opened-before > 1 else ("reveal" if board.opened > before else ""))
 func _cell_input(event: InputEvent, i: int) -> void:
@@ -621,10 +634,11 @@ func _chord_action(i: int) -> void:
 	protected_this_move = 0
 	_guarded_chord(i)
 	if board.opened != before or board.hits != hits:
-		economy.observe(board.opened-before,board.hits==hits)
+		economy.observe(board.opened-before,board.hits==hits,board.clue(i,board.rule))
 		_remember_move(saved)
 		_after_action("flood" if board.opened-before > 1 else "reveal")
 func _after_action(sound: String = "") -> void:
+	_clear_inspection()
 	hint_cell = -1
 	hint_sources.clear()
 	if board.finished(): rewind_data.clear()
@@ -658,7 +672,7 @@ func _after_action(sound: String = "") -> void:
 func _refresh() -> void:
 	if is_instance_valid(next_button): next_button.text = tr("VIS_SHOP" if pending_sector or _shop_available() else "CORE_NEW")
 	if is_instance_valid(credit_label): credit_label.text = "CR %d" % economy.credits
-	var max_hp: int = Profiles.HP[profile]
+	var max_hp: int = _max_hp()
 	var hp: int = run_hp if board == null else board.hp
 	integrity.text = tr("CORE_HP")+"\n%d / %d" % [hp,max_hp]
 	integrity.add_theme_color_override("font_color",RED if hp < 2 else (AMBER if hp == 2 else GREEN))
@@ -669,6 +683,7 @@ func _refresh() -> void:
 	var flags: int = 0
 	status.text = "> " + tr(message_key)
 	if hint_cell >= 0: status.text += "  #%d" % (hint_cell+1)
+	if not inspect_result.is_empty(): status.text = "> "+inspect_result
 	if pending_sector and last_reward>0: status.text += "  +%d CR" % last_reward
 	status.add_theme_color_override("font_color",RED if message_key == "CORE_LOSS" else (AMBER if message_key in ["CORE_HIT","CORE_FAIL","CORE_SEED_BAD"] else GREEN))
 	for i in range(buttons.size()):
@@ -727,6 +742,7 @@ func protocol_input(event: InputEventKey) -> bool:
 func _begin_protocol() -> void:
 	if protocol_active or screen != "game" or not protocol.prepare(board): return
 	protocol_active = true
+	_clear_inspection()
 	hint_cell = -1
 	hint_sources.clear()
 	protocol_elapsed = 0.0
@@ -793,6 +809,7 @@ func _remember_move(previous: Dictionary) -> void:
 	if rewinds_left>0 and not previous.is_empty() and not board.finished(): rewind_data = previous
 func _rewind() -> void:
 	if protocol_active or board==null or board.finished() or rewinds_left<=0 or rewind_data.is_empty(): return
+	_clear_inspection()
 	var restored: Dictionary = Store.restore(rewind_data)
 	if restored.is_empty(): return
 	board = restored["board"]
@@ -811,6 +828,7 @@ func _rewind() -> void:
 	_save_session()
 func _request_hint() -> void:
 	if protocol_active or board==null or board.finished() or (hints_left<=0 and economy.stock<=0) or hint_cell>=0: return
+	_clear_inspection()
 	var available: Array[int] = [board.rule]
 	var result: Dictionary = Tools.safe_hint(board.observation(available))
 	if result.is_empty():
@@ -831,6 +849,7 @@ func _request_hint() -> void:
 	_save_session()
 func _cycle_rule() -> void:
 	if protocol_active or board==null or board.finished(): return
+	_clear_inspection()
 	board.rule = (board.rule+1)%Tools.NAMES.size()
 	hint_cell = -1
 	hint_sources.clear()
@@ -852,6 +871,12 @@ func _refresh_tools() -> void:
 	if is_instance_valid(hint_button):
 		hint_button.text = tr("VIS_HINT")+" [%d]" % (hints_left+economy.stock)
 		hint_button.disabled = not active or (hints_left<=0 and economy.stock<=0) or hint_cell>=0
+	if is_instance_valid(analyzer_button):
+		analyzer_button.text = tr("VIS_ANALYZER")+" [%d]" % economy.stock
+		analyzer_button.disabled = not active or economy.stock<=0
+	if is_instance_valid(third_button):
+		third_button.text = tr("MOD_THIRD_EYE")+" [%d]" % (1 if economy.owned.has("THIRD_EYE") and not economy.third_used else 0)
+		third_button.disabled = not active or not economy.owned.has("THIRD_EYE") or economy.third_used
 	if is_instance_valid(shield_button):
 		shield_button.text = tr("VIS_ARMED") if economy.shield_armed else tr("VIS_SHIELD")+" [%d]" % economy.shield_stock
 		shield_button.disabled = not active or economy.shield_stock<=0 or economy.shield_armed
@@ -867,7 +892,7 @@ func _refresh_marks() -> void:
 		if not is_instance_valid(marks[i]): continue
 		var target: bool = i==hint_cell
 		var premise: bool = hint_sources.has(i)
-		var adjacent: bool = neighbors.has(i)
+		var adjacent: bool = neighbors.has(i) or inspect_marks.has(i)
 		marks[i].visible = not protocol_active and (target or premise or adjacent)
 		if marks[i].visible:
 			marks[i].add_theme_stylebox_override("panel",_style(Color(0,0,0,0),GREEN if target else (AMBER if premise else Color("81b6a6")),5 if target else 3))
@@ -883,7 +908,7 @@ func _shop() -> void:
 		_show("game")
 		return
 	_label(tr("VIS_SHOP")+" // %02d" % sector_number,Rect2(124,185,1160,65),page,40)
-	_label("CR %d  |  HP %d/%d  |  %s %d/%d  |  %s %d/4" % [economy.credits,run_hp,Profiles.HP[profile],tr("VIS_STOCK"),economy.stock,economy.capacity(),tr("VIS_MODULES"),economy.owned.size()],Rect2(124,256,1170,60),page,27,AMBER)
+	_label("CR %d  |  HP %d/%d  |  %s %d/%d  |  %s %d/4" % [economy.credits,run_hp,_max_hp(),tr("VIS_STOCK"),economy.stock,economy.capacity(),tr("VIS_MODULES"),economy.owned.size()],Rect2(124,256,1170,60),page,27,AMBER)
 	var offers: Array[String] = economy.offers()
 	for i in range(offers.size()):
 		var id: String = offers[i]
@@ -894,7 +919,7 @@ func _shop() -> void:
 	var charge := _button(tr("VIS_BUY_CHARGE")+" / 12",Rect2(124,684,275,60),page,_buy_charge,21)
 	charge.disabled = economy.stock>=economy.capacity() or economy.credits<12
 	var repair := _button(tr("VIS_REPAIR")+" / 30",Rect2(419,684,275,60),page,_repair,21)
-	repair.disabled = run_hp>=Profiles.HP[profile] or economy.credits<30
+	repair.disabled = run_hp>=_max_hp() or economy.credits<30
 	var shield := _button(tr("VIS_SHIELD")+" / 18",Rect2(714,684,275,60),page,_buy_shield,21)
 	shield.disabled = economy.shield_stock>=1 or economy.credits<18
 	var reroll := _button(tr("VIS_REROLL")+" / %d" % economy.reroll_price(),Rect2(1009,684,275,60),page,_reroll_shop,21)
@@ -911,6 +936,7 @@ func _buy_module(id: String) -> void:
 		_show("replace")
 		return
 	if economy.buy(id):
+		_apply_hp_cap()
 		hints_left = _hint_limit()
 		rewinds_left = _rewind_limit()
 		_save_session()
@@ -954,13 +980,14 @@ func _guarded_chord(i: int) -> void:
 		_guarded_reveal(n)
 func _arm_shield() -> void:
 	if protocol_active or board==null or board.finished() or not economy.arm_shield(): return
+	_clear_inspection()
 	rewind_data.clear()
 	message_key = "VIS_ARMED"
 	_refresh()
 	_save_session()
 func _repair() -> void:
 	if not _shop_available() or screen!="shop": return
-	run_hp = economy.repair(run_hp,Profiles.HP[profile])
+	run_hp = economy.repair(run_hp,_max_hp())
 	sector_start_hp = run_hp
 	_save_session()
 	_show("shop")
@@ -981,8 +1008,47 @@ func _replacement() -> void:
 func _confirm_replace(id: String) -> void:
 	if not _shop_available() or screen!="replace": return
 	if economy.replace_module(id,replace_id):
+		_apply_hp_cap()
 		hints_left = _hint_limit()
 		rewinds_left = _rewind_limit()
 		replace_id = ""
 		_save_session()
 		_show("shop")
+
+func _max_hp() -> int:
+	return economy.max_hp(Profiles.HP[profile])
+func _apply_hp_cap() -> void:
+	run_hp = clampi(run_hp,1,_max_hp())
+	sector_start_hp = run_hp
+func _clear_inspection() -> void:
+	inspect_mode = ""
+	inspect_result = ""
+	inspect_marks.clear()
+func _select_inspection(mode: String) -> void:
+	if protocol_active or board==null or board.finished(): return
+	if mode=="analyzer" and economy.stock<=0: return
+	if mode=="third" and (not economy.owned.has("THIRD_EYE") or economy.third_used): return
+	var same: bool = inspect_mode==mode
+	_clear_inspection()
+	hint_cell = -1
+	hint_sources.clear()
+	if not same:
+		inspect_mode = mode
+		inspect_result = tr("VIS_SELECT_OPEN" if mode=="analyzer" else "VIS_SELECT_GROUP")
+	_refresh()
+func _inspect_target(i: int) -> void:
+	if board==null or board.finished() or protocol_active: return
+	var result: Dictionary = Tools.analyzer(board,i) if inspect_mode=="analyzer" else Tools.third_eye(board,i)
+	if result.is_empty(): return
+	if inspect_mode=="analyzer":
+		if not economy.use_analyzer(): return
+		inspect_result = "%s #%d: %s = %d" % [tr("VIS_ANALYZER"),i+1,Tools.NAMES[result["rule"]],result["value"]]
+	else:
+		if not economy.use_third(): return
+		inspect_result = "%s #%d: %d %s" % [tr("MOD_THIRD_EYE"),i+1,result["value"],tr("VIS_GROUP_MINES")]
+	inspect_marks.assign(result["cells"])
+	inspect_mode = ""
+	rewind_data.clear()
+	audio.play_event("key")
+	_refresh()
+	_save_session()
