@@ -4,6 +4,7 @@ const Board = preload("res://scripts/board/state.gd")
 const Validator = preload("res://scripts/solver/validator.gd")
 const Rules = preload("res://scripts/board/rules.gd")
 const Phantom = preload("res://scripts/board/phantom.gd")
+const Parasite = preload("res://scripts/board/parasite.gd")
 const PATH := "user://saperror_session.cfg"
 const VERSION := 1
 static func load_config(path: String = PATH) -> ConfigFile:
@@ -63,4 +64,8 @@ static func restore(data: Dictionary) -> Dictionary:
 	var phantom := Phantom.new()
 	var anomaly: Variant = data.get("phantom",{})
 	if not anomaly is Dictionary or not phantom.restore(anomaly,board): return {}
-	return {"phantom":phantom,"board":board,"profile":profile,"seed":data["seed"],"first":first,"certificate":proof,"start_hp":start_hp,"protected_hits":protected_hits}
+	var parasite := Parasite.new()
+	var infection: Variant = data.get("parasite",{})
+	if not infection is Dictionary or not parasite.restore(infection,board): return {}
+	if phantom.active() and parasite.active(): return {}
+	return {"parasite":parasite,"phantom":phantom,"board":board,"profile":profile,"seed":data["seed"],"first":first,"certificate":proof,"start_hp":start_hp,"protected_hits":protected_hits}

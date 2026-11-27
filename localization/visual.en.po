@@ -436,3 +436,21 @@ msgstr "Journal: cell #2, CLASSIC = 1. Press Cleanse to restore the clue."
 
 msgid "VIS_LANGUAGE"
 msgstr "Language"
+
+msgid "VIS_PARASITE_WARNING"
+msgstr "Infection warning"
+
+msgid "VIS_PARASITE_BLOCKED"
+msgstr "Cell locked - cleanse"
+
+msgid "VIS_PARASITE_CLEAR"
+msgstr "Infection cleared"
+
+msgid "VIS_PARASITE_SAFE"
+msgstr "Proven safe cell"
+
+msgid "MOD_STABILIZER"
+msgstr "Stabilizer"
+
+msgid "DESC_STABILIZER"
+msgstr "Delays PARASITE lock by two actions."

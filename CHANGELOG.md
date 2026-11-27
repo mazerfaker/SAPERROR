@@ -1,4 +1,7 @@
 # Changelog
+## 0.5.0-alpha.2 — PARASITE candidate
+- Alternate PHANTOM and PARASITE in sectors 3+; one logically proven safe target, three successful actions before lock, stabilizer +2. If opened early infection resolves. Direct reveal, flags, chord/flood cannot bypass lock; cleanse restores access, including no-resource emergency purge after lock. No mine/clue changes. Persist and validate state, preserve old saves and K30; Hotfix shared across anomalies. Provisional pacing and emergency fallback, CI/manual QA pending.
+
 ## 0.5.0-alpha.1-audio.1 — terminal hum loop and menu click
 - Preserve the hum timbre while expanding its native phase-locked PCM loop to 60 seconds at 48 kHz. Test wrap slope and all internal joins. Menu-only one-shot MP3 path with original byte hash and existing SFX volume; original procedural fallback until supplied asset is uploaded. All other sounds and live lamp audio unchanged. Manual listening pending.
 

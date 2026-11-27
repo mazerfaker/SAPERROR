@@ -11,6 +11,8 @@ const Tools = preload("res://scripts/board/onboarding_tools.gd")
 const Economy = preload("res://scripts/run/economy.gd")
 const Phantom = preload("res://scripts/board/phantom.gd")
 var phantom := Phantom.new()
+const Parasite = preload("res://scripts/board/parasite.gd")
+var parasite := Parasite.new()
 var journal_button: Button
 var cleanse_button: Button
 const Rules = preload("res://scripts/board/rules.gd")
@@ -195,7 +197,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.5.0-a1-audio.1",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.5.0-a2",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -324,6 +326,7 @@ func _load_session() -> void:
 		else:
 			board = resumed["board"]
 			phantom = resumed["phantom"]
+			parasite = resumed["parasite"]
 			pending_sector = false
 			sector_ready = false
 			profile = resumed["profile"]
@@ -603,6 +606,10 @@ func _reveal(i: int) -> void:
 		sessions += 1
 		sector_ready = false
 	if board.finished() or board.cells[i] != Board.Cell.CLOSED: return
+	if i==board.blocked_cell:
+		message_key = "VIS_PARASITE_BLOCKED"
+		_refresh()
+		return
 	var saved: Dictionary = _before_move()
 	var before: int = board.opened
 	protected_this_move = 0
@@ -647,7 +654,12 @@ func _chord_action(i: int) -> void:
 		_after_action("flood" if board.opened-before > 1 else "reveal")
 func _after_action(sound: String = "") -> void:
 	var anomaly_event: String = ""
-	if not protocol_active: anomaly_event = phantom.advance(board,sector_number>=3,economy.owned.has("SHIELDING"))
+	var infection_event: String = ""
+	if not protocol_active:
+		# Alternate anomaly types for this conservative alpha; preserve legacy PHANTOM saves.
+		var parasite_sector: bool = sector_number>=4 and sector_number%2==0 and not phantom.triggered
+		anomaly_event = phantom.advance(board,sector_number>=3 and not parasite_sector and parasite.cell<0,economy.owned.has("SHIELDING"))
+		infection_event = parasite.advance(board,parasite_sector,economy.owned.has("STABILIZER"))
 	_clear_inspection()
 	hint_cell = -1
 	hint_sources.clear()
@@ -656,6 +668,9 @@ func _after_action(sound: String = "") -> void:
 	if anomaly_event=="hidden": message_key = "VIS_PHANTOM_ALERT"
 	elif anomaly_event=="shielded": message_key = "VIS_PHANTOM_SHIELDED"
 	elif anomaly_event=="expired": message_key = "VIS_PHANTOM_CLEAR"
+	if infection_event=="warning": message_key = "VIS_PARASITE_WARNING"
+	elif infection_event=="blocked": message_key = "VIS_PARASITE_BLOCKED"
+	elif infection_event=="escaped": message_key = "VIS_PARASITE_CLEAR"
 	if board.hits > last_hits:
 		message_key = "VIS_PROTECTED" if protected_this_move==board.hits-last_hits else "CORE_HIT"
 		fault_triggered.emit()
@@ -699,6 +714,8 @@ func _refresh() -> void:
 	if not inspect_result.is_empty(): status.text = "> "+inspect_result
 	elif phantom.active() and not protocol_active and board!=null and not board.finished():
 		status.text += " // PHANTOM #%d [%d]" % [phantom.cell+1,phantom.until_action-phantom.actions]
+	elif parasite.active() and not protocol_active and board!=null and not board.finished():
+		status.text += " // PARASITE #%d [%s]" % [parasite.cell+1,"LOCK" if parasite.blocked() else str(parasite.remaining())]
 	if pending_sector and last_reward>0: status.text += "  +%d CR" % last_reward
 	status.add_theme_color_override("font_color",RED if message_key == "CORE_LOSS" else (AMBER if message_key in ["CORE_HIT","CORE_FAIL","CORE_SEED_BAD"] else GREEN))
 	for i in range(buttons.size()):
@@ -735,6 +752,13 @@ func _refresh() -> void:
 			fill = Color("491e19")
 			edge = Color("b15a50")
 			desc = tr("CORE_NEUTRAL")
+		if board!=null and not protocol_active and not board.finished() and parasite.active() and i==parasite.cell:
+			b.text = "X" if parasite.blocked() else "!"+str(parasite.remaining())
+			color = RED if parasite.blocked() else AMBER
+			edge = color
+			fill = Color("49221a") if parasite.blocked() else Color("382e15")
+			desc = tr("VIS_PARASITE_BLOCKED" if parasite.blocked() else "VIS_PARASITE_WARNING")
+			b.disabled = parasite.blocked()
 		b.add_theme_stylebox_override("normal",_style(fill,edge,2))
 		b.add_theme_stylebox_override("disabled",_style(fill,edge,2))
 		b.add_theme_stylebox_override("hover",_style(fill.lightened(0.13),color,2))
@@ -815,6 +839,7 @@ func _process(delta: float) -> void:
 
 func _reset_tools() -> void:
 	phantom = Phantom.new()
+	parasite = Parasite.new()
 	hints_left = _hint_limit()
 	rewinds_left = _rewind_limit()
 	rewind_data.clear()
@@ -835,6 +860,7 @@ func _rewind() -> void:
 	if restored.is_empty(): return
 	board = restored["board"]
 	phantom = restored["phantom"]
+	parasite = restored["parasite"]
 	run_hp = board.hp
 	sector_start_hp = restored["start_hp"]
 	protected_hits = restored["protected_hits"]
@@ -851,6 +877,16 @@ func _rewind() -> void:
 func _request_hint() -> void:
 	if protocol_active or board==null or board.finished() or (hints_left<=0 and economy.stock<=0) or hint_cell>=0: return
 	_clear_inspection()
+	if parasite.blocked():
+		if hints_left>0: hints_left -= 1
+		else: economy.stock -= 1
+		parasite.cleanse(board)
+		rewind_data.clear()
+		message_key = "VIS_PARASITE_CLEAR"
+		audio.play_event("key")
+		_refresh()
+		_save_session()
+		return
 	if phantom.active():
 		if hints_left>0: hints_left -= 1
 		else: economy.stock -= 1
@@ -897,9 +933,9 @@ func _leave_cell(i: int) -> void:
 		_refresh_marks()
 func _refresh_tools() -> void:
 	var active: bool = board!=null and not board.finished() and not protocol_active
-	if is_instance_valid(journal_button): journal_button.disabled = not active or phantom.cell<0
+	if is_instance_valid(journal_button): journal_button.disabled = not active or (phantom.cell<0 and parasite.cell<0)
 	if is_instance_valid(cleanse_button):
-		cleanse_button.disabled = not active or not phantom.active() or (economy.stock<=0 and not _free_cleanse())
+		cleanse_button.disabled = not active or not (phantom.active() or parasite.active()) or (economy.stock<=0 and not _free_cleanse() and not parasite.blocked())
 	if is_instance_valid(rule_button):
 		rule_button.text = Tools.NAMES[board.rule] if board!=null else "CLASSIC"
 		rule_button.disabled = not active
@@ -987,10 +1023,12 @@ func _reroll_shop() -> void:
 
 func _snapshot_board() -> Dictionary:
 	var data: Dictionary = Store.snapshot(board,profile,active_seed,first_cell,sector_start_hp,protected_hits)
-	if not data.is_empty(): data["phantom"] = phantom.snapshot()
+	if not data.is_empty():
+		data["phantom"] = phantom.snapshot()
+		data["parasite"] = parasite.snapshot()
 	return data
 func _guarded_reveal(i: int) -> void:
-	if board.finished() or i<0 or i>=board.cells.size() or board.cells[i]!=Board.Cell.CLOSED: return
+	if board.finished() or i<0 or i>=board.cells.size() or board.cells[i]!=Board.Cell.CLOSED or i==board.blocked_cell: return
 	if not economy.can_protect():
 		board.reveal(i)
 		return
@@ -1091,24 +1129,34 @@ func _inspect_target(i: int) -> void:
 	_save_session()
 
 func _free_cleanse() -> bool:
-	return economy.owned.has("HOTFIX") and not phantom.hotfix_used
+	return economy.owned.has("HOTFIX") and not phantom.hotfix_used and not parasite.hotfix_used
 func _open_journal() -> void:
-	if protocol_active or board==null or board.finished() or phantom.cell<0: return
+	if protocol_active or board==null or board.finished() or (phantom.cell<0 and parasite.cell<0): return
 	_clear_inspection()
+	if parasite.cell>=0:
+		inspect_result = "%s: PARASITE #%d / %s" % [tr("VIS_JOURNAL"),parasite.cell+1,tr("VIS_PARASITE_SAFE")]
+		inspect_marks.append(parasite.cell)
+		audio.play_event("key")
+		_refresh()
+		return
 	inspect_result = "%s: #%d / %s = %d" % [tr("VIS_JOURNAL"),phantom.cell+1,Tools.NAMES[phantom.rule],phantom.value]
 	inspect_marks.assign(Rules.neighbors(board.width,board.height,phantom.cell,phantom.rule))
 	inspect_marks.append(phantom.cell)
 	audio.play_event("key")
 	_refresh()
 func _cleanse() -> void:
-	if protocol_active or board==null or board.finished() or not phantom.active(): return
+	if protocol_active or board==null or board.finished() or not (phantom.active() or parasite.active()): return
+	var infection: bool = parasite.active()
 	var free: bool = _free_cleanse()
-	if not free and economy.stock<=0: return
-	if not phantom.clear_zone(free): return
-	if not free: economy.stock -= 1
+	# Fail-safe: no stock or Hotfix must never make a proven safe cell permanently inaccessible.
+	var emergency: bool = infection and parasite.blocked() and economy.stock<=0 and not free
+	if not free and not emergency and economy.stock<=0: return
+	var cleared: bool = parasite.cleanse(board,free) if infection else phantom.clear_zone(free)
+	if not cleared: return
+	if not free and not emergency: economy.stock -= 1
 	rewind_data.clear()
 	_clear_inspection()
-	message_key = "VIS_PHANTOM_CLEAR"
+	message_key = "VIS_PARASITE_CLEAR" if infection else "VIS_PHANTOM_CLEAR"
 	audio.play_event("key")
 	_refresh()
 	_save_session()

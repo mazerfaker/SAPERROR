@@ -10,6 +10,8 @@ var cells: PackedInt32Array
 var _mask: PackedByteArray
 var opened: int = 0
 var hits: int = 0
+# Temporary access lock, not a new Cell state. Normal boards always use -1.
+var blocked_cell: int = -1
 func _init(w: int, h: int, mask: PackedByteArray, integrity: int = 3) -> void:
 	assert(w > 0 and h > 0 and mask.size() == w * h)
 	width = w
@@ -31,11 +33,11 @@ func clue(i: int, r: int) -> int:
 	var count: int = count_mines(i, r)
 	return Rules.neighbors(width, height, i, r).size() - count if r == Rules.Rule.INVERT else count
 func flag(i: int) -> void:
-	if finished() or i < 0 or i >= cells.size(): return
+	if finished() or i < 0 or i >= cells.size() or i==blocked_cell: return
 	if cells[i] == Cell.CLOSED: cells[i] = Cell.FLAG
 	elif cells[i] == Cell.FLAG: cells[i] = Cell.CLOSED
 func reveal(i: int) -> void:
-	if finished() or i < 0 or i >= cells.size() or cells[i] != Cell.CLOSED: return
+	if finished() or i < 0 or i >= cells.size() or cells[i] != Cell.CLOSED or i==blocked_cell: return
 	if _mask[i] == 1:
 		cells[i] = Cell.NEUTRALIZED
 		hp -= 1
@@ -46,7 +48,7 @@ func reveal(i: int) -> void:
 	while cursor < queue.size():
 		var c: int = queue[cursor]
 		cursor += 1
-		if cells[c] != Cell.CLOSED: continue
+		if cells[c] != Cell.CLOSED or c==blocked_cell: continue
 		assert(_mask[c] == 0)
 		cells[c] = Cell.OPEN
 		opened += 1

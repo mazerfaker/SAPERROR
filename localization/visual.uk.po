@@ -436,3 +436,21 @@ msgstr "Журнал: клітинка №2, CLASSIC = 1. Натисни Очи�
 
 msgid "VIS_LANGUAGE"
 msgstr "Мова"
+
+msgid "VIS_PARASITE_WARNING"
+msgstr "Загроза зараження"
+
+msgid "VIS_PARASITE_BLOCKED"
+msgstr "Клітинку заблоковано — очисти"
+
+msgid "VIS_PARASITE_CLEAR"
+msgstr "Зараження усунуто"
+
+msgid "VIS_PARASITE_SAFE"
+msgstr "Доведено безпечна клітинка"
+
+msgid "MOD_STABILIZER"
+msgstr "Стабілізатор"
+
+msgid "DESC_STABILIZER"
+msgstr "Відтерміновує блокування PARASITE на дві дії."
