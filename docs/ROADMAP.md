@@ -77,3 +77,5 @@ Alpha.7 LIAR authored boss trial, no intermediate CI. Full combined v0.5 Beta ga
 0.8.0-beta.3 verified CI 46039772326: 467472 new long-run checks; 72h simulation, 60 sectors, no orphan-node growth; native 72s smoke accepted. 0.8.0-beta.4 profile balance: Story sector checkpoint, start resources and repair costs, Hardcore Profit adjustment, authored encounter HP by difficulty, expanded public proof routes. Real human playtesting and broader anomaly combinations remain open.
 
 0.8.0-beta.4 verified CI 46041175533: 224 balance checks, 350 campaign checks. 0.8.0-beta.5 Audio Ultimate: 13 additional event signals, persistent master and priority-aware six-voice pool, dedicated event routing, no approved audio replacement. CI and manual listening pending.
+
+0.8.0-beta.5 verified CI 46042249939, Audio Ultimate 81/81. 0.8.0-beta.6 adds persistent high contrast, large field symbols and clear CRT controls, keyboard navigation and focus, localized warning, resolution mapping regressions. Actual monitor/readability acceptance and general UI scaling pending. Next anomaly combination validation.

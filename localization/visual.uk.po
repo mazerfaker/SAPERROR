@@ -835,3 +835,21 @@ msgstr "У Хардкорі +25% за сектор: максимум ціліс�
 
 msgid "VIS_MASTER"
 msgstr "Загальна гучність"
+
+msgid "ACC_TITLE"
+msgstr "Доступність"
+
+msgid "ACC_CONTRAST"
+msgstr "Високий контраст"
+
+msgid "ACC_SYMBOLS"
+msgstr "Великі символи клітинок"
+
+msgid "ACC_CLEAR"
+msgstr "Чітке зображення CRT"
+
+msgid "ACC_KEYS"
+msgstr "Стрілки: фокус · Tab: наступний елемент · Enter/Space: дія · F: прапорець · Space на відкритій клітинці: chord · Esc: назад · F11: повний екран"
+
+msgid "ACC_WARNING"
+msgstr "Горор, раптові звуки та спалахи світла. Чіткий CRT вимикає ефекти екрана, але лампа мерехтить. Рух і гучність можна зменшити окремо."

@@ -1,4 +1,7 @@
 extends Control
+const Access=preload("res://scripts/ui/accessibility.gd")
+var high_contrast: bool=false
+var large_symbols: bool=false
 const Classic = preload("res://scripts/board/classic_game.gd")
 const Board = preload("res://scripts/board/state.gd")
 signal back
@@ -53,10 +56,12 @@ func rebuild() -> void:
 	grid.add_theme_constant_override("v_separation",4)
 	body.add_child(grid)
 	var extent: float=floor((470.0-(model.width()-1)*4)/model.width())
+	var focus: StyleBoxFlat=Access.focus_style(high_contrast)
 	for i in range(model.width()*model.width()):
 		var tile:=Button.new()
 		tile.custom_minimum_size=Vector2(extent,extent)
-		tile.add_theme_font_size_override("font_size",int(extent*0.62))
+		tile.add_theme_font_size_override("font_size",int(extent*(0.76 if large_symbols else 0.62)))
+		tile.add_theme_stylebox_override("focus",focus)
 		tile.pressed.connect(_move.bind(i,"reveal"))
 		tile.gui_input.connect(_input_tile.bind(i))
 		grid.add_child(tile)
@@ -72,6 +77,7 @@ func rebuild() -> void:
 	button(tr("TUT_REPEAT"),Vector2(520,565),Vector2(340,58),_retry)
 	button(tr("VIS_BACK"),Vector2(880,565),Vector2(350,58),func(): back.emit())
 	refresh()
+	Access.focus_tiles(tiles)
 func _size(i: int) -> void:
 	model.start(i,model.seed_value)
 	rebuild()
@@ -83,6 +89,7 @@ func _toggle_timer() -> void:
 	model.timer_enabled=not model.timer_enabled
 	refresh()
 func _input_tile(event: InputEvent,index: int) -> void:
+	if Access.grid_key(event,tiles,index,model.width()): return
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index==MOUSE_BUTTON_RIGHT:
 			tiles[index].accept_event()
@@ -91,7 +98,7 @@ func _input_tile(event: InputEvent,index: int) -> void:
 			tiles[index].accept_event()
 			_move(index,"chord")
 	elif event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode==KEY_F:
+		if Access.physical(event)==KEY_F:
 			tiles[index].accept_event()
 			_move(index,"flag")
 		elif event.keycode==KEY_SPACE and model.board!=null and model.board.cells[index]==Board.Cell.OPEN:
@@ -134,6 +141,6 @@ func refresh() -> void:
 		tile.disabled=b!=null and b.finished()
 		var fill: Color=Color("081a11") if state==Board.Cell.OPEN else Color("183b27")
 		if tile.text=="×": fill=Color("491e19")
-		var style: StyleBoxFlat=style_bank.get_style(fill,Color("53775d"),2,false)
+		var style: StyleBoxFlat=style_bank.get_style(fill.darkened(0.32) if high_contrast else fill,Access.readable(Color("53775d"),high_contrast),2,false)
 		if tile.get_theme_stylebox("normal")!=style: tile.add_theme_stylebox_override("normal",style)
 		if tile.get_theme_stylebox("disabled")!=style: tile.add_theme_stylebox_override("disabled",style)

@@ -100,7 +100,7 @@ func _ready() -> void:
 	ui.connect("outcome_triggered", _on_outcome)
 	ui.connect("protocol_triggered", _on_protocol)
 	visual_rng.randomize()
-	_set_effects(ui.amount, ui.glass, ui.reduced, ui.flicker, ui.global_amount, ui.glitches)
+	_set_effects(0.0 if ui.clear_display else ui.amount, ui.glass, ui.reduced, ui.flicker and not ui.clear_display, 0.0 if ui.clear_display else ui.global_amount, ui.glitches and not ui.clear_display)
 	if DisplayServer.get_name() == "headless" or reduced_motion or effects <= 0.0:
 		lifecycle.skip_boot()
 	else:
@@ -188,6 +188,18 @@ func _input(event: InputEvent) -> void:
 		return
 	if ui.protocol_input(event):
 		get_viewport().set_input_as_handled()
+		return
+	if not is_instance_valid(display) or not display.has_focus(): return
+	if event.pressed and not event.echo:
+		if event.keycode==KEY_F11:
+			_toggle_fullscreen()
+			get_viewport().set_input_as_handled()
+			return
+		if event.keycode==KEY_ESCAPE and not (raster.gui_get_focus_owner() is LineEdit) and ui.back_shortcut():
+			get_viewport().set_input_as_handled()
+			return
+	raster.push_input(event.duplicate(),true)
+	get_viewport().set_input_as_handled()
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT and is_instance_valid(ui):
 		ui.protocol.reset_input()
@@ -207,6 +219,7 @@ func _crt_input(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.button_index <= MOUSE_BUTTON_MIDDLE:
 			if event.pressed:
 				if not inside: return
+				display.grab_focus()
 				pointer_captured = true
 			else:
 				if not inside and not pointer_captured: return

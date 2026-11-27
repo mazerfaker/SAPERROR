@@ -835,3 +835,21 @@ msgstr "+25% sector reward on Hardcore; maximum integrity is already 1."
 
 msgid "VIS_MASTER"
 msgstr "Master volume"
+
+msgid "ACC_TITLE"
+msgstr "Accessibility"
+
+msgid "ACC_CONTRAST"
+msgstr "High contrast"
+
+msgid "ACC_SYMBOLS"
+msgstr "Large cell symbols"
+
+msgid "ACC_CLEAR"
+msgstr "Clear CRT display"
+
+msgid "ACC_KEYS"
+msgstr "Arrows: move focus · Tab: next control · Enter/Space: activate · F: flag · Space on open cell: chord · Esc: back · F11: fullscreen"
+
+msgid "ACC_WARNING"
+msgstr "Horror, sudden sounds and flashing light. Clear CRT removes screen effects; the room lamp still flickers. Reduce motion and volume separately."

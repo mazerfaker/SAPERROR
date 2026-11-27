@@ -1,4 +1,7 @@
 extends Control
+const Access=preload("res://scripts/ui/accessibility.gd")
+var high_contrast: bool=false
+var large_symbols: bool=false
 const Board = preload("res://scripts/board/state.gd")
 const Rules = preload("res://scripts/board/rules.gd")
 const Tools = preload("res://scripts/board/onboarding_tools.gd")
@@ -93,10 +96,12 @@ func _build() -> void:
 	grid.add_theme_constant_override("v_separation",5)
 	body.add_child(grid)
 	tiles.clear()
+	var focus: StyleBoxFlat=Access.focus_style(high_contrast)
 	for i in range(0 if step==7 else 16):
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(104,104)
-		b.add_theme_font_size_override("font_size",46)
+		b.add_theme_font_size_override("font_size",56 if large_symbols else 46)
+		b.add_theme_stylebox_override("focus",focus)
 		b.pressed.connect(_action.bind(i,"reveal"))
 		b.gui_input.connect(_cell_input.bind(i))
 		grid.add_child(b)
@@ -106,7 +111,9 @@ func _build() -> void:
 	next_button = _button(tr("TUT_NEXT"),Vector2(570,620),Vector2(320,64),_next)
 	_button(tr("VIS_BACK"),Vector2(905,620),Vector2(350,64),func(): back.emit())
 	_refresh()
+	if not Access.focus_tiles(tiles): Access.focus_first(body)
 func _cell_input(event: InputEvent, i: int) -> void:
+	if Access.grid_key(event,tiles,i,4): return
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_RIGHT:
 			tiles[i].accept_event()
@@ -115,7 +122,7 @@ func _cell_input(event: InputEvent, i: int) -> void:
 			tiles[i].accept_event()
 			_action(i,"chord")
 	elif event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_F:
+		if Access.physical(event)==KEY_F:
 			tiles[i].accept_event()
 			_action(i,"flag")
 		elif event.keycode == KEY_SPACE and board.cells[i] == Board.Cell.OPEN:
@@ -179,7 +186,8 @@ func _refresh() -> void:
 		marked = marked or (step==5 and i==0) or (step==6 and (i==5 or Rules.neighbors(4,4,5,board.rule).has(i)))
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color("081a11") if state == Board.Cell.OPEN else Color("183b27")
-		style.border_color = Color("f0c37b") if marked else Color("53775d")
+		style.border_color = Access.readable(Color("f0c37b") if marked else Color("53775d"),high_contrast)
+		if high_contrast: style.bg_color=style.bg_color.darkened(0.32)
 		style.set_border_width_all(4 if marked else 2)
 		b.add_theme_stylebox_override("normal",style)
 		b.tooltip_text = "%s %d" % [tr("CORE_CELL"),i+1]

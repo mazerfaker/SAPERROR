@@ -1,4 +1,7 @@
 # Changelog
+## 0.8.0-beta.6 — Accessibility & UI Polish candidate
+Persistent high-contrast palette, larger cell symbols, clear CRT mode without altering stored CRT preferences, keyboard-focused grid navigation and layout-independent flag shortcut across all field UIs, visible transparent focus outline, Escape navigation and F11 fullscreen in CRT focus. Localized accessibility settings and content warning; unchanged original composition and mapped input. Automated checks added; manual readability, physical display testing and whole-UI text scaling pending.
+
 ## 0.8.0-beta.5 — Audio Ultimate candidate
 13 original one-shot procedural signals for tools, shop, anomalies and story progression; 27 one-shot event types including exact approved MP3s (lamp separate). Persistent Master gain, independent channels, score and lamp routing, priority-aware bounded six-voice pool. Existing hum/score samples and approved MP3/WAV unchanged. Headless waveform/routing/voice QA and existing native loop smoke required; listening acceptance pending.
 

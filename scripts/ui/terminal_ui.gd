@@ -45,6 +45,10 @@ signal fault_triggered
 signal fullscreen_requested
 signal shutdown_requested
 signal outcome_triggered(won: bool)
+const Access=preload("res://scripts/ui/accessibility.gd")
+var high_contrast: bool=false
+var large_symbols: bool=false
+var clear_display: bool=false
 const GREEN := Color("b6edb1")
 const DIM := Color("729b79")
 const AMBER := Color("f0c37b")
@@ -163,7 +167,7 @@ func _terminal_theme() -> Theme:
 	mono.font_names = PackedStringArray(["Consolas","Cascadia Mono","DejaVu Sans Mono","Courier New"])
 	t.default_font = mono
 	t.default_font_size = 29
-	t.set_color("font_color","Label",GREEN)
+	t.set_color("font_color","Label",Access.readable(GREEN,high_contrast))
 	for state in ["normal","hover","pressed","disabled","focus"]:
 		var fill := Color("0c2117")
 		var border := DIM
@@ -171,10 +175,10 @@ func _terminal_theme() -> Theme:
 		elif state == "pressed": fill = Color("396a43"); border = GREEN
 		elif state == "disabled": fill = Color("09170f"); border = Color("284436")
 		elif state == "focus": fill = Color(0,0,0,0); border = AMBER
-		t.set_stylebox(state,"Button",_style(fill,border))
+		t.set_stylebox(state,"Button",Access.focus_style(high_contrast) if state=="focus" else _style(fill,Access.readable(border,high_contrast)))
 	for state in ["font_color","font_hover_color","font_pressed_color","font_focus_color"]:
-		t.set_color(state,"Button",GREEN)
-	t.set_color("font_disabled_color","Button",DIM)
+		t.set_color(state,"Button",Access.readable(GREEN,high_contrast))
+	t.set_color("font_disabled_color","Button",Access.readable(DIM,high_contrast))
 	t.set_stylebox("normal","LineEdit",_style(Color("07170e"),DIM))
 	t.set_stylebox("focus","LineEdit",_style(Color("0a1a12"),AMBER))
 	t.set_color("font_color","LineEdit",GREEN)
@@ -188,7 +192,7 @@ func _label(value: String, rect: Rect2, parent: Control, font_size: int = 28, co
 	var l := Label.new()
 	l.text = value
 	l.add_theme_font_size_override("font_size",font_size)
-	l.add_theme_color_override("font_color",color)
+	l.add_theme_color_override("font_color",Access.readable(color,high_contrast))
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_place(l,rect,parent)
 	return l
@@ -228,7 +232,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.8.0-b5",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.8.0-b6",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -239,6 +243,7 @@ func _show(next: String) -> void:
 	elif screen == "help": _help()
 	elif screen == "performance": _performance()
 	elif screen == "audio": _audio_settings()
+	elif screen == "accessibility": _accessibility()
 	elif screen == "profiles": _profiles()
 	elif screen == "modes": _modes()
 	elif screen == "classic": _classic()
@@ -265,6 +270,7 @@ func _show(next: String) -> void:
 	elif screen == "challenge": _challenge()
 	else: _menu()
 	_update_music()
+	if screen!="game" or not Access.focus_tiles(buttons): Access.focus_first(page)
 func _menu() -> void:
 	_label(tr("VIS_BOOT"),Rect2(124,190,1170,80),page,36)
 	_label(tr("VIS_TAGLINE"),Rect2(124,266,1170,62),page,28,DIM)
@@ -365,6 +371,8 @@ func _tutorial() -> void:
 	tutorial.size = Vector2(1266,710)
 	tutorial.position = Vector2(80,180)
 	tutorial.theme = theme
+	tutorial.high_contrast=high_contrast
+	tutorial.large_symbols=large_symbols
 	tutorial.start_at = mini(tutorial_done,8)
 	tutorial.completed.connect(func(step: int):
 		tutorial_done = maxi(tutorial_done,step+1)
@@ -378,6 +386,9 @@ func _load_session() -> void:
 		save_recovered=report["source"] in ["backup","staged"]
 		save_failed=report["source"]=="invalid"
 	is_uk = bool(cfg.get_value("settings","uk",false))
+	high_contrast=bool(cfg.get_value("settings","contrast",false))
+	large_symbols=bool(cfg.get_value("settings","large_symbols",false))
+	clear_display=bool(cfg.get_value("settings","clear_display",false))
 	amount = clampf(float(cfg.get_value("settings","crt",0.45)),0.0,1.0)
 	glass = bool(cfg.get_value("settings","glass",true))
 	reduced = bool(cfg.get_value("settings","reduced",false))
@@ -452,6 +463,9 @@ func _load_session() -> void:
 func _save_session() -> void:
 	if DisplayServer.get_name() == "headless": return
 	cfg.set_value("settings","uk",is_uk)
+	cfg.set_value("settings","contrast",high_contrast)
+	cfg.set_value("settings","large_symbols",large_symbols)
+	cfg.set_value("settings","clear_display",clear_display)
 	cfg.set_value("settings","crt",amount)
 	cfg.set_value("settings","glass",glass)
 	if cfg.has_section_key("settings","curve"): cfg.erase_section_key("settings","curve")
@@ -568,7 +582,8 @@ func _settings() -> void:
 	_button(tr("VIS_MOTION")+": "+_on_off(reduced),Rect2(124,553,1040,62),page,func(): reduced = not reduced; _apply(); _show("settings"))
 	_button(tr("VIS_FLICKER")+": "+_on_off(flicker),Rect2(124,635,1040,62),page,func(): flicker = not flicker; _apply(); _show("settings"))
 	_button(tr("VIS_GRADE")+": "+_on_off(global_amount>0.0),Rect2(124,717,1040,62),page,func(): global_amount = 0.25 if global_amount == 0.0 else 0.0; _apply(); _show("settings"))
-	_button(tr("VIS_AUDIO"),Rect2(510,803,654,57),page,func(): _show("audio"))
+	_button(tr("VIS_AUDIO"),Rect2(510,803,310,57),page,func(): _show("audio"))
+	_button(tr("ACC_TITLE"),Rect2(840,803,324,57),page,func(): _show("accessibility"),22)
 	_button(tr("VIS_BACK"),Rect2(124,803,350,57),page,func(): _show("menu"))
 func _audio_settings() -> void:
 	_label(tr("VIS_AUDIO"),Rect2(124,212,1150,60),page,41)
@@ -605,7 +620,7 @@ func _fullscreen_active() -> bool:
 func _on_off(value: bool) -> String:
 	return tr("VIS_ON" if value else "VIS_OFF")
 func _apply() -> void:
-	effects_changed.emit(amount,glass,reduced,flicker,global_amount,glitches)
+	effects_changed.emit(0.0 if clear_display else amount,glass,reduced,flicker and not clear_display,0.0 if clear_display else global_amount,glitches and not clear_display)
 	_save_session()
 func _game() -> void:
 	var left := _panel(Rect2(80,180,284,608))
@@ -649,12 +664,14 @@ func _game() -> void:
 	_place(grid,Rect2(Geometry.GAME_GRID_CENTER-extent*0.5,extent),page)
 	last_states.clear()
 	last_visual_styles.clear()
+	var grid_focus: StyleBoxFlat=Access.focus_style(high_contrast)
 	for i in range(w*h):
 		var btn := Button.new()
 		btn.custom_minimum_size = cell
-		btn.add_theme_font_size_override("font_size",maxi(14,int(cell.x*0.68)))
-		for style_name in ["normal","hover","pressed","disabled","focus"]:
+		btn.add_theme_font_size_override("font_size",maxi(14,int(cell.x*(0.78 if large_symbols else 0.68))))
+		for style_name in ["normal","hover","pressed","disabled"]:
 			btn.add_theme_stylebox_override(style_name,style_bank.get_style(Color("183b27"),DIM,2))
+		btn.add_theme_stylebox_override("focus",grid_focus)
 		btn.pressed.connect(_reveal.bind(i))
 		btn.gui_input.connect(_cell_input.bind(i))
 		grid.add_child(btn)
@@ -744,7 +761,9 @@ func _reveal(i: int) -> void:
 	_remember_move(saved)
 	_after_action("flood" if board.opened-before > 1 else ("reveal" if board.opened > before else ""))
 func _cell_input(event: InputEvent, i: int) -> void:
-	if protocol_active or board == null or board.finished(): return
+	if protocol_active: return
+	if Access.grid_key(event,buttons,i,grid.columns): return
+	if board == null or board.finished(): return
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_RIGHT:
 			_flag_action(i)
@@ -756,7 +775,7 @@ func _cell_input(event: InputEvent, i: int) -> void:
 		if event.keycode == KEY_SPACE and board.cells[i] == Board.Cell.OPEN:
 			_chord_action(i)
 			buttons[i].accept_event()
-		elif event.keycode == KEY_F:
+		elif Access.physical(event) == KEY_F:
 			_flag_action(i)
 			buttons[i].accept_event()
 func _flag_action(i: int) -> void:
@@ -833,7 +852,7 @@ func _refresh() -> void:
 	var max_hp: int = _max_hp()
 	var hp: int = run_hp if board == null else board.hp
 	integrity.text = tr("CORE_HP")+"\n%d / %d" % [hp,max_hp]
-	integrity.add_theme_color_override("font_color",RED if hp < 2 else (AMBER if hp == 2 else GREEN))
+	integrity.add_theme_color_override("font_color",Access.readable(RED if hp < 2 else (AMBER if hp == 2 else GREEN),high_contrast))
 	var opened: int = 0 if board == null else board.opened
 	var total: int = Profiles.SIZES[profile]*Profiles.SIZES[profile]-Profiles.MINES[profile] if board == null else board.width * board.height - board.mine_total
 	recovered.text = tr("CORE_OPEN")+"\n%d / %d" % [opened,total]
@@ -850,7 +869,7 @@ func _refresh() -> void:
 	if board!=null and board.has_portal() and not protocol_active and not board.finished() and inspect_result.is_empty():
 		status.text += " // PORTAL %s [%d-%d]" % [_on_off(board.portal_enabled),board.portal_pair.x+1,board.portal_pair.y+1]
 	if pending_sector and last_reward>0: status.text += "  +%d CR" % last_reward
-	status.add_theme_color_override("font_color",RED if message_key == "CORE_LOSS" else (AMBER if message_key in ["CORE_HIT","CORE_FAIL","CORE_SEED_BAD"] else GREEN))
+	status.add_theme_color_override("font_color",Access.readable(RED if message_key == "CORE_LOSS" else (AMBER if message_key in ["CORE_HIT","CORE_FAIL","CORE_SEED_BAD"] else GREEN),high_contrast))
 	for i in range(buttons.size()):
 		var b: Button = buttons[i]
 		var state: int = Board.Cell.CLOSED if board == null else board.cells[i]
@@ -896,6 +915,10 @@ func _refresh() -> void:
 			edge = Color("7ac5d0")
 			desc += " / PORTAL #%d" % ((board.portal_pair.y if i==board.portal_pair.x else board.portal_pair.x)+1)
 		var width: int=3 if board!=null and board.has_portal() and i in [board.portal_pair.x,board.portal_pair.y] else 2
+		if high_contrast:
+			color=Access.readable(color,true)
+			edge=Access.readable(edge,true)
+			fill=fill.darkened(0.32)
 		var signature: Array=[fill,edge,color,width]
 		if last_visual_styles[i]!=signature:
 			b.add_theme_stylebox_override("normal",style_bank.get_style(fill,edge,width))
@@ -1355,6 +1378,8 @@ func _challenge() -> void:
 	challenge.position=Vector2(80,180)
 	challenge.size=Vector2(1266,710)
 	challenge.theme=theme
+	challenge.high_contrast=high_contrast
+	challenge.large_symbols=large_symbols
 	challenge.back.connect(func(): _show("challenges"))
 	challenge.clicked.connect(func(): audio.play_event("key"))
 	challenge.trial_completed.connect(func(id: String):
@@ -1416,6 +1441,8 @@ func _campaign_boss() -> void:
 	trial.position=Vector2(80,180)
 	trial.size=Vector2(1266,710)
 	trial.theme=theme
+	trial.high_contrast=high_contrast
+	trial.large_symbols=large_symbols
 	trial.back.connect(func(): _show("menu"))
 	trial.clicked.connect(func(): audio.play_event("key"))
 	trial.encounter_won.connect(func():
@@ -1494,6 +1521,8 @@ func _campaign_archive() -> void:
 	trial.position=Vector2(80,180)
 	trial.size=Vector2(1266,710)
 	trial.theme=theme
+	trial.high_contrast=high_contrast
+	trial.large_symbols=large_symbols
 	trial.back.connect(func(): _show("campaign_route"))
 	trial.clicked.connect(func(): audio.play_event("key"))
 	trial.encounter_won.connect(func():
@@ -1547,6 +1576,8 @@ func _rewrite_trial() -> void:
 	trial.position=Vector2(80,180)
 	trial.size=Vector2(1266,710)
 	trial.theme=theme
+	trial.high_contrast=high_contrast
+	trial.large_symbols=large_symbols
 	trial.back.connect(func(): _show("ending_choice"))
 	trial.clicked.connect(func(): audio.play_event("key"))
 	trial.encounter_won.connect(func():
@@ -1615,6 +1646,8 @@ func _classic() -> void:
 	view.position=Vector2(80,180)
 	view.size=Vector2(1266,710)
 	view.theme=theme
+	view.high_contrast=high_contrast
+	view.large_symbols=large_symbols
 	view.back.connect(func(): _show("modes"))
 	view.clicked.connect(func(): audio.play_event("key"))
 	page.add_child(view)
@@ -1658,3 +1691,41 @@ func _performance() -> void:
 	panel.name="PerformanceReadout"
 	_place(panel,Rect2(124,310,1170,450),page)
 	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("help"))
+
+func _accessibility() -> void:
+	_label(tr("ACC_TITLE"),Rect2(124,205,1170,68),page,40)
+	var contrast_button:=_button(tr("ACC_CONTRAST")+": "+_on_off(high_contrast),Rect2(124,292,1170,60),page,func():
+		high_contrast=not high_contrast
+		theme=_terminal_theme()
+		_save_session()
+		_show("accessibility"))
+	contrast_button.name="ContrastSetting"
+	var symbols_button:=_button(tr("ACC_SYMBOLS")+": "+_on_off(large_symbols),Rect2(124,368,1170,60),page,func():
+		large_symbols=not large_symbols
+		_save_session()
+		_show("accessibility"))
+	symbols_button.name="SymbolsSetting"
+	var clear_button:=_button(tr("ACC_CLEAR")+": "+_on_off(clear_display),Rect2(124,444,1170,60),page,func():
+		clear_display=not clear_display
+		_apply()
+		_show("accessibility"))
+	clear_button.name="ClearDisplaySetting"
+	_button(tr("VIS_MOTION")+": "+_on_off(reduced),Rect2(124,520,1170,60),page,func():
+		reduced=not reduced
+		_apply()
+		_show("accessibility"))
+	_label(tr("ACC_KEYS"),Rect2(124,608,1170,92),page,25)
+	_label(tr("ACC_WARNING"),Rect2(124,708,1170,100),page,25,AMBER)
+	_button(tr("VIS_BACK"),Rect2(124,820,350,58),page,func(): _show("settings"))
+
+func back_shortcut() -> bool:
+	if protocol_active or screen=="menu": return false
+	var parent_screen: String={
+		"audio":"settings","accessibility":"settings","performance":"help",
+		"classic":"modes","profiles":"modes","challenge":"challenges",
+		"archive_preview":"archives","gallery_preview":"gallery","archives":"gallery",
+		"campaign_archive":"campaign_route","rewrite_trial":"ending_choice","replace":"shop"
+	}.get(screen,"menu")
+	_save_session()
+	_show(parent_screen)
+	return true

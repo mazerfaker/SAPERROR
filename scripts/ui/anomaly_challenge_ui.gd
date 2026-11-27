@@ -1,4 +1,7 @@
 extends Control
+const Access=preload("res://scripts/ui/accessibility.gd")
+var high_contrast: bool=false
+var large_symbols: bool=false
 const Challenge = preload("res://scripts/board/anomaly_challenge.gd")
 const Board = preload("res://scripts/board/state.gd")
 const BossEmblem = preload("res://scripts/ui/boss_emblem.gd")
@@ -76,10 +79,12 @@ func restart() -> void:
 		grid.add_theme_constant_override("h_separation",5)
 		grid.add_theme_constant_override("v_separation",5)
 		body.add_child(grid)
+		var focus: StyleBoxFlat=Access.focus_style(high_contrast)
 		for i in range(Challenge.SIZE*Challenge.SIZE):
 			var tile := Button.new()
 			tile.custom_minimum_size=Vector2(84,84)
-			tile.add_theme_font_size_override("font_size",34)
+			tile.add_theme_font_size_override("font_size",42 if large_symbols else 34)
+			tile.add_theme_stylebox_override("focus",focus)
 			tile.pressed.connect(_move.bind(i,false,false))
 			tile.gui_input.connect(_tile_input.bind(i))
 			grid.add_child(tile)
@@ -104,7 +109,9 @@ func restart() -> void:
 	if campaign_encounter and model.valid:
 		proceed_button=button(tr("CAM_ENTER"),Vector2(350,630),Vector2(550,60),_proceed)
 	if model.valid: refresh()
+	if not Access.focus_tiles(tiles): Access.focus_first(body)
 func _tile_input(event: InputEvent, i: int) -> void:
+	if Access.grid_key(event,tiles,i,Challenge.SIZE): return
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index==MOUSE_BUTTON_RIGHT:
 			tiles[i].accept_event()
@@ -113,7 +120,7 @@ func _tile_input(event: InputEvent, i: int) -> void:
 			tiles[i].accept_event()
 			_move(i,false,true)
 	elif event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode==KEY_F:
+		if Access.physical(event)==KEY_F:
 			tiles[i].accept_event()
 			_move(i,true,false)
 		elif event.keycode==KEY_SPACE and model.board().cells[i]==Board.Cell.OPEN:
@@ -165,7 +172,7 @@ func refresh() -> void:
 		var fill: Color=Color("081a11") if state==Board.Cell.OPEN else Color("183b27")
 		if state==Board.Cell.NEUTRALIZED: fill=Color("491e19")
 		var marked: bool=not model.marker(i).is_empty()
-		var style: StyleBoxFlat=style_bank.get_style(fill,Color("edc27b") if marked else Color("53775d"),3 if marked else 2,false)
+		var style: StyleBoxFlat=style_bank.get_style(fill.darkened(0.32) if high_contrast else fill,Access.readable(Color("edc27b") if marked else Color("53775d"),high_contrast),3 if marked else 2,false)
 		if tile.get_theme_stylebox("normal")!=style: tile.add_theme_stylebox_override("normal",style)
 		if tile.get_theme_stylebox("disabled")!=style: tile.add_theme_stylebox_override("disabled",style)
 		tile.tooltip_text="#%d %s" % [i+1,model.marker(i)]
