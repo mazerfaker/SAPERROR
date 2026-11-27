@@ -148,7 +148,7 @@ func _shutdown() -> void:
 	ui.audio.play_event("shutdown")
 func _process(delta: float) -> void:
 	if crt_material == null: return
-	if is_instance_valid(live): live.set_audio_settings(ui.audio.sfx_level,ui.audio.enabled)
+	if is_instance_valid(live): live.set_audio_settings(ui.audio.effective_sfx(),ui.audio.enabled)
 	var previous: int = lifecycle.phase
 	lifecycle.advance(delta)
 	if lifecycle.phase == Lifecycle.Phase.BOOT:

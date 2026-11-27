@@ -1,4 +1,7 @@
 # Changelog
+## 0.8.0-beta.5 — Audio Ultimate candidate
+13 original one-shot procedural signals for tools, shop, anomalies and story progression; 27 one-shot event types including exact approved MP3s (lamp separate). Persistent Master gain, independent channels, score and lamp routing, priority-aware bounded six-voice pool. Existing hum/score samples and approved MP3/WAV unchanged. Headless waveform/routing/voice QA and existing native loop smoke required; listening acceptance pending.
+
 ## 0.8.0-beta.4 — profile balance candidate
 Story 40 CR/3 stock, 20 CR repair and sector-start checkpoint including selected seed and pre-move purchases. Standard unchanged. Expert 25 CR, Hardcore 20 CR; Hardcore Profit bonus 25% instead of 50% since minimum HP already one. Campaign encounters use profile HP on each independent authored layer; Lab remains 3. 64 certified generation/replay samples, all 4 difficulties in full campaign integration, profile economy and checkpoint regression. Values provisional pending real playtests.
 

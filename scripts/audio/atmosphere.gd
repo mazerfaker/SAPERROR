@@ -22,6 +22,7 @@ const THEMES := {
 	"end_rewrite":[65,98,130,1,0.15]
 }
 var level: float=DEFAULT_LEVEL
+var master: float=1.0
 var enabled: bool=true
 var requested: String=""
 var current: String=""
@@ -130,7 +131,7 @@ func _process(delta: float) -> void:
 					stream_player.play()
 	else:
 		gain=move_toward(gain,1.0 if not current.is_empty() else 0.0,maxf(delta,0.0)/FADE)
-	var amplitude: float=gain*level*power if enabled else 0.0
+	var amplitude: float=gain*level*power*master if enabled else 0.0
 	_set_volume(linear_to_db(maxf(0.0001,amplitude)))
 
 func _set_volume(db: float) -> void:
@@ -138,3 +139,6 @@ func _set_volume(db: float) -> void:
 	last_db=db
 	stream_player.volume_db=db
 	volume_writes+=1
+
+func set_master(value: float) -> void:
+	master=clampf(value,0.0,1.0)

@@ -75,3 +75,5 @@ Alpha.7 LIAR authored boss trial, no intermediate CI. Full combined v0.5 Beta ga
 0.8.0-beta.2 verified Windows CI 46037558423 (220 performance checks). 0.8.0-beta.3 adds 72h ×100 simulation at 5/10/24/48/72h, 60 sector advances, repeated screen cleanup, bounded resources, and separate native 72-second audio loop smoke. Actual 72-hour hardware soak and leak profiling remain open; CI pending.
 
 0.8.0-beta.3 verified CI 46039772326: 467472 new long-run checks; 72h simulation, 60 sectors, no orphan-node growth; native 72s smoke accepted. 0.8.0-beta.4 profile balance: Story sector checkpoint, start resources and repair costs, Hardcore Profit adjustment, authored encounter HP by difficulty, expanded public proof routes. Real human playtesting and broader anomaly combinations remain open.
+
+0.8.0-beta.4 verified CI 46041175533: 224 balance checks, 350 campaign checks. 0.8.0-beta.5 Audio Ultimate: 13 additional event signals, persistent master and priority-aware six-voice pool, dedicated event routing, no approved audio replacement. CI and manual listening pending.

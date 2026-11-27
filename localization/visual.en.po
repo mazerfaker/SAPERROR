@@ -832,3 +832,6 @@ msgstr "Retry from the start of this sector, retaining the loadout and integrity
 
 msgid "DESC_PROFIT_HARD"
 msgstr "+25% sector reward on Hardcore; maximum integrity is already 1."
+
+msgid "VIS_MASTER"
+msgstr "Master volume"

@@ -139,6 +139,7 @@ func _ready() -> void:
 	audio = TerminalAudio.new()
 	audio.set_levels(float(cfg.get_value("settings","sfx",0.55)),float(cfg.get_value("settings","hum",0.28)),bool(cfg.get_value("settings","sound",true)))
 	audio.set_music_level(float(cfg.get_value("settings","music",Atmosphere.DEFAULT_LEVEL)))
+	audio.set_master(float(cfg.get_value("settings","master",1.0)))
 	add_child(audio)
 	var bg := ColorRect.new()
 	bg.color = Color("081710")
@@ -227,7 +228,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.8.0-b4",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.8.0-b5",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -461,6 +462,7 @@ func _save_session() -> void:
 	cfg.set_value("settings","sfx",audio.sfx_level)
 	cfg.set_value("settings","hum",audio.hum_level)
 	cfg.set_value("settings","music",audio.music_level)
+	cfg.set_value("settings","master",audio.master_level)
 	cfg.set_value("settings","sound",audio.enabled)
 	cfg.set_value("stats","tutorial",tutorial_done)
 	cfg.set_value("stats","sessions",sessions)
@@ -571,9 +573,10 @@ func _settings() -> void:
 func _audio_settings() -> void:
 	_label(tr("VIS_AUDIO"),Rect2(124,212,1150,60),page,41)
 	_button(tr("VIS_SOUND")+": "+_on_off(audio.enabled),Rect2(124,300,1040,62),page,func(): audio.set_levels(audio.sfx_level,audio.hum_level,not audio.enabled); _save_session(); _show("audio"))
-	_audio_slider(tr("VIS_SFX"),audio.sfx_level,390,"sfx")
-	_audio_slider(tr("VIS_HUM"),audio.hum_level,500,"hum")
-	_audio_slider(tr("VIS_MUSIC"),audio.music_level,610,"music")
+	_audio_slider(tr("VIS_MASTER"),audio.master_level,378,"master")
+	_audio_slider(tr("VIS_SFX"),audio.sfx_level,465,"sfx")
+	_audio_slider(tr("VIS_HUM"),audio.hum_level,552,"hum")
+	_audio_slider(tr("VIS_MUSIC"),audio.music_level,639,"music")
 	_button(tr("VIS_AUDIO_TEST"),Rect2(124,730,500,55),page,func(): audio.play_event("reveal"))
 	var preview:=_button(tr("VIS_MUSIC_TEST"),Rect2(644,730,520,55),page,func():
 		audio.select_music("" if audio.music.requested=="act_boot" else "act_boot"))
@@ -592,6 +595,7 @@ func _audio_slider(caption: String, value: float, y: float, channel: String) -> 
 		readout.text = caption+": "+str(roundi(v*100))+"%"
 		if channel=="sfx": audio.set_levels(v,audio.hum_level,audio.enabled)
 		elif channel=="hum": audio.set_levels(audio.sfx_level,v,audio.enabled)
+		elif channel=="master": audio.set_master(v)
 		else: audio.set_music_level(v)
 		_save_session())
 func _fullscreen_active() -> bool:
@@ -807,6 +811,7 @@ func _after_action(sound: String = "") -> void:
 		message_key = "CORE_LOSS"
 		sound = "loss"
 	if not sound.is_empty(): audio.play_event(sound)
+	if not board.finished() and (anomaly_event=="hidden" or infection_event in ["warning","blocked"]): audio.play_event("anomaly")
 	_refresh()
 	if board.finished() and not pending_sector:
 		sector_ready = false
@@ -1010,7 +1015,7 @@ func _rewind() -> void:
 	hint_cell = -1
 	hint_sources.clear()
 	message_key = "VIS_REWOUND"
-	audio.play_event("boot")
+	audio.play_event("rewind")
 	_refresh()
 	_save_session()
 func _request_hint() -> void:
@@ -1022,7 +1027,7 @@ func _request_hint() -> void:
 		parasite.cleanse(board)
 		rewind_data.clear()
 		message_key = "VIS_PARASITE_CLEAR"
-		audio.play_event("key")
+		audio.play_event("cleanse")
 		_refresh()
 		_save_session()
 		return
@@ -1032,7 +1037,7 @@ func _request_hint() -> void:
 		phantom.clear_zone()
 		rewind_data.clear()
 		message_key = "VIS_PHANTOM_CLEAR"
-		audio.play_event("key")
+		audio.play_event("cleanse")
 		_refresh()
 		_save_session()
 		return
@@ -1051,7 +1056,7 @@ func _request_hint() -> void:
 			var source: int = item["source"]
 			if source>=0 and not hint_sources.has(source): hint_sources.append(source)
 		message_key = "VIS_PROVEN_SAFE"
-	audio.play_event("key")
+	audio.play_event("scanner" if not result.is_empty() else "invalid")
 	_refresh()
 	_save_session()
 func _cycle_rule() -> void:
@@ -1061,6 +1066,7 @@ func _cycle_rule() -> void:
 	hint_cell = -1
 	hint_sources.clear()
 	message_key = "VIS_RULE_CHANGED"
+	audio.play_event("rule")
 	_refresh()
 	_save_session()
 func _inspect_cell(i: int) -> void:
@@ -1151,6 +1157,7 @@ func _buy_module(id: String) -> void:
 		_show("replace")
 		return
 	if economy.buy(id):
+		audio.play_event("module")
 		_apply_hp_cap()
 		hints_left = _hint_limit()
 		rewinds_left = _rewind_limit()
@@ -1158,10 +1165,12 @@ func _buy_module(id: String) -> void:
 		_show("shop")
 func _buy_charge() -> void:
 	if _shop_available() and screen=="shop" and economy.buy_charge():
+		audio.play_event("purchase")
 		_save_session()
 		_show("shop")
 func _reroll_shop() -> void:
 	if _shop_available() and screen=="shop" and economy.reroll():
+		audio.play_event("reroll")
 		_save_session()
 		_show("shop")
 
@@ -1202,16 +1211,20 @@ func _arm_shield() -> void:
 	_clear_inspection()
 	rewind_data.clear()
 	message_key = "VIS_ARMED"
+	audio.play_event("shield")
 	_refresh()
 	_save_session()
 func _repair() -> void:
 	if not _shop_available() or screen!="shop": return
+	var old_hp: int=run_hp
 	run_hp = economy.repair(run_hp,_max_hp())
+	if run_hp>old_hp: audio.play_event("repair")
 	sector_start_hp = run_hp
 	_save_session()
 	_show("shop")
 func _buy_shield() -> void:
 	if _shop_available() and screen=="shop" and economy.buy_shield():
+		audio.play_event("purchase")
 		_save_session()
 		_show("shop")
 func _replacement() -> void:
@@ -1227,6 +1240,7 @@ func _replacement() -> void:
 func _confirm_replace(id: String) -> void:
 	if not _shop_available() or screen!="replace": return
 	if economy.replace_module(id,replace_id):
+		audio.play_event("module")
 		_apply_hp_cap()
 		hints_left = _hint_limit()
 		rewinds_left = _rewind_limit()
@@ -1268,7 +1282,7 @@ func _inspect_target(i: int) -> void:
 	inspect_marks.assign(result["cells"])
 	inspect_mode = ""
 	rewind_data.clear()
-	audio.play_event("key")
+	audio.play_event("scanner")
 	_refresh()
 	_save_session()
 
@@ -1306,7 +1320,7 @@ func _cleanse() -> void:
 	rewind_data.clear()
 	_clear_inspection()
 	message_key = "VIS_PARASITE_CLEAR" if infection else "VIS_PHANTOM_CLEAR"
-	audio.play_event("key")
+	audio.play_event("cleanse")
 	_refresh()
 	_save_session()
 
@@ -1317,6 +1331,7 @@ func _toggle_portal() -> void:
 	hint_cell = -1
 	hint_sources.clear()
 	message_key = "VIS_PORTAL_CHANGED"
+	audio.play_event("portal")
 	_refresh()
 	_save_session()
 
@@ -1406,6 +1421,7 @@ func _campaign_boss() -> void:
 	trial.encounter_won.connect(func():
 		if screen!="campaign_boss" or not pending_sector or not trial.model.won(): return
 		if not campaign.advance_phase(sector_number,kind): return
+		audio.play_event("phase")
 		_save_session()
 		_advance_sector()
 		if screen=="game": _show("shop"))
@@ -1484,6 +1500,7 @@ func _campaign_archive() -> void:
 		if screen!="campaign_archive" or not trial.model.won() or not campaign.choose_route(sector_number,true): return
 		collection.recover("MEMORY_%02d" % sector_number)
 		last_reward=economy.archive_reward()
+		audio.play_event("archive")
 		_save_session()
 		_advance_sector()
 		if screen=="game": _show("shop"))

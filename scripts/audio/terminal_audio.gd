@@ -9,11 +9,31 @@ const ADMIN_INTRO_PATH := "res://assets/audio/dragon-studio-glitch-effect-1-3979
 const ADMIN_INTRO_SHA := "760b72bdaad71f83350e2ef3a9d037daf58f44855a05a6cce25d990f1ffb888a"
 const MENU_CLICK_PATH := "res://assets/audio/finntastico-old-computer-click-152513.mp3"
 const MENU_CLICK_SHA := "7ebe2a698a203d0682cfdf0d13c2a352bae46c69d989259698d9a87787a2d034"
-const EVENTS := ["key","reveal","flood","flag","unflag","fault","win","loss","invalid","boot","shutdown","k30","hum"]
+const EXTRA := {
+	"purchase":[0.18,430.0,820.0,0.16,0.03,2],
+	"module":[0.30,180.0,640.0,0.18,0.05,3],
+	"repair":[0.25,240.0,480.0,0.18,0.03,2],
+	"shield":[0.28,330.0,160.0,0.19,0.07,2],
+	"reroll":[0.21,520.0,240.0,0.14,0.07,4],
+	"scanner":[0.26,480.0,760.0,0.16,0.025,3],
+	"rewind":[0.32,720.0,160.0,0.19,0.045,4],
+	"cleanse":[0.36,210.0,540.0,0.18,0.06,2],
+	"portal":[0.30,390.0,600.0,0.16,0.055,4],
+	"rule":[0.13,310.0,460.0,0.15,0.04,2],
+	"archive":[0.46,260.0,780.0,0.19,0.02,3],
+	"phase":[0.42,120.0,360.0,0.20,0.07,3],
+	"anomaly":[0.32,165.0,95.0,0.18,0.08,3]
+}
+const EVENTS := ["key","reveal","flood","flag","unflag","fault","win","loss","invalid","boot","shutdown","k30","hum","purchase","module","repair","shield","reroll","scanner","rewind","cleanse","portal","rule","archive","phase","anomaly"]
+const VOICE_COUNT: int=6
 var sounds: Dictionary = {}
 var ambience: AudioStreamPlayer
 var voices: Array[AudioStreamPlayer] = []
 var next_voice: int = 0
+var voice_priorities: Array[int]=[]
+var master_level: float=1.0
+var last_event: String=""
+var dropped_events: int=0
 var sfx_level: float = 0.55
 var hum_level: float = 0.28
 var enabled: bool = true
@@ -21,6 +41,7 @@ var music_level: float=Atmosphere.DEFAULT_LEVEL
 var music: Atmosphere
 
 static func synth(kind: String) -> AudioStreamWAV:
+	if EXTRA.has(kind): return synth_extra(kind)
 	var duration: float = 0.10
 	match kind:
 		"key": duration = 0.065
@@ -98,6 +119,54 @@ static func synth(kind: String) -> AudioStreamWAV:
 	stream.data = pcm
 	return stream
 
+# Original, short, gently windowed mechanical/tonal signals.
+static func synth_extra(kind: String) -> AudioStreamWAV:
+	if not EXTRA.has(kind): return null
+	var spec: Array=EXTRA[kind]
+	var duration: float=float(spec[0])
+	var count: int=roundi(duration*RATE)
+	var pcm:=PackedByteArray()
+	pcm.resize(count*2)
+	var rng:=RandomNumberGenerator.new()
+	rng.seed=17301+EVENTS.find(kind)*97
+	var low: float=0.0
+	for i in range(count):
+		var t: float=float(i)/RATE
+		var x: float=float(i)/float(count-1)
+		var f0: float=float(spec[1])
+		var f1: float=float(spec[2])
+		var phase: float=TAU*(f0*t+(f1-f0)*t*t/(2.0*duration))
+		low=lerpf(low,rng.randf_range(-1.0,1.0),0.14)
+		var pulse: float=0.65+0.35*cos(TAU*float(spec[5])*x)
+		var envelope: float=smoothstep(0.0,0.018,x)*(1.0-smoothstep(0.55,1.0,x))
+		var sample: float=envelope*pulse*(float(spec[3])*(sin(phase)+0.22*sin(phase*2.0))+float(spec[4])*low)
+		pcm.encode_s16(i*2,roundi(clampf(sample,-0.35,0.35)*32767.0))
+	var stream:=AudioStreamWAV.new()
+	stream.format=AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate=RATE
+	stream.stereo=false
+	stream.data=pcm
+	return stream
+
+static func priority(kind: String) -> int:
+	if kind in ["admin_intro","shutdown","win","loss","k30","archive","phase"]: return 3
+	if kind in ["fault","anomaly","shield","cleanse","rewind","boot"]: return 2
+	if kind in ["menu_click","key","flag","unflag","invalid"]: return 0
+	return 1
+
+# Prefer a free voice; never cut a sound of equal or higher importance.
+static func pick_voice(busy: Array[bool], priorities: Array[int], start: int, incoming: int) -> int:
+	if busy.is_empty() or busy.size()!=priorities.size(): return -1
+	var weakest: int=-1
+	for offset in range(busy.size()):
+		var i: int=posmod(start+offset,busy.size())
+		if not busy[i]: return i
+		if priorities[i]<incoming and (weakest<0 or priorities[i]<priorities[weakest]): weakest=i
+	return weakest
+
+static func gain_db(channel: float,master: float,active: bool) -> float:
+	return linear_to_db(maxf(0.0001,clampf(channel,0.0,1.0)*clampf(master,0.0,1.0))) if active else -80.0
+
 static func button_event(screen: String) -> String:
 	return "menu_click" if screen=="menu" else "key"
 
@@ -116,6 +185,7 @@ static func admin_intro_stream() -> AudioStreamMP3:
 func _ready() -> void:
 	music=Atmosphere.new()
 	music.set_levels(music_level,enabled)
+	music.set_master(master_level)
 	add_child(music)
 	if DisplayServer.get_name() == "headless": return
 	for kind in EVENTS:
@@ -129,10 +199,11 @@ func _ready() -> void:
 	ambience = AudioStreamPlayer.new()
 	ambience.stream = sounds["hum"]
 	add_child(ambience)
-	for i in range(6):
+	for i in range(VOICE_COUNT):
 		var player := AudioStreamPlayer.new()
 		add_child(player)
 		voices.append(player)
+		voice_priorities.append(-1)
 	_apply_levels()
 	play_event("boot")
 
@@ -145,9 +216,9 @@ func set_levels(sfx: float, hum: float, active: bool) -> void:
 
 func _apply_levels() -> void:
 	if not is_instance_valid(ambience): return
-	ambience.volume_db = linear_to_db(maxf(hum_level,0.0001)) if enabled else -80.0
+	ambience.volume_db = gain_db(hum_level,master_level,enabled)
 	for voice in voices:
-		voice.volume_db = linear_to_db(maxf(sfx_level,0.0001)) if enabled else -80.0
+		voice.volume_db = gain_db(sfx_level,master_level,enabled)
 		if not enabled or sfx_level <= 0.0: voice.stop()
 	if not enabled or hum_level <= 0.0:
 		ambience.stop()
@@ -155,16 +226,25 @@ func _apply_levels() -> void:
 		ambience.play()
 
 func play_event(kind: String) -> void:
-	if not enabled or sfx_level <= 0.0 or voices.is_empty() or not sounds.has(kind): return
-	var voice: AudioStreamPlayer = voices[next_voice]
-	next_voice = (next_voice+1)%voices.size()
-	voice.stop()
-	voice.stream = sounds[kind]
+	if kind not in EVENTS and kind not in ["menu_click","admin_intro"]: return
+	last_event=kind
+	if not enabled or sfx_level<=0.0 or master_level<=0.0 or voices.is_empty() or not sounds.has(kind): return
+	var busy: Array[bool]=[]
+	for voice in voices: busy.append(voice.playing)
+	var selected: int=pick_voice(busy,voice_priorities,next_voice,priority(kind))
+	if selected<0:
+		dropped_events+=1
+		return
+	var voice: AudioStreamPlayer=voices[selected]
+	next_voice=(selected+1)%voices.size()
+	voice_priorities[selected]=priority(kind)
+	if voice.playing: voice.stop()
+	voice.stream=sounds[kind]
 	voice.play()
 
 func fade_hum(factor: float) -> void:
 	if is_instance_valid(ambience) and enabled:
-		ambience.volume_db = linear_to_db(maxf(hum_level*clampf(factor,0.0,1.0),0.0001))
+		ambience.volume_db = gain_db(hum_level*clampf(factor,0.0,1.0),master_level,enabled)
 
 func set_music_level(value: float) -> void:
 	music_level=clampf(value,0.0,1.0)
@@ -173,3 +253,10 @@ func select_music(id: String) -> void:
 	if is_instance_valid(music): music.select(id)
 func fade_music(factor: float) -> void:
 	if is_instance_valid(music): music.fade_power(factor)
+
+func set_master(value: float) -> void:
+	master_level=clampf(value,0.0,1.0)
+	if is_instance_valid(music): music.set_master(master_level)
+	_apply_levels()
+func effective_sfx() -> float:
+	return sfx_level*master_level if enabled else 0.0
