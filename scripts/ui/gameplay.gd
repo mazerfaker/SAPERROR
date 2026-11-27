@@ -5,8 +5,8 @@ const CRT = preload("res://assets/shaders/crt.gdshader")
 const Grade = preload("res://assets/shaders/scene_grade.gdshader")
 const Lifecycle = preload("res://scripts/ui/crt_lifecycle.gd")
 const ART_PATH := "res://assets/art/terminal_original.png"
-const Environment = preload("res://scripts/environment/live_environment.gd")
-var live: Environment
+const LiveEnvironment = preload("res://scripts/environment/live_environment.gd")
+var live: LiveEnvironment
 var frame: TextureRect
 var display: TextureRect
 var raster: SubViewport
@@ -38,7 +38,7 @@ func _ready() -> void:
 		push_error("SAPERROR: unexpected approved artwork dimensions")
 		get_tree().quit(2)
 		return
-	var candidate := Environment.new()
+	var candidate := LiveEnvironment.new()
 	if candidate.setup():
 		live = candidate
 		live.name = "LiveEnvironment"
