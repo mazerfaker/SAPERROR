@@ -690,7 +690,7 @@ msgid "CH_INST_RULE"
 msgstr "RULE"
 
 msgid "CH_MAGNET_INTRO"
-msgstr "MAGNET: before any move, acknowledge the marked exchange of closed cells #1 and #3. The mine total stays the same, clues are recalculated."
+msgstr "MAGNET: before any move, acknowledge the marked exchange of closed cells #2 and #3. The mine total stays the same, clues are recalculated."
 
 msgid "CH_MAGNET_WARNING"
 msgstr "Exchange pending. Inspect the clues, then apply the visible cycle."

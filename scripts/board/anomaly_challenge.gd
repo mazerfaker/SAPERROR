@@ -11,8 +11,8 @@ const MASK_B := [0,2,10,19]
 const KINDS := ["LOOP","DOUBLE","WATCHER","LIAR","MIMIC","NULL","INSTABILITY","MAGNET"]
 const MIMIC_ZONE := [0,2,4,14,20,22,24]
 const NULL_ZONE := [0,1,2,3,4,9,14,19,20,21,22,23,24]
-const MAGNET_SWAP := Vector2i(0,2)
-const MAGNET_MASK := [2,1,14,21]
+const MAGNET_SWAP := Vector2i(1,2)
+const MAGNET_MASK := [0,2,14,21]
 const EXTRA_KINDS := ["LOOP_B","ADMIN_LINK","REWRITE"]
 const LIAR_ROWS := [0,2,4]
 const DOUBLE_LINKS := [Vector2i(11,13),Vector2i(13,11)]
@@ -225,7 +225,7 @@ func details() -> String:
 	if kind=="MIMIC": return tr("CH_MIMIC_STATUS")
 	if kind=="NULL": return tr("CH_NULL_STATUS")+"\n"+(tr("CH_SCAN_FOUND")+" #%d" % (scan_cell+1) if scan_cell>=0 else tr("CH_SCAN_SPENT" if scan_used else "CH_SCAN_READY"))
 	if kind=="INSTABILITY": return ("CLASSIC" if board().rule==Rules.Rule.CLASSIC else "CROSS")+"\n"+(tr("CH_INST_SWITCH") if instability_triggered else tr("CH_INST_COUNT")+" %d" % maxi(0,3-actions))
-	if kind=="MAGNET": return "#1 <-> #3\n"+tr("CH_MAGNET_COMMITTED" if magnet_committed else "CH_MAGNET_WARNING")
+	if kind=="MAGNET": return "#%d <-> #%d\n" % [MAGNET_SWAP.x+1,MAGNET_SWAP.y+1]+tr("CH_MAGNET_COMMITTED" if magnet_committed else "CH_MAGNET_WARNING")
 	if kind=="LIAR":
 		var readings: Array[int] = decoded_sensors() if liar_solved else sensor_values
 		return "S1 = %d | S2 = %d | S3 = %d\nS1+S2 = %d | S2+S3 = %d | S1+S3 = %d\n%s" % [readings[0],readings[1],readings[2],checksum_values[0],checksum_values[1],checksum_values[2],tr("CH_LIAR_CORRECT" if liar_solved else "CH_LIAR_SELECT")]

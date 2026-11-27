@@ -1,4 +1,7 @@
 # Changelog
+## 0.7.0-beta.1 — MAGNET certification repair
+CI 46034527457 rejected post-exchange board (13/21 safe cells reached by independent reproduction). Use swap of closed indices 1 and 2 instead, both states solvable in independent direct/subset simulation with identical initial visibility. Keep native Godot certification mandatory, assert exactly two announced endpoints change. Full CI rerun pending.
+
 ## 0.7.0-beta.1 — combined Content & Art candidate
 First CI after all seven alpha stages. Existing regression plus extended authored anomalies, Classic/finite run, imported boss/act/ending art, original narrative audio, and collection. Package must retain eleven narrative SVG resources and approved audio/live assets. Candidate, not a completed release: actual visual/audio acceptance, GDD 25 SFX target, broader anomaly interactions, and balance remain open.
 

@@ -63,9 +63,15 @@ func run() -> void:
 	check(model.start("MAGNET"),"both MAGNET states certified")
 	if model.valid:
 		var prior: PackedInt32Array=model.board().cells.duplicate()
+		var original: PackedByteArray=model.board()._mask.duplicate()
 		check(not model.act(0,true),"moves blocked until acknowledged exchange")
 		check(model.commit_magnet(),"explicit exchange")
 		check(model.board().cells==prior and model.board()._mask==model.make_mask(Challenge.MAGNET_MASK),"only announced mine exchange, open state preserved")
+		var changed: Array[int]=[]
+		for i in range(original.size()):
+			if original[i]!=model.board()._mask[i]: changed.append(i)
+		check(changed==[Challenge.MAGNET_SWAP.x,Challenge.MAGNET_SWAP.y],"only marked endpoints changed")
+		check(model.certificates.size()==2,"both independent certificates retained")
 		check(not model.commit_magnet(),"no second exchange")
 	check(model.start("MIMIC"),"MIMIC setup")
 	if model.valid:
