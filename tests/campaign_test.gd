@@ -4,6 +4,7 @@ const TerminalUI = preload("res://scripts/ui/terminal_ui.gd")
 const ChallengeUI = preload("res://scripts/ui/anomaly_challenge_ui.gd")
 const Tools = preload("res://scripts/board/onboarding_tools.gd")
 const Board = preload("res://scripts/board/state.gd")
+const Profiles = preload("res://scripts/board/profiles.gd")
 var checks: int=0
 var failures: int=0
 func check(ok: bool, message: String) -> void:
@@ -77,6 +78,8 @@ func run() -> void:
 	await process_frame
 	for route in [0,1,2]:
 		await full_campaign(route)
+	for difficulty in [0,2,3]:
+		await full_campaign(2,difficulty)
 	print("CAMPAIGN_QA checks=",checks," failures=",failures)
 	quit(0 if failures==0 else 1)
 
@@ -95,11 +98,11 @@ func solve_trial(trial: ChallengeUI) -> bool:
 		if proof.is_empty(): break
 		trial._move(int(proof["cell"]),false,false)
 	return trial.model.won()
-func full_campaign(route: int) -> void:
+func full_campaign(route: int, difficulty: int=1) -> void:
 	var ui := TerminalUI.new()
 	ui.size=Vector2(1426,962)
 	root.add_child(ui)
-	ui._start_profile(1,true)
+	ui._start_profile(difficulty,true)
 	var entered: int=0
 	var completed: int=0
 	for transition in range(100):
@@ -137,6 +140,7 @@ func full_campaign(route: int) -> void:
 				if child is ChallengeUI: trial=child
 			check(is_instance_valid(trial),"trial UI "+ui.screen)
 			if not is_instance_valid(trial): break
+			check(trial.model.board().hp==Profiles.HP[difficulty],"encounter integrity matches difficulty")
 			check(solve_trial(trial),"public proof "+trial.kind)
 			if not trial.model.won(): break
 			trial._proceed()

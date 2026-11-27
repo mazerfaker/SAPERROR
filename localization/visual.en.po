@@ -826,3 +826,9 @@ msgstr "Engine nodes"
 
 msgid "PERF_NOTE"
 msgstr "Local display only. Unsupported monitors show N/A; not total process RAM or GPU utilization. Samples update once per second."
+
+msgid "CAM_RETRY_SECTOR"
+msgstr "Retry from the start of this sector, retaining the loadout and integrity recorded before its first move."
+
+msgid "DESC_PROFIT_HARD"
+msgstr "+25% sector reward on Hardcore; maximum integrity is already 1."

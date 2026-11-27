@@ -227,7 +227,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.8.0-b3",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.8.0-b4",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -286,7 +286,8 @@ func _profiles() -> void:
 		_label(tr("VIS_REPLACE_RUN"),Rect2(124,265,1170,80),page,29,AMBER)
 	for i in range(4):
 		var label: String = tr("VIS_PROFILE_"+Profiles.IDS[i].to_upper())+"  //  %d×%d  ·  %d  ·  HP %d" % [Profiles.SIZES[i],Profiles.SIZES[i],Profiles.MINES[i],Profiles.HP[i]]
-		_button(label,Rect2(124,350+i*100,1170,74),page,_start_profile.bind(i,campaign_selected,finite_selected),32)
+		var choice:=_button(label,Rect2(124,350+i*100,1170,74),page,_start_profile.bind(i,campaign_selected,finite_selected),32)
+		choice.tooltip_text="%d CR | %s %d | %s %d" % [Economy.START_CREDITS[i],tr("VIS_STOCK"),Economy.START_STOCK[i],tr("VIS_HINT"),Tools.HINT_LIMITS[i]]
 	_button(tr("VIS_BACK"),Rect2(124,803,350,57),page,func(): _show("menu"))
 func _start_profile(next_profile: int, story: bool = false, finite: bool = false) -> void:
 	if protocol_active: return
@@ -355,7 +356,7 @@ func _advance_sector() -> void:
 	first_cell = -1
 	last_hits = 0
 	message_key = "CORE_READY"
-	if campaign.active and sector_number in [4,7,10]: _capture_checkpoint()
+	if campaign.active and (profile==0 or sector_number in [4,7,10]): _capture_checkpoint()
 	_save_session()
 	_show("campaign_intro" if campaign.needs_intro(sector_number) else "game")
 func _tutorial() -> void:
@@ -715,6 +716,8 @@ func _reveal(i: int) -> void:
 		certificate = generated["certificate"]
 		active_seed = seed_input.text.to_int()
 		first_cell = i
+		# Story checkpoint includes the chosen seed and purchases before opening.
+		if campaign.active and profile==0: _capture_checkpoint()
 		seed_input.editable = false
 		sector_start_hp = clampi(run_hp,1,_max_hp())
 		protected_hits = 0
@@ -1127,11 +1130,11 @@ func _shop() -> void:
 		var y: int = 340+i*110
 		var buy := _button(tr("MOD_"+id)+"  /  "+str(economy.price(id))+" CR",Rect2(124,y,510,86),page,_buy_module.bind(id),26)
 		buy.disabled = economy.credits<economy.price(id)
-		_label(tr("DESC_"+id),Rect2(654,y,630,100),page,25)
+		_label(tr("DESC_PROFIT_HARD" if id=="PROFIT" and profile==3 else "DESC_"+id),Rect2(654,y,630,100),page,25)
 	var charge := _button(tr("VIS_BUY_CHARGE")+" / 12",Rect2(124,684,275,60),page,_buy_charge,21)
 	charge.disabled = economy.stock>=economy.capacity() or economy.credits<12
-	var repair := _button(tr("VIS_REPAIR")+" / 30",Rect2(419,684,275,60),page,_repair,21)
-	repair.disabled = run_hp>=_max_hp() or economy.credits<30
+	var repair := _button(tr("VIS_REPAIR")+" / %d" % economy.repair_price(),Rect2(419,684,275,60),page,_repair,21)
+	repair.disabled = run_hp>=_max_hp() or economy.credits<economy.repair_price()
 	var shield := _button(tr("VIS_SHIELD")+" / 18",Rect2(714,684,275,60),page,_buy_shield,21)
 	shield.disabled = economy.shield_stock>=1 or economy.credits<18
 	var reroll := _button(tr("VIS_REROLL")+" / %d" % economy.reroll_price(),Rect2(1009,684,275,60),page,_reroll_shop,21)
@@ -1392,6 +1395,7 @@ func _campaign_boss() -> void:
 	trial.kind=kind
 	trial.boss_identity=id
 	trial.campaign_encounter=true
+	trial.encounter_hp=Profiles.HP[profile]
 	if id=="LOOP": trial.encounter_title="LOOP // %d/2" % (campaign.loop_phase+1)
 	elif id=="ADMIN": trial.encounter_title="ADMIN // %d/3" % (campaign.admin_phase+1)
 	trial.position=Vector2(80,180)
@@ -1421,7 +1425,7 @@ func _retry_checkpoint() -> void:
 		return
 	var target: int=int(act_checkpoint.get("sector",0))
 	var saved := Campaign.new()
-	if target not in [1,4,7,10] or target>sector_number or int(act_checkpoint.get("profile",-1))!=profile or not saved.restore(act_checkpoint.get("campaign",{}),target):
+	if target<1 or target>10 or (profile!=0 and target not in [1,4,7,10]) or target>sector_number or int(act_checkpoint.get("profile",-1))!=profile or not saved.restore(act_checkpoint.get("campaign",{}),target):
 		_start_profile(profile,true)
 		return
 	var data: Variant=act_checkpoint.get("economy",{})
@@ -1450,7 +1454,7 @@ func _retry_checkpoint() -> void:
 	_show("campaign_intro" if campaign.needs_intro(sector_number) else "game")
 func _campaign_recovery() -> void:
 	_label(tr("CAM_RETRY"),Rect2(124,215,1170,80),page,42,RED)
-	_label(tr("CAM_RETRY_HARD" if profile==3 else "CAM_RETRY_ACT"),Rect2(124,320,1170,280),page,32)
+	_label(tr("CAM_RETRY_HARD" if profile==3 else ("CAM_RETRY_SECTOR" if profile==0 else "CAM_RETRY_ACT")),Rect2(124,320,1170,280),page,32)
 	_button(tr("CAM_ENTER"),Rect2(124,810,570,60),page,_retry_checkpoint)
 	_button(tr("VIS_BACK"),Rect2(714,810,570,60),page,func(): _show("menu"))
 func _campaign_route() -> void:
@@ -1470,6 +1474,7 @@ func _campaign_archive() -> void:
 	trial.reduced_motion=reduced
 	trial.kind=Campaign.ARCHIVES[sector_number]
 	trial.campaign_encounter=true
+	trial.encounter_hp=Profiles.HP[profile]
 	trial.position=Vector2(80,180)
 	trial.size=Vector2(1266,710)
 	trial.theme=theme
@@ -1521,6 +1526,7 @@ func _rewrite_trial() -> void:
 	trial.reduced_motion=reduced
 	trial.kind="REWRITE"
 	trial.campaign_encounter=true
+	trial.encounter_hp=Profiles.HP[profile]
 	trial.position=Vector2(80,180)
 	trial.size=Vector2(1266,710)
 	trial.theme=theme

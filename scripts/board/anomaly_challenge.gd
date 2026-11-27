@@ -17,6 +17,7 @@ const EXTRA_KINDS := ["LOOP_B","ADMIN_LINK","REWRITE"]
 const LIAR_ROWS := [0,2,4]
 const DOUBLE_LINKS := [Vector2i(11,13),Vector2i(13,11)]
 var kind: String = "LOOP"
+var starting_hp: int=3
 var boards: Array[Board] = []
 var certificates: Array[Dictionary] = []
 var active_layer: int = 0
@@ -47,13 +48,14 @@ func add_board(mines: Array) -> bool:
 	var mask: PackedByteArray = make_mask(mines)
 	var proof: Dictionary = Validator.certify(SIZE,SIZE,mask,FIRST,[Rules.Rule.CLASSIC])
 	if proof.is_empty(): return false
-	var b := Board.new(SIZE,SIZE,mask,3)
+	var b := Board.new(SIZE,SIZE,mask,starting_hp)
 	b.reveal(FIRST)
 	boards.append(b)
 	certificates.append(proof)
 	return not b.finished()
-func start(next_kind: String) -> bool:
+func start(next_kind: String, integrity: int=3) -> bool:
 	kind = next_kind
+	starting_hp=clampi(integrity,1,5)
 	boards.clear()
 	certificates.clear()
 	active_layer=0
@@ -84,7 +86,7 @@ func start(next_kind: String) -> bool:
 		var alternate: PackedByteArray=make_mask(MAGNET_MASK)
 		var proof: Dictionary=Validator.certify(SIZE,SIZE,alternate,FIRST,[Rules.Rule.CLASSIC])
 		if proof.is_empty(): return false
-		var preview := Board.new(SIZE,SIZE,alternate,3)
+		var preview := Board.new(SIZE,SIZE,alternate,starting_hp)
 		preview.reveal(FIRST)
 		if preview.cells!=board().cells or preview.finished(): return false
 		certificates.append(proof)

@@ -11,6 +11,7 @@ signal encounter_won
 signal trial_completed(id: String)
 var completion_reported: bool=false
 var campaign_encounter: bool = false
+var encounter_hp: int=3
 var encounter_title: String = ""
 var proceed_button: Button
 var kind: String = "LOOP"
@@ -54,7 +55,7 @@ func restart() -> void:
 	add_child(body)
 	tiles.clear()
 	completion_reported=false
-	model.start(kind)
+	model.start(kind,encounter_hp if campaign_encounter else 3)
 	var identity: String=boss_identity if not boss_identity.is_empty() else BossEmblem.resolve(kind)
 	emblem=null
 	var text_width: float=1060.0 if not identity.is_empty() else 1266.0

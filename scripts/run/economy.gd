@@ -4,6 +4,11 @@ const MODULES := ["XRAY","CHAIN","CAPACITOR","ASSISTANT","CHRONOMANCER","SECOND_
 const PRICES := [32,36,28,30,34,40,35,34,32,45,30,28,26,30,30]
 const MAX_MODULES := 4
 const MAX_CREDITS := 1000000
+# Provisional product-beta economy tuning; Standard stays identical.
+const START_CREDITS := [40,30,25,20]
+const START_STOCK := [3,2,0,0]
+const REPAIR_COST := [20,30,30,30]
+var difficulty: int=1
 var credits: int = 30
 var stock: int = 0
 var owned: Array[String] = []
@@ -27,8 +32,9 @@ var spent: int = 0
 func capacity() -> int:
 	return 4+(2 if owned.has("CAPACITOR") else 0)
 func reset(profile: int) -> void:
-	credits = 30
-	stock = 2 if profile==1 else 0
+	difficulty=clampi(profile,0,3)
+	credits=START_CREDITS[difficulty]
+	stock=START_STOCK[difficulty]
 	owned.clear()
 	shield_stock = 0
 	earned = 0
@@ -54,7 +60,9 @@ func add_stock(n: int) -> void:
 func reward(sector: int, opened: int, hits: int) -> int:
 	if sector<=rewarded_sector or sector!=offer_sector: return 0
 	var amount: int = 25+maxi(0,opened)/5+(10 if hits==0 else 0)
-	if owned.has("PROFIT"): amount = amount*3/2
+	if owned.has("PROFIT"):
+		# At one HP the nominal -1 HP penalty cannot apply. Reduce the bonus.
+		amount=amount*5/4 if difficulty==3 else amount*3/2
 	_gain(amount)
 	rewarded_sector = sector
 	return amount
@@ -144,7 +152,7 @@ func snapshot() -> Dictionary:
 	data.merge({"credits":credits,"owned":owned.duplicate(),"sector":offer_sector,"rewarded":rewarded_sector,"rerolls":rerolls})
 	return data
 func restore(data: Dictionary, sector: int, pending: bool) -> void:
-	credits = clampi(int(data.get("credits",30)),0,MAX_CREDITS)
+	credits = clampi(int(data.get("credits",START_CREDITS[difficulty])),0,MAX_CREDITS)
 	owned.clear()
 	var items: Variant = data.get("owned",[])
 	if items is Array:
@@ -159,8 +167,8 @@ func restore(data: Dictionary, sector: int, pending: bool) -> void:
 		restore_move(data)
 
 func repair(hp: int, maximum: int) -> int:
-	if hp<1 or hp>=maximum or credits<30: return hp
-	_spend(30)
+	if hp<1 or hp>=maximum or credits<repair_price(): return hp
+	_spend(repair_price())
 	return hp+1
 func buy_shield() -> bool:
 	if credits<18 or shield_stock>=1 or shield_armed: return false
@@ -217,3 +225,6 @@ func archive_reward() -> int:
 	var value: int=15+(10 if owned.has("ARCHIVIST") else 0)
 	_gain(value)
 	return value
+
+func repair_price() -> int:
+	return REPAIR_COST[difficulty]
