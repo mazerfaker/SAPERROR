@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 45
     env:
       GODOT_VERSION: '4.7.2-stable'
-      GAME_VERSION: '0.8.0-beta.1'
+      GAME_VERSION: '0.8.0-beta.2'
     steps:
       - name: Windows prerequisites
         shell: pwsh
@@ -155,6 +155,8 @@ jobs:
           if (-not (Select-String -Path build/logs/collection-tests.txt -Pattern 'COLLECTION_QA.*failures=0' -Quiet)) { throw 'Missing collection QA marker' }
           Invoke-Godot 'save-recovery-tests.txt' @('--headless','--path','.','--script','res://tests/save_recovery_test.gd')
           if (-not (Select-String -Path build/logs/save-recovery-tests.txt -Pattern 'SAVE_RECOVERY_QA.*failures=0' -Quiet)) { throw 'Missing save recovery QA marker' }
+          Invoke-Godot 'performance-tests.txt' @('--headless','--path','.','--script','res://tests/performance_test.gd')
+          if (-not (Select-String -Path build/logs/performance-tests.txt -Pattern 'PERFORMANCE_QA.*failures=0' -Quiet)) { throw 'Missing performance QA marker' }
           Invoke-Godot 'export.txt' @('--headless','--path','.','--export-release','Windows Desktop','build/windows/SAPERROR.exe')
       - name: Native render and audio QA
         shell: pwsh

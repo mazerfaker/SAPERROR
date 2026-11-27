@@ -14,6 +14,8 @@ var campaign_encounter: bool = false
 var encounter_title: String = ""
 var proceed_button: Button
 var kind: String = "LOOP"
+const StyleBank=preload("res://scripts/ui/style_bank.gd")
+var style_bank:=StyleBank.new()
 var model := Challenge.new()
 var body: Control
 var info: Label
@@ -159,13 +161,12 @@ func refresh() -> void:
 		if state==Board.Cell.OPEN and model.hidden(i): tile.text="?"
 		if state==Board.Cell.CLOSED and model.marker(i)=="MIMIC": tile.text="~"
 		tile.disabled=model.done() or b.finished() or (kind=="MAGNET" and not model.magnet_committed)
-		var style := StyleBoxFlat.new()
-		style.bg_color=Color("081a11") if state==Board.Cell.OPEN else Color("183b27")
-		if state==Board.Cell.NEUTRALIZED: style.bg_color=Color("491e19")
-		style.border_color=Color("edc27b") if not model.marker(i).is_empty() else Color("53775d")
-		style.set_border_width_all(3 if not model.marker(i).is_empty() else 2)
-		tile.add_theme_stylebox_override("normal",style)
-		tile.add_theme_stylebox_override("disabled",style)
+		var fill: Color=Color("081a11") if state==Board.Cell.OPEN else Color("183b27")
+		if state==Board.Cell.NEUTRALIZED: fill=Color("491e19")
+		var marked: bool=not model.marker(i).is_empty()
+		var style: StyleBoxFlat=style_bank.get_style(fill,Color("edc27b") if marked else Color("53775d"),3 if marked else 2,false)
+		if tile.get_theme_stylebox("normal")!=style: tile.add_theme_stylebox_override("normal",style)
+		if tile.get_theme_stylebox("disabled")!=style: tile.add_theme_stylebox_override("disabled",style)
 		tile.tooltip_text="#%d %s" % [i+1,model.marker(i)]
 	if model.won() and not completion_reported and not campaign_encounter:
 		completion_reported=true

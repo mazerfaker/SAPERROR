@@ -802,3 +802,27 @@ msgstr "MINE / RECOVERED OPERATOR RECORD\n\nThe same clearance procedure has bee
 
 msgid "VIS_SAVE_RECOVERED"
 msgstr "Recovered a previous valid save. Some recent actions may be lost."
+
+msgid "PERF_TITLE"
+msgstr "PERFORMANCE DIAGNOSTICS"
+
+msgid "PERF_FPS"
+msgstr "Engine FPS"
+
+msgid "PERF_FRAME"
+msgstr "Mean frame interval"
+
+msgid "PERF_MEMORY"
+msgstr "Engine static memory"
+
+msgid "PERF_VIDEO"
+msgstr "Reported video memory"
+
+msgid "PERF_DRAW"
+msgstr "Draw calls (last frame)"
+
+msgid "PERF_NODES"
+msgstr "Engine nodes"
+
+msgid "PERF_NOTE"
+msgstr "Local display only. Unsupported monitors show N/A; not total process RAM or GPU utilization. Samples update once per second."

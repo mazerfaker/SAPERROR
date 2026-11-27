@@ -12,6 +12,9 @@ var display: TextureRect
 var raster: SubViewport
 var crt_material: ShaderMaterial
 var grade_material: ShaderMaterial
+var grade_layer: ColorRect
+var crt_values: Dictionary={}
+var crt_parameter_writes: int=0
 var ui: TerminalUI
 var effects: float = 0.45
 var glitches_enabled: bool = true
@@ -79,6 +82,7 @@ func _ready() -> void:
 	display.gui_input.connect(_crt_input)
 	display.mouse_exited.connect(_mouse_exit)
 	var post := ColorRect.new()
+	grade_layer=post
 	post.name = "GlobalPostProcessing"
 	post.size = Geometry.CANVAS if live==null else Geometry.SCREEN.size
 	post.position = Vector2.ZERO if live==null else Geometry.SCREEN.position
@@ -111,6 +115,9 @@ func _set_effects(amount: float, glass: bool, reduced: bool, flicker: bool, glob
 	glitches_enabled = glitches
 	crt_material.set_shader_parameter("bulge",Geometry.FIXED_BULGE)
 	scene_effects = global_amount
+	# At zero strength, grade returns the original screen unchanged.
+	# Hide the pass to avoid an unnecessary screen-texture copy.
+	if is_instance_valid(grade_layer): grade_layer.visible=scene_effects>0.0
 	crt_material.set_shader_parameter("glass",1.0 if glass_enabled else 0.0)
 	crt_material.set_shader_parameter("strength",effects)
 	crt_material.set_shader_parameter("motion",0.0 if reduced_motion else 1.0)
@@ -125,8 +132,8 @@ func _on_outcome(won: bool) -> void:
 	outcome = 1.0
 	outcome_sign = 1.0 if won else -1.0
 func _apply_lifecycle() -> void:
-	crt_material.set_shader_parameter("power",lifecycle.power())
-	crt_material.set_shader_parameter("beam",lifecycle.beam())
+	_set_crt("power",lifecycle.power())
+	_set_crt("beam",lifecycle.beam())
 func _finish_boot() -> void:
 	lifecycle.skip_boot()
 	ui.end_boot()
@@ -162,11 +169,11 @@ func _process(delta: float) -> void:
 			next_glitch = visual_rng.randf_range(12.0,28.0)
 	else: signal_fault = 0.0
 	signal_fault = move_toward(signal_fault,0.0,delta*5.0)
-	crt_material.set_shader_parameter("signal_fault",signal_fault)
-	crt_material.set_shader_parameter("scan_wave",ui.protocol_scan if not reduced_motion else -1.0)
+	_set_crt("signal_fault",signal_fault)
+	_set_crt("scan_wave",ui.protocol_scan if not reduced_motion else -1.0)
 	outcome = move_toward(outcome,0.0,delta*0.85)
-	crt_material.set_shader_parameter("fault",fault if not reduced_motion else 0.0)
-	crt_material.set_shader_parameter("outcome",outcome*outcome_sign if not reduced_motion else 0.0)
+	_set_crt("fault",fault if not reduced_motion else 0.0)
+	_set_crt("outcome",outcome*outcome_sign if not reduced_motion else 0.0)
 func _toggle_fullscreen() -> void:
 	if DisplayServer.get_name() == "headless": return
 	var mode: int = DisplayServer.window_get_mode()
@@ -224,3 +231,9 @@ func _mouse_exit() -> void:
 	m.position = Vector2(-100,-100)
 	m.global_position = m.position
 	raster.push_input(m,true)
+
+func _set_crt(key: String,value: float) -> void:
+	if crt_values.has(key) and crt_values[key]==value: return
+	crt_values[key]=value
+	crt_material.set_shader_parameter(key,value)
+	crt_parameter_writes+=1

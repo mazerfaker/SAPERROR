@@ -90,16 +90,19 @@ void fragment() {
 		float drift = 0.5+0.3*sin(t*3.2)+0.2*sin(t*8.7+sin(t*1.1));
 		graded *= 1.0-flicker*motion*0.065*drift;
 		// Brief additive signal error: localized tearing and channel bleed. Base geometry stays fixed.
-		float band_id = floor(pixel.y/5.0);
-		float tick = floor(t*23.0);
-		float band = step(0.78,hash(vec2(band_id,tick)))*signal_fault*motion;
-		float jitter = (hash(vec2(band_id+18.0,tick))-0.5)*0.035*band;
-		vec2 offset = vec2(jitter,0.0);
-		vec3 shifted = texture(TEXTURE,clamp(q+offset,vec2(0.0),vec2(1.0))).rgb;
-		float split = 0.0028*band;
-		vec3 chroma = vec3(texture(TEXTURE,clamp(q+offset+vec2(split,0.0),vec2(0.0),vec2(1.0))).r,shifted.g,texture(TEXTURE,clamp(q+offset-vec2(split,0.0),vec2(0.0),vec2(1.0))).b);
-		graded = mix(graded,chroma,band*0.48);
-		graded += vec3(0.025,0.09,0.035)*band;
+		// Zero signal/motion contributed exactly zero in the original path.
+		if (signal_fault != 0.0 && motion != 0.0) {
+			float band_id = floor(pixel.y/5.0);
+			float tick = floor(t*23.0);
+			float band = step(0.78,hash(vec2(band_id,tick)))*signal_fault*motion;
+			float jitter = (hash(vec2(band_id+18.0,tick))-0.5)*0.035*band;
+			vec2 offset = vec2(jitter,0.0);
+			vec3 shifted = texture(TEXTURE,clamp(q+offset,vec2(0.0),vec2(1.0))).rgb;
+			float split = 0.0028*band;
+			vec3 chroma = vec3(texture(TEXTURE,clamp(q+offset+vec2(split,0.0),vec2(0.0),vec2(1.0))).r,shifted.g,texture(TEXTURE,clamp(q+offset-vec2(split,0.0),vec2(0.0),vec2(1.0))).b);
+			graded = mix(graded,chroma,band*0.48);
+			graded += vec3(0.025,0.09,0.035)*band;
+		}
 		if (scan_wave >= 0.0) {
 			float field = step(0.272,q.x)*step(q.x,0.728)*step(0.187,q.y)*step(q.y,0.82);
 			float line = exp(-abs(q.y-(0.187+0.633*scan_wave))*85.0);

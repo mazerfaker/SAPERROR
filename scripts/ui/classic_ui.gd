@@ -3,6 +3,10 @@ const Classic = preload("res://scripts/board/classic_game.gd")
 const Board = preload("res://scripts/board/state.gd")
 signal back
 signal clicked
+const StyleBank=preload("res://scripts/ui/style_bank.gd")
+var style_bank:=StyleBank.new()
+var shown_second: int=-1
+var readout_updates: int=0
 var model: Classic
 var tiles: Array[Button]=[]
 var body: Control
@@ -100,8 +104,10 @@ func _move(index: int,mode: String) -> void:
 func _process(delta: float) -> void:
 	if not is_instance_valid(readout): return
 	model.tick(delta)
-	_update_readout()
+	if model.timer_enabled and int(model.elapsed)!=shown_second: _update_readout()
 func _update_readout() -> void:
+	shown_second=int(model.elapsed)
+	readout_updates+=1
 	var b: Board=model.board
 	var flags: int=0
 	if b!=null:
@@ -126,10 +132,8 @@ func refresh() -> void:
 		elif state==Board.Cell.NEUTRALIZED: tile.text="×"
 		elif b!=null and b.finished() and not b.won() and b._mask[i]==1: tile.text="×"
 		tile.disabled=b!=null and b.finished()
-		var style:=StyleBoxFlat.new()
-		style.bg_color=Color("081a11") if state==Board.Cell.OPEN else Color("183b27")
-		if tile.text=="×": style.bg_color=Color("491e19")
-		style.border_color=Color("53775d")
-		style.set_border_width_all(2)
-		tile.add_theme_stylebox_override("normal",style)
-		tile.add_theme_stylebox_override("disabled",style)
+		var fill: Color=Color("081a11") if state==Board.Cell.OPEN else Color("183b27")
+		if tile.text=="×": fill=Color("491e19")
+		var style: StyleBoxFlat=style_bank.get_style(fill,Color("53775d"),2,false)
+		if tile.get_theme_stylebox("normal")!=style: tile.add_theme_stylebox_override("normal",style)
+		if tile.get_theme_stylebox("disabled")!=style: tile.add_theme_stylebox_override("disabled",style)

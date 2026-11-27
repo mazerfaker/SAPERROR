@@ -19,6 +19,8 @@ var audio_episode: int = 0
 var audio_ms: float = 0.0
 var audio_enabled: bool = true
 var sfx_level: float = 1.0
+var last_audio_db: float=-1000.0
+var audio_gain_writes: int=0
 var minimized: bool = false
 var automatic: bool = true
 func setup(seed_value: int = 0) -> bool:
@@ -80,7 +82,11 @@ func set_audio_settings(level: float, enabled: bool) -> void:
 	audio_enabled = enabled
 	if is_instance_valid(player):
 		var gain: float = AUDIO_GAIN*sfx_level if audio_enabled else 0.0
-		player.volume_db = linear_to_db(gain) if gain>0.0 else -80.0
+		var db: float=linear_to_db(gain) if gain>0.0 else -80.0
+		if last_audio_db!=db:
+			player.volume_db=db
+			last_audio_db=db
+			audio_gain_writes+=1
 func _set_visual(level: int, lamp: bool) -> void:
 	if level!=drawn_level or lamp!=drawn_lamp:
 		drawn_level = level

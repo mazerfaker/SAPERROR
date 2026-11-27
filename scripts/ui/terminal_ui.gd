@@ -115,6 +115,11 @@ var seed_input: LineEdit
 var seed_value: String = "1701"
 var progress_fill: ColorRect
 var last_states := PackedInt32Array()
+const StyleBank = preload("res://scripts/ui/style_bank.gd")
+const PerformancePanel = preload("res://scripts/ui/performance_panel.gd")
+var style_bank := StyleBank.new()
+var last_visual_styles: Array=[]
+var refresh_style_writes: int=0
 var page: Control
 var grid: GridContainer
 var message_key: String = "CORE_READY"
@@ -222,7 +227,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.8.0-b1",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.8.0-b2",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -231,6 +236,7 @@ func _show(next: String) -> void:
 	if screen == "game": _game()
 	elif screen == "settings": _settings()
 	elif screen == "help": _help()
+	elif screen == "performance": _performance()
 	elif screen == "audio": _audio_settings()
 	elif screen == "profiles": _profiles()
 	elif screen == "modes": _modes()
@@ -537,6 +543,7 @@ func _language() -> void:
 func _help() -> void:
 	_label(tr("VIS_HELP_TEXT"),Rect2(124,215,1170,500),page,34)
 	_button(tr("VIS_BACK"),Rect2(124,790,350,62),page,func(): _show("menu"))
+	_button(tr("PERF_TITLE"),Rect2(510,790,784,62),page,func(): _show("performance"))
 func _settings() -> void:
 	_label(tr("VIS_SETTINGS"),Rect2(124,212,1150,60),page,41)
 	var language_button := _button(tr("VIS_LANGUAGE")+": "+("Українська" if is_uk else "English"),Rect2(124,305,300,62),page,_language,22)
@@ -636,17 +643,13 @@ func _game() -> void:
 	var extent := Vector2(w,h)*cell+Vector2(w-1,h-1)*gap
 	_place(grid,Rect2(Geometry.GAME_GRID_CENTER-extent*0.5,extent),page)
 	last_states.clear()
+	last_visual_styles.clear()
 	for i in range(w*h):
 		var btn := Button.new()
 		btn.custom_minimum_size = cell
 		btn.add_theme_font_size_override("font_size",maxi(14,int(cell.x*0.68)))
 		for style_name in ["normal","hover","pressed","disabled","focus"]:
-			var style: StyleBoxFlat = _style(Color("183b27"),DIM,2)
-			style.content_margin_left = 2
-			style.content_margin_right = 2
-			style.content_margin_top = 2
-			style.content_margin_bottom = 2
-			btn.add_theme_stylebox_override(style_name,style)
+			btn.add_theme_stylebox_override(style_name,style_bank.get_style(Color("183b27"),DIM,2))
 		btn.pressed.connect(_reveal.bind(i))
 		btn.gui_input.connect(_cell_input.bind(i))
 		grid.add_child(btn)
@@ -662,6 +665,7 @@ func _game() -> void:
 		btn.focus_entered.connect(_inspect_cell.bind(i))
 		btn.focus_exited.connect(_leave_cell.bind(i))
 		last_states.append(-1)
+		last_visual_styles.append([])
 	status = _label("",Rect2(86,794,1250,46),page,31)
 	_label(tr("CORE_SEED"),Rect2(86,850,100,54),page,28)
 	seed_input = LineEdit.new()
@@ -827,6 +831,7 @@ func _refresh() -> void:
 	recovered.text = tr("CORE_OPEN")+"\n%d / %d" % [opened,total]
 	progress_fill.size.x = 252.0 * float(opened) / float(maxi(total,1))
 	var flags: int = 0
+	refresh_style_writes=0
 	status.text = "> " + tr(message_key)
 	if hint_cell >= 0: status.text += "  #%d" % (hint_cell+1)
 	if not inspect_result.is_empty(): status.text = "> "+inspect_result
@@ -844,55 +849,63 @@ func _refresh() -> void:
 		var color: Color = Color("7fa58a")
 		var fill: Color = Color("183b27")
 		var edge: Color = Color("5c936c")
-		b.text = "·"
-		b.disabled = protocol_active or (board != null and board.finished())
+		var cell_text: String="·"
+		var cell_disabled: bool=protocol_active or (board != null and board.finished())
 		var desc: String = tr("CORE_CLOSED")
 		if state == Board.Cell.OPEN:
 			var clue: int = board.clue(i,board.rule)
-			b.text = str(clue)
+			cell_text = str(clue)
 			color = Color("668b71") if clue == 0 else (GREEN if clue <= 2 else AMBER)
 			fill = Color("081a11")
 			edge = Color("2c5238")
-			desc = b.text
+			desc = cell_text
 			if not protocol_active and not board.finished() and phantom.hidden(i,board.rule):
-				b.text = "?"
+				cell_text = "?"
 				color = AMBER
 				edge = AMBER
 				desc = tr("VIS_PHANTOM_HIDDEN")
 		elif state == Board.Cell.FLAG:
-			b.text = "⚑"
+			cell_text = "⚑"
 			color = AMBER
 			fill = Color("352c17")
 			edge = Color("987743")
 			flags += 1
 			desc = tr("CORE_FLAG")
 		elif state == Board.Cell.NEUTRALIZED:
-			b.text = "×"
+			cell_text = "×"
 			color = RED
 			fill = Color("491e19")
 			edge = Color("b15a50")
 			desc = tr("CORE_NEUTRAL")
 		if board!=null and not protocol_active and not board.finished() and parasite.active() and i==parasite.cell:
-			b.text = "X" if parasite.blocked() else (("⚑" if state==Board.Cell.FLAG else "!")+str(parasite.remaining()))
+			cell_text = "X" if parasite.blocked() else (("⚑" if state==Board.Cell.FLAG else "!")+str(parasite.remaining()))
 			color = RED if parasite.blocked() else AMBER
 			edge = color
 			fill = Color("49221a") if parasite.blocked() else Color("382e15")
 			desc = tr("VIS_PARASITE_BLOCKED" if parasite.blocked() else "VIS_PARASITE_WARNING")
-			b.disabled = parasite.blocked()
+			cell_disabled = parasite.blocked()
 		if board!=null and board.has_portal() and i in [board.portal_pair.x,board.portal_pair.y] and not protocol_active:
 			edge = Color("7ac5d0")
 			desc += " / PORTAL #%d" % ((board.portal_pair.y if i==board.portal_pair.x else board.portal_pair.x)+1)
-		b.add_theme_stylebox_override("normal",_style(fill,edge,3 if board!=null and board.has_portal() and i in [board.portal_pair.x,board.portal_pair.y] else 2))
-		b.add_theme_stylebox_override("disabled",_style(fill,edge,2))
-		b.add_theme_stylebox_override("hover",_style(fill.lightened(0.13),color,2))
-		b.add_theme_stylebox_override("pressed",_style(fill.lightened(0.25),color,3))
+		var width: int=3 if board!=null and board.has_portal() and i in [board.portal_pair.x,board.portal_pair.y] else 2
+		var signature: Array=[fill,edge,color,width]
+		if last_visual_styles[i]!=signature:
+			b.add_theme_stylebox_override("normal",style_bank.get_style(fill,edge,width))
+			b.add_theme_stylebox_override("disabled",style_bank.get_style(fill,edge,2))
+			b.add_theme_stylebox_override("hover",style_bank.get_style(fill.lightened(0.13),color,2))
+			b.add_theme_stylebox_override("pressed",style_bank.get_style(fill.lightened(0.25),color,3))
+			for key in ["font_color","font_disabled_color","font_hover_color","font_pressed_color","font_focus_color"]:
+				b.add_theme_color_override(key,color)
+			last_visual_styles[i]=signature
+			refresh_style_writes+=1
+		if b.text!=cell_text: b.text=cell_text
+		if b.disabled!=cell_disabled: b.disabled=cell_disabled
 		if last_states[i] >= 0 and last_states[i] != state and not reduced:
 			b.self_modulate = Color(1.4,1.4,1.4,1.0)
 			b.create_tween().tween_property(b,"self_modulate",Color.WHITE,0.18)
 		last_states[i] = state
-		for key in ["font_color","font_disabled_color","font_hover_color","font_pressed_color","font_focus_color"]:
-			b.add_theme_color_override(key,color)
-		b.tooltip_text = "%s %d: %s" % [tr("CORE_CELL"),i+1,desc]
+		var tooltip: String="%s %d: %s" % [tr("CORE_CELL"),i+1,desc]
+		if b.tooltip_text!=tooltip: b.tooltip_text=tooltip
 	flag_count.text = tr("VIS_FLAGS")+"\n%d / %d" % [flags,Profiles.MINES[profile] if board == null else board.mine_total]
 	_refresh_tools()
 
@@ -1093,7 +1106,8 @@ func _refresh_marks() -> void:
 		var adjacent: bool = neighbors.has(i) or inspect_marks.has(i)
 		marks[i].visible = not protocol_active and (target or premise or adjacent)
 		if marks[i].visible:
-			marks[i].add_theme_stylebox_override("panel",_style(Color(0,0,0,0),GREEN if target else (AMBER if premise else Color("81b6a6")),5 if target else 3))
+			var style: StyleBoxFlat=style_bank.get_style(Color(0,0,0,0),GREEN if target else (AMBER if premise else Color("81b6a6")),5 if target else 3)
+			if marks[i].get_theme_stylebox("panel")!=style: marks[i].add_theme_stylebox_override("panel",style)
 
 func _hint_limit() -> int:
 	return Tools.HINT_LIMITS[profile]+(1 if economy.owned.has("ASSISTANT") else 0)
@@ -1614,3 +1628,10 @@ func _archive_preview() -> void:
 	record.name="ArchiveText"
 	_label(tr("COLLECTION_READ_ONLY"),Rect2(124,727,1170,50),page,24,DIM)
 	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("archives"))
+
+func _performance() -> void:
+	_label(tr("PERF_TITLE"),Rect2(124,205,1170,76),page,42)
+	var panel:=PerformancePanel.new()
+	panel.name="PerformanceReadout"
+	_place(panel,Rect2(124,310,1170,450),page)
+	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("help"))

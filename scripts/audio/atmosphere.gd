@@ -30,6 +30,8 @@ var power: float=1.0
 var stream_player: AudioStreamPlayer
 var cache: Dictionary={}
 var cache_order: Array[String]=[]
+var last_db: float=-80.0
+var volume_writes: int=0
 static func scene_theme(screen: String, story: bool, act: int, boss: String, ending: String, lab: String="") -> String:
 	if screen=="ending_scene" or screen=="gallery_preview":
 		var id: String="end_"+ending.to_lower()
@@ -116,7 +118,7 @@ func _process(delta: float) -> void:
 	if target!=current:
 		gain=move_toward(gain,0.0,maxf(delta,0.0)/FADE)
 		if gain<=0.0:
-			stream_player.volume_db=-80.0
+			_set_volume(-80.0)
 			stream_player.stop()
 			stream_player.stream=null
 			current=""
@@ -129,4 +131,10 @@ func _process(delta: float) -> void:
 	else:
 		gain=move_toward(gain,1.0 if not current.is_empty() else 0.0,maxf(delta,0.0)/FADE)
 	var amplitude: float=gain*level*power if enabled else 0.0
-	stream_player.volume_db=linear_to_db(maxf(0.0001,amplitude))
+	_set_volume(linear_to_db(maxf(0.0001,amplitude)))
+
+func _set_volume(db: float) -> void:
+	if last_db==db: return
+	last_db=db
+	stream_player.volume_db=db
+	volume_writes+=1

@@ -802,3 +802,27 @@ msgstr "MINE / ВІДНОВЛЕНИЙ ЗАПИС ОПЕРАТОРА\n\nТу са
 
 msgid "VIS_SAVE_RECOVERED"
 msgstr "Відновлено попереднє справне збереження. Останні дії могли бути втрачені."
+
+msgid "PERF_TITLE"
+msgstr "ДІАГНОСТИКА ПРОДУКТИВНОСТІ"
+
+msgid "PERF_FPS"
+msgstr "FPS рушія"
+
+msgid "PERF_FRAME"
+msgstr "Середній інтервал кадру"
+
+msgid "PERF_MEMORY"
+msgstr "Статична пам'ять рушія"
+
+msgid "PERF_VIDEO"
+msgstr "Звіт про відеопам'ять"
+
+msgid "PERF_DRAW"
+msgstr "Виклики малювання (останній кадр)"
+
+msgid "PERF_NODES"
+msgstr "Вузли рушія"
+
+msgid "PERF_NOTE"
+msgstr "Лише локальний показ. N/A — дані недоступні. Це не загальна RAM процесу чи завантаження GPU. Оновлення раз на секунду."
