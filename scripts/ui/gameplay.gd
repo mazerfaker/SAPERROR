@@ -7,6 +7,7 @@ const Lifecycle = preload("res://scripts/ui/crt_lifecycle.gd")
 const ART_PATH := "res://assets/art/terminal_original.png"
 const LiveEnvironment = preload("res://scripts/environment/live_environment.gd")
 var live: LiveEnvironment
+var skip_first_launch_warning: bool=false
 var frame: TextureRect
 var display: TextureRect
 var raster: SubViewport
@@ -64,6 +65,7 @@ func _ready() -> void:
 	raster.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_LINEAR
 	add_child(raster)
 	ui = TerminalUI.new()
+	ui.require_content_warning=DisplayServer.get_name()!="headless" and not skip_first_launch_warning
 	ui.size = Vector2(Geometry.RASTER)
 	raster.add_child(ui)
 	display = TextureRect.new()
@@ -100,7 +102,9 @@ func _ready() -> void:
 	ui.connect("outcome_triggered", _on_outcome)
 	ui.connect("protocol_triggered", _on_protocol)
 	visual_rng.randomize()
-	_set_effects(0.0 if ui.clear_display else ui.amount, ui.glass, ui.reduced, ui.flicker and not ui.clear_display, 0.0 if ui.clear_display else ui.global_amount, ui.glitches and not ui.clear_display)
+	var quiet: bool=ui.clear_display or ui.warning_pending
+	_set_effects(0.0 if quiet else ui.amount, ui.glass and not ui.warning_pending, ui.reduced or ui.warning_pending, ui.flicker and not quiet, 0.0 if quiet else ui.global_amount, ui.glitches and not quiet)
+	if is_instance_valid(live): live.set_lamp_enabled(ui.lamp_animation and not ui.warning_pending)
 	if DisplayServer.get_name() == "headless" or reduced_motion or effects <= 0.0:
 		lifecycle.skip_boot()
 	else:
@@ -148,7 +152,9 @@ func _shutdown() -> void:
 	ui.audio.play_event("shutdown")
 func _process(delta: float) -> void:
 	if crt_material == null: return
-	if is_instance_valid(live): live.set_audio_settings(ui.audio.effective_sfx(),ui.audio.enabled)
+	if is_instance_valid(live):
+		live.set_lamp_enabled(ui.lamp_animation and not ui.warning_pending)
+		live.set_audio_settings(ui.audio.effective_sfx(),ui.audio.enabled)
 	var previous: int = lifecycle.phase
 	lifecycle.advance(delta)
 	if lifecycle.phase == Lifecycle.Phase.BOOT:

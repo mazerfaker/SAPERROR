@@ -852,10 +852,25 @@ msgid "ACC_KEYS"
 msgstr "Arrows: move focus · Tab: next control · Enter/Space: activate · F: flag · Space on open cell: chord · Esc: back · F11: fullscreen"
 
 msgid "ACC_WARNING"
-msgstr "Horror, sudden sounds and flashing light. Clear CRT removes screen effects; the room lamp still flickers. Reduce motion and volume separately."
+msgstr "Horror, sudden sounds and flashing light. Clear CRT removes screen effects; the room lamp has a separate toggle. Reduce motion and volume separately."
 
 msgid "SYNERGY_JOURNAL"
 msgstr "Press repeatedly to read each anomaly record. All records are free."
 
 msgid "SYNERGY_CLEANSE"
 msgstr "Clears PARASITE first, then PHANTOM. Blocked safe cells can always be freed when no charges remain."
+
+msgid "RC_WARNING_TITLE"
+msgstr "CONTENT WARNING"
+
+msgid "RC_WARNING_TEXT"
+msgstr "SAPERROR contains horror themes, sudden sounds, flashing light and CRT distortion. Continue with your existing settings or choose a quieter display preset. You can change these preferences in Settings."
+
+msgid "RC_WARNING_CONTINUE"
+msgstr "Continue with current settings"
+
+msgid "RC_WARNING_SAFE"
+msgstr "Reduced effects + mute"
+
+msgid "RC_LAMP"
+msgstr "Room lamp flicker"

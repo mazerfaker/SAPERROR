@@ -17,6 +17,7 @@ func run() -> void:
 		quit(1)
 		return
 	var game=Scene.instantiate()
+	game.skip_first_launch_warning=true
 	root.add_child(game)
 	game._finish_boot()
 	var env=game.live

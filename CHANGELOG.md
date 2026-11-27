@@ -1,4 +1,7 @@
 # Changelog
+## 0.9.0-rc.1 — Release Candidate
+Feature freeze baseline 6826dcd. First-run bilingual warning, persisted reduced-effects/mute choice, separate room lamp toggle, official matching Godot license files and corrected third-party audio inventory, new RC regression gate. Manual acceptance and audio rights pending; no installer/analytics yet.
+
 ## 0.8.0-beta.8 — Final Integration candidate
 End-to-end isolated real save/reload and recovery QA, persistent last reward readout, strict native smoke packaging gate, verified patch ZIP entries, updated player README and manual release checklist in portable ZIP. No telemetry, installer, new art or main merge. CI pending.
 

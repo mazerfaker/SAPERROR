@@ -52,6 +52,11 @@ const Access=preload("res://scripts/ui/accessibility.gd")
 var high_contrast: bool=false
 var large_symbols: bool=false
 var clear_display: bool=false
+var lamp_animation: bool=true
+var require_content_warning: bool=false
+var warning_acknowledged: bool=false
+var warning_pending: bool=false
+var warning_sound: bool=true
 const GREEN := Color("b6edb1")
 const DIM := Color("729b79")
 const AMBER := Color("f0c37b")
@@ -143,10 +148,12 @@ var glitches: bool = true
 var global_amount: float = 0.0
 func _ready() -> void:
 	_load_session()
+	warning_pending=require_content_warning and not warning_acknowledged
+	warning_sound=bool(cfg.get_value("settings","sound",true))
 	TranslationServer.set_locale("uk" if is_uk else "en")
 	theme = _terminal_theme()
 	audio = TerminalAudio.new()
-	audio.set_levels(float(cfg.get_value("settings","sfx",0.55)),float(cfg.get_value("settings","hum",0.28)),bool(cfg.get_value("settings","sound",true)))
+	audio.set_levels(float(cfg.get_value("settings","sfx",0.55)),float(cfg.get_value("settings","hum",0.28)),warning_sound and not warning_pending)
 	audio.set_music_level(float(cfg.get_value("settings","music",Atmosphere.DEFAULT_LEVEL)))
 	audio.set_master(float(cfg.get_value("settings","master",1.0)))
 	add_child(audio)
@@ -155,7 +162,7 @@ func _ready() -> void:
 	bg.size = size
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
-	_show("menu")
+	_show("warning" if warning_pending else "menu")
 func _style(fill: Color, border: Color, width: int = 2) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
 	s.bg_color = fill
@@ -218,7 +225,7 @@ func _panel(rect: Rect2) -> Panel:
 	_place(p,rect,page)
 	return p
 func _show(next: String) -> void:
-	if protocol_active: return
+	if protocol_active or (warning_pending and next!="warning"): return
 	protocol.reset_input()
 	if is_instance_valid(seed_input):
 		seed_value = seed_input.text
@@ -237,13 +244,14 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.8.0-b8",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.9.0-rc1",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_place(line,Rect2(80,153,1266,2),page)
-	if screen == "game": _game()
+	if screen == "warning": _content_warning()
+	elif screen == "game": _game()
 	elif screen == "settings": _settings()
 	elif screen == "help": _help()
 	elif screen == "performance": _performance()
@@ -394,6 +402,8 @@ func _load_session() -> void:
 	high_contrast=bool(cfg.get_value("settings","contrast",false))
 	large_symbols=bool(cfg.get_value("settings","large_symbols",false))
 	clear_display=bool(cfg.get_value("settings","clear_display",false))
+	lamp_animation=bool(cfg.get_value("settings","lamp_animation",true))
+	warning_acknowledged=bool(cfg.get_value("settings","warning_acknowledged",false))
 	amount = clampf(float(cfg.get_value("settings","crt",0.45)),0.0,1.0)
 	glass = bool(cfg.get_value("settings","glass",true))
 	reduced = bool(cfg.get_value("settings","reduced",false))
@@ -468,11 +478,14 @@ func _load_session() -> void:
 					var prior: Board = checked["board"]
 					if prior._mask==board._mask: rewind_data = previous.duplicate(true)
 func _save_session() -> void:
+	if warning_pending: return
 	if DisplayServer.get_name() == "headless" and session_path==Store.PATH: return
 	cfg.set_value("settings","uk",is_uk)
 	cfg.set_value("settings","contrast",high_contrast)
 	cfg.set_value("settings","large_symbols",large_symbols)
 	cfg.set_value("settings","clear_display",clear_display)
+	cfg.set_value("settings","lamp_animation",lamp_animation)
+	cfg.set_value("settings","warning_acknowledged",warning_acknowledged)
 	cfg.set_value("settings","crt",amount)
 	cfg.set_value("settings","glass",glass)
 	if cfg.has_section_key("settings","curve"): cfg.erase_section_key("settings","curve")
@@ -1749,12 +1762,16 @@ func _accessibility() -> void:
 		reduced=not reduced
 		_apply()
 		_show("accessibility"))
-	_label(tr("ACC_KEYS"),Rect2(124,608,1170,92),page,25)
-	_label(tr("ACC_WARNING"),Rect2(124,708,1170,100),page,25,AMBER)
+	var lamp:=_button(tr("RC_LAMP")+": "+_on_off(lamp_animation),Rect2(124,596,1170,60),page,func():
+		lamp_animation=not lamp_animation
+		_save_session()
+		_show("accessibility"))
+	lamp.name="LampSetting"
+	_label(tr("ACC_KEYS"),Rect2(124,674,1170,132),page,24)
 	_button(tr("VIS_BACK"),Rect2(124,820,350,58),page,func(): _show("settings"))
 
 func back_shortcut() -> bool:
-	if protocol_active or screen=="menu": return false
+	if protocol_active or warning_pending or screen=="menu": return false
 	var parent_screen: String={
 		"audio":"settings","accessibility":"settings","performance":"help",
 		"classic":"modes","profiles":"modes","challenge":"challenges",
@@ -1764,3 +1781,28 @@ func back_shortcut() -> bool:
 	_save_session()
 	_show(parent_screen)
 	return true
+
+func _content_warning() -> void:
+	_label(tr("RC_WARNING_TITLE"),Rect2(124,210,1170,74),page,42,AMBER)
+	_label(tr("RC_WARNING_TEXT"),Rect2(124,305,1170,230),page,34)
+	_button(tr("VIS_LANGUAGE")+": "+("Українська" if is_uk else "English"),Rect2(124,560,1170,62),page,func():
+		is_uk=not is_uk
+		TranslationServer.set_locale("uk" if is_uk else "en")
+		_show("warning"),25)
+	var normal:=_button(tr("RC_WARNING_CONTINUE"),Rect2(124,650,1170,64),page,_accept_warning.bind(false),30)
+	normal.name="WarningContinue"
+	var safe:=_button(tr("RC_WARNING_SAFE"),Rect2(124,734,1170,72),page,_accept_warning.bind(true),28)
+	safe.name="WarningSafe"
+func _accept_warning(safe: bool) -> void:
+	if not warning_pending: return
+	warning_pending=false
+	warning_acknowledged=true
+	if safe:
+		clear_display=true
+		reduced=true
+		lamp_animation=false
+		audio.set_levels(audio.sfx_level,audio.hum_level,false)
+	else:
+		audio.set_levels(audio.sfx_level,audio.hum_level,warning_sound)
+	_apply()
+	_show("menu")

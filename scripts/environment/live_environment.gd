@@ -23,6 +23,7 @@ var last_audio_db: float=-1000.0
 var audio_gain_writes: int=0
 var minimized: bool = false
 var automatic: bool = true
+var lamp_enabled: bool=true
 func setup(seed_value: int = 0) -> bool:
 	if ready_assets: return true
 	var path: String = ROOT+"config.json"
@@ -95,7 +96,7 @@ func _set_visual(level: int, lamp: bool) -> void:
 func advance_virtual(delta: float) -> void:
 	# QA uses accelerated virtual time; never starts real audio.
 	clock.tick(clock.time_ms+maxf(0.0,delta)*1000.0)
-	_set_visual(clock.level,clock.lamp_on())
+	_set_visual(clock.level,clock.lamp_on() if lamp_enabled else true)
 func _process(delta: float) -> void:
 	if not ready_assets or not automatic: return
 	var hidden: bool = DisplayServer.get_name()!="headless" and get_window().mode==Window.MODE_MINIMIZED
@@ -104,6 +105,10 @@ func _process(delta: float) -> void:
 		player.stream_paused = hidden
 	if minimized: return
 	clock.tick(clock.time_ms+clampf(delta,0.0,0.1)*1000.0)
+	if not lamp_enabled:
+		seen_episode=clock.serial
+		_set_visual(clock.level,true)
+		return
 	if clock.episode_start>=0.0 and clock.serial!=seen_episode:
 		seen_episode = clock.serial
 		var offset: float = (clock.time_ms-clock.episode_start)/1000.0
@@ -122,3 +127,12 @@ func _process(delta: float) -> void:
 			lamp = true
 			audio_episode = 0
 	_set_visual(clock.level,lamp)
+
+func set_lamp_enabled(value: bool) -> void:
+	if lamp_enabled==value: return
+	lamp_enabled=value
+	if not value:
+		if is_instance_valid(player): player.stop()
+		audio_episode=0
+		seen_episode=clock.serial
+		_set_visual(clock.level,true)

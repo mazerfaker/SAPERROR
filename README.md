@@ -1,12 +1,12 @@
-# SAPERROR — 0.8.0-beta.8 (Product Beta candidate)
+# SAPERROR — 0.9.0-rc.1 (Release Candidate)
 The numbers don't lie. Usually. / Числа не брешуть. Зазвичай.
 
-Offline Windows x64 analog-horror minesweeper roguelite. Godot 4.7.2 stable. This is an integration beta candidate, not 1.0 or a manually accepted release.
+Offline Windows x64 analog-horror minesweeper roguelite. Godot 4.7.2 stable. This is a feature-frozen release candidate, not 1.0 or a manually accepted release.
 
 ## Play
-Extract the whole Windows x64 ZIP into one folder and run SAPERROR.exe. Keep SAPERROR.pck next to it. No Godot installation needed. Campaign: four acts, ten sectors, four difficulties and three endings. Anomaly Lab and Classic are separate modes; finite Free Run unlocks after an ending. Endless mode is also available. Settings include Ukrainian/English, audio mixer, CRT and accessibility. Local save is in Godot user:// (normally %APPDATA%/Godot/app_userdata/SAPERROR/ on Windows); back up the session files before upgrading. No telemetry in this beta.
+Extract the whole Windows x64 ZIP into one folder and run SAPERROR.exe. Keep SAPERROR.pck next to it. No Godot installation needed. Campaign: four acts, ten sectors, four difficulties and three endings. Anomaly Lab and Classic are separate modes; finite Free Run unlocks after an ending. Endless mode is also available. Settings include Ukrainian/English, audio mixer, CRT and accessibility. Local save is in Godot user:// (normally %APPDATA%/Godot/app_userdata/SAPERROR/ on Windows); back up the session files before upgrading. No telemetry in this RC.
 
-Controls: left click reveal, right click or physical F flag, middle click or Space on open cell chord, arrows move focus, Tab changes control, Enter/Space activates, Escape goes back, F11 toggles fullscreen when CRT has focus. Horror, sudden audio and flashing light: adjust audio and accessibility options. Clear CRT does not stop the physical room lamp.
+Controls: left click reveal, right click or physical F flag, middle click or Space on open cell chord, arrows move focus, Tab changes control, Enter/Space activates, Escape goes back, F11 toggles fullscreen when CRT has focus. Horror, sudden audio and flashing light: adjust audio and accessibility options. The first-launch warning offers a reduced-effects and mute preset; room lamp flicker can be switched off separately.
 
 ## Source
 Open project.godot with Godot 4.7.2 stable, import and press F5. Matching export templates required for a Windows build. Original approved room PNG, live assets and icon must not be replaced. [GDD](docs/SAPERROR_GDD.md) | [Roadmap](docs/ROADMAP.md) | [Final beta QA](docs/FINAL_BETA_QA.md).
