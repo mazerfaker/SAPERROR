@@ -49,3 +49,5 @@ Alpha.7 LIAR authored boss trial, no intermediate CI. Full combined v0.5 Beta ga
 0.6 alpha.2–3 routes/archives, Archivist, act checkpoints, ADMIN intro asset path. Optional challenge HP is independent. CI deferred.
 
 0.6 alpha.4–7 LOOP temporal stages, ADMIN phases, ending gates, credits/gallery, combined authored-route tests. CI deferred pending original ADMIN MP3 and Beta gate.
+
+0.6 Beta.1: first combined campaign regression, including all three routes and ending scenes, boss phases, retry and exact ADMIN asset. Human visual/audio acceptance and campaign balancing remain open. Existing background unchanged.

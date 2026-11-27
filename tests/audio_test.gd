@@ -56,7 +56,7 @@ func run() -> void:
 		check(FileAccess.get_sha256(Audio.ADMIN_INTRO_PATH)==Audio.ADMIN_INTRO_SHA,"original ADMIN intro bytes")
 		check(intro!=null,"ADMIN intro imports")
 		if intro!=null: check(not intro.loop and intro.get_length()>2.5 and intro.get_length()<2.8,"ADMIN one-shot duration")
-	else: print("ADMIN_INTRO_PENDING: asset awaiting upload")
+	else: check(false,"approved ADMIN intro asset required")
 	var player := Audio.new()
 	root.add_child(player)
 	player.set_levels(-1.0,2.0,false)

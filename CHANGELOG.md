@@ -1,4 +1,7 @@
 # Changelog
+## 0.6.0-beta.1 — complete campaign candidate
+First combined CI: all three endings via actual UI and public-deduction normal sectors and trials, route metadata, checkpoint retry, Hardcore restart, gallery and credits. Require exact approved ADMIN MP3. No intermediate CI. Candidate until CI and manual QA pass.
+
 ## 0.6.0-alpha.4–7 — campaign finale (CI deferred)
 Two LOOP temporal stages, three ADMIN phases (PORTAL topology, DOUBLE, LIAR), one-shot approved intro event, optional REWRITE trial, three gated endings, terminal ending scenes and credits/gallery. Phase transitions and ending metadata persist. Existing art and menu audio unchanged. No full campaign certification yet; manual presentation and asset licensing pending.
 

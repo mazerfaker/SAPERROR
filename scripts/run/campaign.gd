@@ -84,6 +84,8 @@ func restore(raw: Variant, sector: int) -> bool:
 		if gate<sector and not c.has(gate): return false
 	for key in rt:
 		if typeof(key)!=TYPE_INT or not ARCHIVES.has(key) or key>sector or typeof(rt[key])!=TYPE_BOOL: return false
+	for gate in ARCHIVES:
+		if int(gate)<sector and not rt.has(gate): return false
 	for value in raw["records"]:
 		if typeof(value)!=TYPE_STRING or r.has(value): return false
 		r.append(value)

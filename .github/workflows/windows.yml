@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 45
     env:
       GODOT_VERSION: '4.7.2-stable'
-      GAME_VERSION: '0.6.0-alpha.7'
+      GAME_VERSION: '0.6.0-beta.1'
     steps:
       - name: Windows prerequisites
         shell: pwsh
@@ -207,7 +207,7 @@ jobs:
           Add-Type -AssemblyName System.IO.Compression.FileSystem
           $expected = @{
             "SAPERROR_v${env:GAME_VERSION}_Windows_x64.zip" = @('SAPERROR.exe','SAPERROR.pck','README.md')
-            "SAPERROR_v${env:GAME_VERSION}_Source.zip" = @('project.godot','export_presets.cfg','docs/SAPERROR_GDD.md','assets/art/terminal_original.png','assets/live/config.json','assets/live/assets/base.png','assets/live/assets/audio/01_Old_Ballast(3).wav','assets/audio/finntastico-old-computer-click-152513.mp3')
+            "SAPERROR_v${env:GAME_VERSION}_Source.zip" = @('project.godot','export_presets.cfg','docs/SAPERROR_GDD.md','assets/art/terminal_original.png','assets/live/config.json','assets/live/assets/base.png','assets/live/assets/audio/01_Old_Ballast(3).wav','assets/audio/finntastico-old-computer-click-152513.mp3','assets/audio/dragon-studio-glitch-effect-1-397982.mp3')
           }
           foreach ($name in $expected.Keys) {
             $path = Join-Path $PWD "build/dist/$name"

@@ -1,6 +1,9 @@
 extends SceneTree
 const Campaign = preload("res://scripts/run/campaign.gd")
 const TerminalUI = preload("res://scripts/ui/terminal_ui.gd")
+const ChallengeUI = preload("res://scripts/ui/anomaly_challenge_ui.gd")
+const Tools = preload("res://scripts/board/onboarding_tools.gd")
+const Board = preload("res://scripts/board/state.gd")
 var checks: int=0
 var failures: int=0
 func check(ok: bool, message: String) -> void:
@@ -50,6 +53,7 @@ func run() -> void:
 	ui.campaign.acknowledge(1)
 	ui._continue_run()
 	check(ui.screen=="game","resume field")
+	ui.campaign.choose_route(2,false)
 	ui.sector_number=3
 	ui.pending_sector=true
 	ui._advance_sector()
@@ -57,8 +61,111 @@ func run() -> void:
 	ui.campaign.complete_boss(3,"WATCHER")
 	ui._advance_sector()
 	check(ui.screen=="campaign_intro" and ui.sector_number==4,"next act")
+	var saved_credits: int=ui.economy.credits
+	ui.economy.credits+=100
+	ui.campaign_failed=true
+	ui._retry_checkpoint()
+	check(ui.sector_number==4 and ui.economy.credits==saved_credits and not ui.campaign_failed,"restore act checkpoint")
+	ui._start_profile(3,true)
+	ui.sector_number=7
+	ui.campaign_failed=true
+	ui._retry_checkpoint()
+	check(ui.sector_number==1 and ui.profile==3 and ui.campaign.active,"Hardcore restarts")
 	ui._start_profile(1)
 	check(not ui.campaign.active and ui.sector_number==1 and ui.screen=="game","free run preserved")
 	ui.queue_free()
+	await process_frame
+	for route in [0,1,2]:
+		await full_campaign(route)
 	print("CAMPAIGN_QA checks=",checks," failures=",failures)
 	quit(0 if failures==0 else 1)
+
+func solve_trial(trial: ChallengeUI) -> bool:
+	if not trial.model.valid: return false
+	if trial.kind=="ADMIN_LINK": trial._switch_layer()
+	if trial.kind=="WATCHER": trial._journal()
+	if trial.kind=="LIAR":
+		var truth: Array[int]=trial.model.decoded_sensors()
+		for index in range(3):
+			if truth[index]!=trial.model.sensor_values[index]: trial._select_sensor(index)
+	for step in range(150):
+		if trial.model.done(): break
+		if trial.kind=="DOUBLE" and trial.model.board().won(): trial._switch_layer()
+		var proof: Dictionary=Tools.safe_hint(trial.model.board().observation([0]))
+		if proof.is_empty(): break
+		trial._move(int(proof["cell"]),false,false)
+	return trial.model.won()
+func full_campaign(route: int) -> void:
+	var ui := TerminalUI.new()
+	ui.size=Vector2(1426,962)
+	root.add_child(ui)
+	ui._start_profile(1,true)
+	var entered: int=0
+	var completed: int=0
+	for transition in range(100):
+		if ui.screen=="campaign_intro":
+			ui.campaign.acknowledge(ui.sector_number)
+			ui._show("game")
+		elif ui.screen=="shop":
+			ui._show("game")
+		elif ui.screen=="game":
+			if not ui.pending_sector:
+				entered+=1
+				ui._reveal(0)
+				if ui.board==null: break
+				if ui.board.portal_enabled: ui._toggle_portal()
+				for step in range(150):
+					if ui.board.finished(): break
+					if ui.parasite.blocked(): ui._cleanse()
+					var proof: Dictionary=Tools.safe_hint(ui.board.observation([0]))
+					if proof.is_empty(): break
+					var target: int=int(proof["cell"])
+					if ui.board.cells[target]==Board.Cell.FLAG: ui._flag_action(target)
+					ui._reveal(target)
+				check(ui.board.won(),"sector %d solved on route %d" % [ui.sector_number,route])
+				if not ui.board.won(): break
+				completed+=1
+			ui._advance_sector()
+		elif ui.screen=="campaign_route":
+			if route==0:
+				ui.campaign.choose_route(ui.sector_number,false)
+				ui._advance_sector()
+			else: ui._show("campaign_archive")
+		elif ui.screen in ["campaign_archive","campaign_boss","rewrite_trial"]:
+			var trial: ChallengeUI
+			for child in ui.page.get_children():
+				if child is ChallengeUI: trial=child
+			check(is_instance_valid(trial),"trial UI "+ui.screen)
+			if not is_instance_valid(trial): break
+			check(solve_trial(trial),"public proof "+trial.kind)
+			if not trial.model.won(): break
+			trial._proceed()
+		elif ui.screen=="admin_intro":
+			check(ui.campaign.admin_intro_seen,"ADMIN intro marked once")
+			ui._show("campaign_boss")
+		elif ui.screen=="ending_choice":
+			var final_id: String=Campaign.ENDINGS[route]
+			if route==2 and not ui.campaign.rewrite_done:
+				check(not ui.campaign.can_end("REWRITE"),"rewrite gated")
+				ui._show("rewrite_trial")
+			else:
+				check(ui.campaign.can_end(final_id),"ending unlocked "+final_id)
+				ui._choose_ending(final_id)
+		elif ui.screen=="ending_scene": break
+		else: break
+		await process_frame
+	check(entered==10 and completed==10,"all ten normal sectors route "+str(route))
+	check(ui.campaign.ending==Campaign.ENDINGS[route] and ui.screen=="ending_scene","correct ending "+str(route))
+	check(ui.ending_gallery.has(Campaign.ENDINGS[route]),"gallery records ending")
+	check(ui.campaign.cleared.size()==4 and ui.campaign.loop_phase==2 and ui.campaign.admin_phase==3,"all boss phases")
+	check(ui.campaign.records.size()==(0 if route==0 else 3),"route records")
+	var resumed := Campaign.new()
+	check(resumed.restore(ui.campaign.snapshot(),10),"final save validation")
+	check(not resumed.choose_ending("SHUTDOWN"),"ending immutable")
+	ui._show("credits")
+	check(ui.screen=="credits","credits screen")
+	ui._show("gallery")
+	ui._show_gallery_ending(Campaign.ENDINGS[route])
+	check(ui.screen=="gallery_preview","ending replay")
+	ui.queue_free()
+	await process_frame
