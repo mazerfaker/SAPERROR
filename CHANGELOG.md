@@ -1,4 +1,7 @@
 # Changelog
+## 0.7.0-alpha.4 — act illustrations (CI deferred)
+Four original imported vector plates: BOOT signal, CORRUPTION damaged grid, ECHO duplicated memory, ADMIN sealed root-access eye. Live UA/EN dialogue, sector range and status, brief optional nonblocking fade and static Reduced Motion. Existing navigation and story unchanged. Art/layout tests authored; actual render acceptance pending.
+
 ## 0.7.0-alpha.3 — boss identity art (CI deferred)
 Four original SVG emblems in the approved phosphor palette, dedicated accent and low-opacity slow scan. Static with Reduced Motion. Boss header reserves art area above board; ADMIN identity retained in all three phases and on introduction. No room background or board logic changes. Import/layout tests authored; visual acceptance pending.
 

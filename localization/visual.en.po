@@ -733,3 +733,18 @@ msgstr "ON"
 
 msgid "CLASSIC_OFF"
 msgstr "OFF"
+
+msgid "CAM_ACT_RANGE"
+msgstr "SECTORS"
+
+msgid "CAM_ACT_SIGNAL_0"
+msgstr "INITIAL SIGNAL"
+
+msgid "CAM_ACT_SIGNAL_1"
+msgstr "INTEGRITY BREACH"
+
+msgid "CAM_ACT_SIGNAL_2"
+msgstr "MEMORY ECHO"
+
+msgid "CAM_ACT_SIGNAL_3"
+msgstr "ROOT ACCESS"

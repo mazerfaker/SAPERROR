@@ -14,6 +14,7 @@ var phantom := Phantom.new()
 const Parasite = preload("res://scripts/board/parasite.gd")
 const ChallengeUI = preload("res://scripts/ui/anomaly_challenge_ui.gd")
 const BossEmblem = preload("res://scripts/ui/boss_emblem.gd")
+const ActPlate = preload("res://scripts/ui/act_plate.gd")
 const Challenge = preload("res://scripts/board/anomaly_challenge.gd")
 const Campaign = preload("res://scripts/run/campaign.gd")
 var campaign := Campaign.new()
@@ -214,7 +215,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.7.0-a3",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.7.0-a4",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -1320,9 +1321,18 @@ func _modes() -> void:
 
 func _campaign_intro() -> void:
 	var act: int=campaign.act_index(sector_number)
-	_label("ACT %d // %s" % [act+1,Campaign.ACT_IDS[act]],Rect2(124,215,1170,80),page,42,AMBER)
-	_label(tr("CAM_ACT_%d" % act),Rect2(124,320,1170,340),page,32)
-	_label(tr("CAM_RECORDS")+" %d / 3" % campaign.records.size(),Rect2(124,705,1170,52),page,27,DIM)
+	var tint: Color=ActPlate.TINTS[act]
+	_label("ACT %d // %s" % [act+1,Campaign.ACT_IDS[act]],Rect2(124,215,1170,80),page,42,tint)
+	var ranges: Array[String]=["01–03","04–06","07–09","10"]
+	_label(tr("CAM_ACT_RANGE")+" "+ranges[act]+"  //  "+tr("CAM_ACT_SIGNAL_%d" % act),Rect2(124,298,1170,48),page,25,tint)
+	var dialogue:=_label(tr("CAM_ACT_%d" % act),Rect2(124,363,696,300),page,30)
+	dialogue.name="ActDialogue"
+	var plate:=ActPlate.new()
+	plate.name="ActIllustration"
+	plate.act_index=act
+	plate.reduced_motion=reduced
+	_place(plate,Rect2(850,353,470,372),page)
+	_label(tr("CAM_RECORDS")+" %d / 3" % campaign.records.size(),Rect2(124,705,696,52),page,27,DIM)
 	_button(tr("CAM_ENTER"),Rect2(124,810,570,60),page,func():
 		campaign.acknowledge(sector_number)
 		_save_session()

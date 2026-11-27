@@ -733,3 +733,18 @@ msgstr "УВІМК"
 
 msgid "CLASSIC_OFF"
 msgstr "ВИМК"
+
+msgid "CAM_ACT_RANGE"
+msgstr "СЕКТОРИ"
+
+msgid "CAM_ACT_SIGNAL_0"
+msgstr "ПОЧАТКОВИЙ СИГНАЛ"
+
+msgid "CAM_ACT_SIGNAL_1"
+msgstr "ПОРУШЕННЯ ЦІЛІСНОСТІ"
+
+msgid "CAM_ACT_SIGNAL_2"
+msgstr "ВІДЛУННЯ ПАМ'ЯТІ"
+
+msgid "CAM_ACT_SIGNAL_3"
+msgstr "КОРЕНЕВИЙ ДОСТУП"
