@@ -20,7 +20,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw 'Git is not available on the Windows runner.' }
           git --version
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (Node.js 24)
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -275,14 +275,14 @@ jobs:
             Get-FileHash $path | Out-File -Append build/logs/artifact-hashes.txt
           }
       - name: Upload build ZIPs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2 (Node.js 24)
         if: success()
         with:
           name: SAPERROR-packages
           path: build/dist/*.zip
           if-no-files-found: error
       - name: Upload QA logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2 (Node.js 24)
         if: always()
         with:
           name: SAPERROR-QA-logs
