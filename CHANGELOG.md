@@ -1,4 +1,7 @@
 # Changelog
+## 0.6.0-alpha.4–7 — campaign finale (CI deferred)
+Two LOOP temporal stages, three ADMIN phases (PORTAL topology, DOUBLE, LIAR), one-shot approved intro event, optional REWRITE trial, three gated endings, terminal ending scenes and credits/gallery. Phase transitions and ending metadata persist. Existing art and menu audio unchanged. No full campaign certification yet; manual presentation and asset licensing pending.
+
 ## 0.6.0-alpha.2–3 — routes, Archivist, checkpoints (CI deferred)
 Optional archive gates at sectors 2/5/8, 15 CR plus Archivist 10 CR once, key records only from recovered archives, act checkpoints and Hardcore restart. ADMIN one-shot source path and exact hash registered; missing asset remains silent until upload. Tests deferred.
 

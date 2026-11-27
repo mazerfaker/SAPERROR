@@ -47,3 +47,5 @@ Alpha.7 LIAR authored boss trial, no intermediate CI. Full combined v0.5 Beta ga
 0.5.0-beta.1 passed combined Windows CI (46027804129). 0.6 alpha.1 campaign foundation, separate mode, act intros and mandatory bosses. Preserve Anomaly Lab and Free Run; defer CI until Campaign Beta. Manual acceptance, route choices, checkpoints, full boss phases, ADMIN and endings pending.
 
 0.6 alpha.2–3 routes/archives, Archivist, act checkpoints, ADMIN intro asset path. Optional challenge HP is independent. CI deferred.
+
+0.6 alpha.4–7 LOOP temporal stages, ADMIN phases, ending gates, credits/gallery, combined authored-route tests. CI deferred pending original ADMIN MP3 and Beta gate.

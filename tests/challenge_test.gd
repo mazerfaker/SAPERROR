@@ -61,10 +61,11 @@ func run() -> void:
 		check(not model.won(),"sensor alone is not victory")
 	# Replay public safe deductions through the actual challenge action path.
 	# No mine mask used to select moves. Every authored puzzle must remain finishable.
-	for kind in Challenge.KINDS:
+	for kind in Challenge.KINDS+Challenge.EXTRA_KINDS:
 		check(model.start(kind),"full route setup "+kind)
 		if not model.valid: continue
 		if kind=="WATCHER": model.toggle_journal()
+		if kind=="ADMIN_LINK": model.switch_layer()
 		if kind=="LIAR":
 			var truth: Array[int]=model.decoded_sensors()
 			for i in range(3):

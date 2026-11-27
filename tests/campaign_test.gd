@@ -20,7 +20,11 @@ func run() -> void:
 	for sector in [3,6,9]:
 		var id: String=cam.boss_pending(sector)
 		check(not cam.complete_boss(sector,"INVALID"),"wrong gate")
-		check(cam.complete_boss(sector,id),"boss unlock")
+		if id=="LOOP":
+			check(cam.advance_phase(sector,"LOOP"),"first LOOP state")
+			check(cam.boss_pending(sector)=="LOOP","second state mandatory")
+			check(cam.advance_phase(sector,"LOOP_B"),"second LOOP state")
+		else: check(cam.complete_boss(sector,id),"boss unlock")
 		check(not cam.complete_boss(sector,id),"no duplicate")
 		cam.acknowledge(sector+1)
 	check(cam.records.is_empty() and cam.boss_pending(10)=="ADMIN","bosses do not grant optional records")
@@ -28,7 +32,11 @@ func run() -> void:
 		check(cam.choose_route(sector,true),"optional archive")
 		check(not cam.choose_route(sector,true),"archive reward once")
 	check(cam.records.size()==3,"three optional records")
-	check(not cam.complete_boss(10,"ADMIN"),"no fake ending")
+	check(not cam.complete_boss(10,"ADMIN"),"cannot bypass final phases")
+	for kind in Campaign.ADMIN_PHASES: check(cam.advance_phase(10,kind),"ADMIN phase "+kind)
+	check(cam.can_end("SHUTDOWN") and cam.can_end("CONTAINMENT") and not cam.can_end("REWRITE"),"ending conditions")
+	cam.rewrite_done=true
+	check(cam.can_end("REWRITE"),"rewrite unlocked")
 	var restored := Campaign.new()
 	check(restored.restore(cam.snapshot(),10) and restored.snapshot()==cam.snapshot(),"metadata round trip")
 	var invalid: Dictionary=cam.snapshot()

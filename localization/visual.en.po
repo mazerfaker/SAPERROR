@@ -592,3 +592,60 @@ msgstr "Hardcore restarts from the beginning."
 
 msgid "CAM_RETRY_ACT"
 msgstr "Restore the start of the current act, including inventory, credits and story records."
+
+msgid "CH_LOOP_B_INTRO"
+msgstr "Second temporal state: the marked lower region resets after three moves. Recover the second field."
+
+msgid "CH_ADMIN_LINK_INTRO"
+msgstr "ADMIN phase 1: a marked portal links the opposite corners. The link can be toggled freely; all readings follow the active topology."
+
+msgid "CH_ADMIN_LINK_STATUS"
+msgstr "LINK TOPOLOGY"
+
+msgid "CH_REWRITE_INTRO"
+msgstr "REWRITE: recover a separate authorized memory field to unlock the final protocol."
+
+msgid "CAM_ADMIN_INTRO"
+msgstr "ADMIN: ROOT ACCESS GRANTED. Three authorization phases remain: linked topology, parallel archive and checksum verification.\n\nECHO: We can end this cycle."
+
+msgid "CAM_FINAL_CHOICE"
+msgstr "FINAL AUTHORIZATION"
+
+msgid "CAM_FINAL_DESC"
+msgstr "Select the fate of the station. The conditions are shown below."
+
+msgid "CAM_REQUIRE_SHUTDOWN"
+msgstr "Defeat ADMIN."
+
+msgid "CAM_REQUIRE_CONTAINMENT"
+msgstr "Defeat ADMIN and recover 3 key records."
+
+msgid "CAM_REQUIRE_REWRITE"
+msgstr "Recover 3 records and complete REWRITE trial."
+
+msgid "CAM_REWRITE_TRIAL"
+msgstr "OPEN OPTIONAL REWRITE TRIAL"
+
+msgid "CAM_END_SHUTDOWN"
+msgstr "The station stops answering. The archive falls silent. The experiment is terminated. For the first time, the terminal forgets your name."
+
+msgid "CAM_END_CONTAINMENT"
+msgstr "The archive is preserved behind a new boundary. ADMIN remains isolated. ECHO answers once, then waits."
+
+msgid "CAM_END_REWRITE"
+msgstr "The protocol accepts a new author. ECHO is no longer a record. The station opens its archive and the old cycle ends."
+
+msgid "CAM_CREDITS"
+msgstr "CREDITS"
+
+msgid "CAM_CREDIT_TEXT"
+msgstr "SAPERROR\nAn independent puzzle horror game.\nEngine: Godot.\nSound: finntastico / Dragon Studio (user-provided sources).\nThank you for recovering the archive."
+
+msgid "CAM_GALLERY"
+msgstr "ENDING GALLERY"
+
+msgid "CAM_UNLOCKED"
+msgstr "UNLOCKED"
+
+msgid "CAM_LOCKED"
+msgstr "LOCKED"

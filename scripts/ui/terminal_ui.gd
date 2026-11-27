@@ -19,6 +19,8 @@ var campaign := Campaign.new()
 var campaign_selected: bool = false
 var act_checkpoint: Dictionary = {}
 var campaign_failed: bool = false
+var ending_gallery: Array[String] = []
+var gallery_preview: String = ""
 var challenge_kind: String = "LOOP"
 var parasite := Parasite.new()
 var portal_button: Button
@@ -206,7 +208,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.6.0-a3",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.6.0-a7",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -224,6 +226,13 @@ func _show(next: String) -> void:
 	elif screen == "campaign_route": _campaign_route()
 	elif screen == "campaign_archive": _campaign_archive()
 	elif screen == "campaign_recovery": _campaign_recovery()
+	elif screen == "admin_intro": _admin_intro()
+	elif screen == "ending_choice": _ending_choice()
+	elif screen == "rewrite_trial": _rewrite_trial()
+	elif screen == "ending_scene": _ending_scene(campaign.ending)
+	elif screen == "credits": _credits()
+	elif screen == "gallery": _gallery()
+	elif screen == "gallery_preview": _ending_scene(gallery_preview)
 	elif screen == "tutorial": _tutorial()
 	elif screen == "shop": _shop()
 	elif screen == "replace": _replacement()
@@ -243,7 +252,8 @@ func _menu() -> void:
 	_label(tr("VIS_STATS")+"\n"+tr("VIS_RUNS")+" "+str(sessions)+"\n"+tr("VIS_WINS")+" "+str(wins)+"\n"+tr("VIS_LOSSES")+" "+str(losses),Rect2(820,345,500,285),page,32)
 	_label(tr("VIS_LESSONS")+" %d / 9" % tutorial_done,Rect2(820,650,500,62),page,29,AMBER)
 	if save_failed: _label(tr("VIS_SAVE_ERROR"),Rect2(820,714,500,80),page,27,RED)
-	_button(tr("CH_MENU"),Rect2(820,810,500,60),page,func(): _show("challenges"),25)
+	_button(tr("CH_MENU"),Rect2(820,810,245,60),page,func(): _show("challenges"),21)
+	_button(tr("CAM_GALLERY"),Rect2(1075,810,245,60),page,func(): _show("gallery"),21)
 func _profiles() -> void:
 	_label(tr("VIS_DIFFICULTY"),Rect2(124,190,1170,70),page,42)
 	if board != null and not board.finished():
@@ -278,7 +288,8 @@ func _start_profile(next_profile: int, story: bool = false) -> void:
 	_save_session()
 	_show("campaign_intro" if campaign.active else "game")
 func _continue_run() -> void:
-	if campaign.active and campaign_failed: _show("campaign_recovery")
+	if campaign.active and not campaign.ending.is_empty(): _show("ending_scene")
+	elif campaign.active and campaign_failed: _show("campaign_recovery")
 	elif pending_sector: _advance_sector()
 	elif campaign.needs_intro(sector_number): _show("campaign_intro")
 	else: _show("game")
@@ -290,10 +301,10 @@ func _advance_sector() -> void:
 			return
 		var boss: String=campaign.boss_pending(sector_number)
 		if not boss.is_empty():
-			_show("campaign_boundary" if boss=="ADMIN" else "campaign_boss")
+			_show("admin_intro" if boss=="ADMIN" and not campaign.admin_intro_seen else "campaign_boss")
 			return
 		if sector_number>=10:
-			_show("campaign_boundary")
+			_show("ending_scene" if not campaign.ending.is_empty() else "ending_choice")
 			return
 	# Shared completion route for normal wins and the hidden protocol.
 	pending_sector = false
@@ -347,6 +358,11 @@ func _load_session() -> void:
 		if not campaign.restore(raw_campaign,sector_number): save_failed=true
 	var saved_checkpoint: Variant=cfg.get_value("run","act_checkpoint",{})
 	act_checkpoint=saved_checkpoint.duplicate(true) if saved_checkpoint is Dictionary else {}
+	ending_gallery.clear()
+	var saved_gallery: Variant=cfg.get_value("stats","endings",[])
+	if saved_gallery is Array:
+		for id in saved_gallery:
+			if id in Campaign.ENDINGS and not ending_gallery.has(id): ending_gallery.append(id)
 	campaign_failed=campaign.active and bool(cfg.get_value("run","campaign_failed",false))
 	pending_sector = bool(cfg.get_value("run","pending_sector",false))
 	sector_ready = bool(cfg.get_value("run","sector_ready",false)) and not pending_sector
@@ -410,6 +426,7 @@ func _save_session() -> void:
 	cfg.set_value("stats","sessions",sessions)
 	cfg.set_value("stats","wins",wins)
 	cfg.set_value("stats","losses",losses)
+	cfg.set_value("stats","endings",ending_gallery.duplicate())
 	cfg.set_value("run","sector",sector_number)
 	cfg.set_value("run","campaign",campaign.snapshot())
 	cfg.set_value("run","act_checkpoint",act_checkpoint)
@@ -1287,12 +1304,15 @@ func _campaign_intro() -> void:
 	_button(tr("VIS_BACK"),Rect2(714,810,570,60),page,func(): _show("menu"))
 func _campaign_boss() -> void:
 	var id: String=campaign.boss_pending(sector_number)
-	if not Challenge.KINDS.has(id):
-		_show("campaign_boundary")
+	var kind: String=campaign.phase_kind(sector_number)
+	if kind.is_empty():
+		_show("ending_choice" if sector_number==10 else "menu")
 		return
 	var trial := ChallengeUI.new()
-	trial.kind=id
+	trial.kind=kind
 	trial.campaign_encounter=true
+	if id=="LOOP": trial.encounter_title="LOOP // %d/2" % (campaign.loop_phase+1)
+	elif id=="ADMIN": trial.encounter_title="ADMIN // %d/3" % (campaign.admin_phase+1)
 	trial.position=Vector2(80,180)
 	trial.size=Vector2(1266,710)
 	trial.theme=theme
@@ -1300,11 +1320,12 @@ func _campaign_boss() -> void:
 	trial.clicked.connect(func(): audio.play_event("key"))
 	trial.encounter_won.connect(func():
 		if screen!="campaign_boss" or not pending_sector or not trial.model.won(): return
-		if not campaign.complete_boss(sector_number,id): return
+		if not campaign.advance_phase(sector_number,kind): return
 		_save_session()
 		_advance_sector()
 		if screen=="game": _show("shop"))
 	page.add_child(trial)
+
 func _campaign_boundary() -> void:
 	_label("ACT IV // ADMIN",Rect2(124,215,1170,80),page,42,AMBER)
 	_label(tr("CAM_BOUNDARY"),Rect2(124,320,1170,300),page,32)
@@ -1379,3 +1400,76 @@ func _campaign_archive() -> void:
 		_advance_sector()
 		if screen=="game": _show("shop"))
 	page.add_child(trial)
+
+func _admin_intro() -> void:
+	if not campaign.active or not pending_sector or campaign.boss_pending(sector_number)!="ADMIN": return
+	_label("ADMIN // ROOT ACCESS",Rect2(124,215,1170,90),page,48,RED)
+	_label(tr("CAM_ADMIN_INTRO"),Rect2(124,330,1170,350),page,32)
+	_button(tr("CAM_ENTER"),Rect2(124,810,570,60),page,func(): _show("campaign_boss"))
+	_button(tr("VIS_BACK"),Rect2(714,810,570,60),page,func(): _show("menu"))
+	if not campaign.admin_intro_seen:
+		campaign.admin_intro_seen=true
+		audio.play_event("admin_intro")
+		fault_triggered.emit()
+		_save_session()
+func _ending_choice() -> void:
+	if not campaign.active or not campaign.cleared.has(10): return
+	if not campaign.ending.is_empty():
+		_show("ending_scene")
+		return
+	_label(tr("CAM_FINAL_CHOICE"),Rect2(124,205,1170,70),page,40,AMBER)
+	_label(tr("CAM_FINAL_DESC")+"  "+tr("CAM_RECORDS")+" %d/3" % campaign.records.size(),Rect2(124,282,1170,100),page,27)
+	var y: int=400
+	for id in Campaign.ENDINGS:
+		var choice := _button(id,Rect2(124,y,490,75),page,_choose_ending.bind(id),29)
+		choice.disabled=not campaign.can_end(id)
+		_label(tr("CAM_REQUIRE_"+id),Rect2(635,y,650,80),page,25,DIM)
+		y+=96
+	var rewrite := _button(tr("CAM_REWRITE_TRIAL"),Rect2(124,705,1170,65),page,func(): _show("rewrite_trial"),25)
+	rewrite.disabled=campaign.records.size()!=3 or campaign.rewrite_done
+	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("menu"))
+func _rewrite_trial() -> void:
+	if not campaign.cleared.has(10) or campaign.records.size()!=3 or campaign.rewrite_done or not campaign.ending.is_empty(): return
+	var trial := ChallengeUI.new()
+	trial.kind="REWRITE"
+	trial.campaign_encounter=true
+	trial.position=Vector2(80,180)
+	trial.size=Vector2(1266,710)
+	trial.theme=theme
+	trial.back.connect(func(): _show("ending_choice"))
+	trial.clicked.connect(func(): audio.play_event("key"))
+	trial.encounter_won.connect(func():
+		if screen!="rewrite_trial" or not trial.model.won() or campaign.rewrite_done: return
+		campaign.rewrite_done=true
+		_save_session()
+		_show("ending_choice"))
+	page.add_child(trial)
+func _choose_ending(id: String) -> void:
+	if not campaign.choose_ending(id): return
+	if not ending_gallery.has(id): ending_gallery.append(id)
+	_save_session()
+	audio.play_event("shutdown" if id=="SHUTDOWN" else "win")
+	_show("ending_scene")
+func _ending_scene(id: String) -> void:
+	if id not in Campaign.ENDINGS: return
+	var tint: Color=RED if id=="SHUTDOWN" else (AMBER if id=="CONTAINMENT" else GREEN)
+	_label("MINE // "+id,Rect2(124,215,1170,110),page,56,tint)
+	_label(tr("CAM_END_"+id),Rect2(124,350,1170,350),page,34,tint)
+	_button(tr("CAM_CREDITS"),Rect2(124,810,570,60),page,func(): _show("credits"))
+	_button(tr("VIS_BACK"),Rect2(714,810,570,60),page,func(): _show("menu"))
+func _credits() -> void:
+	_label("SAPERROR",Rect2(124,205,1170,110),page,64)
+	_label(tr("CAM_CREDIT_TEXT"),Rect2(124,350,1170,380),page,30)
+	_button(tr("CAM_GALLERY"),Rect2(124,810,570,60),page,func(): _show("gallery"))
+	_button(tr("VIS_BACK"),Rect2(714,810,570,60),page,func(): _show("menu"))
+func _gallery() -> void:
+	_label(tr("CAM_GALLERY")+" %d/3" % ending_gallery.size(),Rect2(124,205,1170,80),page,42)
+	for i in range(Campaign.ENDINGS.size()):
+		var id: String=Campaign.ENDINGS[i]
+		var item := _button(id+" // "+tr("CAM_UNLOCKED" if ending_gallery.has(id) else "CAM_LOCKED"),Rect2(124,320+i*118,1170,88),page,func(): _show_gallery_ending(id),30)
+		item.disabled=not ending_gallery.has(id)
+	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("menu"))
+func _show_gallery_ending(id: String) -> void:
+	if not ending_gallery.has(id): return
+	gallery_preview=id
+	_show("gallery_preview")

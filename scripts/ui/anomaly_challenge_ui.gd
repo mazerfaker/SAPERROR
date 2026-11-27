@@ -5,6 +5,7 @@ signal back
 signal clicked
 signal encounter_won
 var campaign_encounter: bool = false
+var encounter_title: String = ""
 var proceed_button: Button
 var kind: String = "LOOP"
 var model := Challenge.new()
@@ -44,7 +45,7 @@ func restart() -> void:
 	add_child(body)
 	tiles.clear()
 	model.start(kind)
-	label(kind+" // "+tr("CH_AUTHORED"),Vector2(0,0),Vector2(1266,56),36)
+	label((encounter_title if not encounter_title.is_empty() else kind)+" // "+tr("CH_AUTHORED"),Vector2(0,0),Vector2(1266,56),36)
 	label(tr("CH_"+kind+"_INTRO"),Vector2(0,62),Vector2(1266,92),26)
 	if model.valid:
 		var grid := GridContainer.new()
@@ -69,7 +70,7 @@ func restart() -> void:
 		if kind=="LIAR":
 			for index in range(3):
 				sensor_buttons.append(button("S%d" % (index+1),Vector2(515+index*240,530),Vector2(225,56),_select_sensor.bind(index)))
-		if kind=="DOUBLE": layer_button=button("PARALLEL: A",Vector2(515,530),Vector2(720,56),_switch_layer)
+		if kind in ["DOUBLE","ADMIN_LINK"]: layer_button=button("PARALLEL: A",Vector2(515,530),Vector2(720,56),_switch_layer)
 		if kind=="WATCHER": journal_button=button(tr("VIS_JOURNAL"),Vector2(515,530),Vector2(720,56),_journal)
 	else:
 		label(tr("CH_INVALID"),Vector2(25,180),Vector2(1100,120),30)
@@ -113,7 +114,7 @@ func refresh() -> void:
 	info.text="%s %d  |  %s %d/%d  |  %s %d" % [tr("CORE_HP"),b.hp,tr("CORE_OPEN"),b.opened,b.cells.size()-b.mine_total,tr("CH_ACTIONS"),model.actions]
 	readout.text=model.details()
 	if is_instance_valid(layer_button):
-		layer_button.text="PARALLEL: "+("A → B" if model.active_layer==0 else "B → A")
+		layer_button.text=("PORTAL: "+("ON" if b.portal_enabled else "OFF")) if kind=="ADMIN_LINK" else "PARALLEL: "+("A → B" if model.active_layer==0 else "B → A")
 		layer_button.disabled=model.done()
 	if is_instance_valid(journal_button): journal_button.text=tr("VIS_JOURNAL")+": "+tr("CH_JOURNAL_OPEN" if model.journal_open else "CH_JOURNAL_CLOSED")
 	if not model.notice.is_empty(): readout.text += "\n"+tr(model.notice)

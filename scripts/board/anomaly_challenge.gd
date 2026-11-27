@@ -8,6 +8,7 @@ const FIRST := 12
 const MASK_A := [0,1,14,21]
 const MASK_B := [0,2,10,19]
 const KINDS := ["LOOP","DOUBLE","WATCHER","LIAR"]
+const EXTRA_KINDS := ["LOOP_B","ADMIN_LINK","REWRITE"]
 const LIAR_ROWS := [0,2,4]
 const DOUBLE_LINKS := [Vector2i(11,13),Vector2i(13,11)]
 var kind: String = "LOOP"
@@ -58,7 +59,10 @@ func start(next_kind: String) -> bool:
 	checksum_values.clear()
 	liar_solved=false
 	valid=false
-	if kind not in KINDS or not add_board(MASK_A): return false
+	loop_zone.assign([15,16,17,18,19,20,21,22,23,24] if kind=="LOOP_B" else [0,1,2,3,4,5,6,7,8,9])
+	if kind not in KINDS and kind not in EXTRA_KINDS: return false
+	if not add_board(MASK_B if kind in ["LOOP_B","REWRITE"] else MASK_A): return false
+	if kind=="ADMIN_LINK": board().configure_portal(0,24)
 	if kind=="DOUBLE":
 		if not add_board(MASK_B): return false
 		for link in DOUBLE_LINKS:
@@ -108,7 +112,7 @@ func act(index: int, flag: bool = false, chord: bool = false) -> bool:
 	if b.cells==before: return false
 	actions += 1
 	notice=""
-	if kind=="LOOP" and not loop_done and b.hp>0 and (actions>=3 or b.won()):
+	if kind in ["LOOP","LOOP_B"] and not loop_done and b.hp>0 and (actions>=3 or b.won()):
 		apply_loop()
 	if kind=="WATCHER" and not watcher_closed and actions>=5:
 		watcher_closed=true
@@ -125,7 +129,9 @@ func apply_loop() -> void:
 	loop_done=true
 	notice="CH_LOOP_RESET"
 func switch_layer() -> void:
-	if valid and kind=="DOUBLE" and not lost(): active_layer=1-active_layer
+	if not valid or done(): return
+	if kind=="DOUBLE": active_layer=1-active_layer
+	elif kind=="ADMIN_LINK": board().portal_enabled=not board().portal_enabled
 func decoded_sensors() -> Array[int]:
 	if checksum_values.size()!=3: return []
 	var a: int = (checksum_values[0]+checksum_values[2]-checksum_values[1])/2
@@ -151,7 +157,8 @@ func marker(index: int) -> String:
 	if kind=="DOUBLE":
 		for link in DOUBLE_LINKS:
 			if index==(link.x if active_layer==0 else link.y): return "PARALLEL"
-	return "LOOP" if kind=="LOOP" and not loop_done and index in loop_zone else ""
+	if kind=="ADMIN_LINK" and index in [0,24]: return "PORTAL"
+	return "LOOP" if kind in ["LOOP","LOOP_B"] and not loop_done and index in loop_zone else ""
 func hidden(index: int) -> bool:
 	return kind=="WATCHER" and watcher_closed and watcher_log.has(index)
 func details() -> String:
@@ -174,6 +181,7 @@ func details() -> String:
 			var b: Board = boards[1]
 			lines.append("A#%d: %d | B#%d: %d" % [link.x+1,a.clue(link.x,0),link.y+1,b.clue(link.y,0)])
 		return "PARALLEL // "+("A" if active_layer==0 else "B")+"\n"+tr("CH_DOUBLE_LINKS")+"\n"+"\n".join(lines)+"\n"+tr("CH_DOUBLE_PROGRESS")+" A %d/21 | B %d/21" % [boards[0].opened,boards[1].opened]
-	if kind=="LOOP":
+	if kind=="ADMIN_LINK": return tr("CH_ADMIN_LINK_STATUS")+" / "+("ON" if board().portal_enabled else "OFF")+"\n#1 <-> #25"
+	if kind in ["LOOP","LOOP_B"]:
 		return tr("CH_LOOP_DONE") if loop_done else tr("CH_LOOP_COUNT")+" "+str(maxi(0,3-actions))
 	return ""

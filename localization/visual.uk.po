@@ -592,3 +592,60 @@ msgstr "Hardcore починається спочатку."
 
 msgid "CAM_RETRY_ACT"
 msgstr "Відновити початок поточного акту, включно з інвентарем, кредитами та сюжетними записами."
+
+msgid "CH_LOOP_B_INTRO"
+msgstr "Другий часовий стан: позначена нижня зона відкотиться через три ходи. Віднови друге поле."
+
+msgid "CH_ADMIN_LINK_INTRO"
+msgstr "ADMIN, фаза 1: портал з'єднує протилежні кути. Зв'язок можна вимкнути безкоштовно; числа відповідають активній топології."
+
+msgid "CH_ADMIN_LINK_STATUS"
+msgstr "ТОПОЛОГІЯ ЗВ'ЯЗКУ"
+
+msgid "CH_REWRITE_INTRO"
+msgstr "REWRITE: віднови окреме авторизоване поле пам'яті, щоб відкрити фінальний протокол."
+
+msgid "CAM_ADMIN_INTRO"
+msgstr "ADMIN: ДОСТУП ДО КОРЕНЯ НАДАНО. Три фази авторизації: зв'язана топологія, паралельний архів та контрольні суми.\n\nECHO: Ми можемо завершити цикл."
+
+msgid "CAM_FINAL_CHOICE"
+msgstr "ФІНАЛЬНА АВТОРИЗАЦІЯ"
+
+msgid "CAM_FINAL_DESC"
+msgstr "Обери долю станції. Умови наведено нижче."
+
+msgid "CAM_REQUIRE_SHUTDOWN"
+msgstr "Перемогти ADMIN."
+
+msgid "CAM_REQUIRE_CONTAINMENT"
+msgstr "Перемогти ADMIN і відновити 3 ключові записи."
+
+msgid "CAM_REQUIRE_REWRITE"
+msgstr "Відновити 3 записи та пройти REWRITE."
+
+msgid "CAM_REWRITE_TRIAL"
+msgstr "ВІДКРИТИ ЗАДАЧУ REWRITE"
+
+msgid "CAM_END_SHUTDOWN"
+msgstr "Станція перестає відповідати. Архів замовкає. Експеримент завершено. Уперше термінал забуває твоє ім'я."
+
+msgid "CAM_END_CONTAINMENT"
+msgstr "Архів збережено за новою межею. ADMIN ізольований. ECHO відповідає востаннє й чекає."
+
+msgid "CAM_END_REWRITE"
+msgstr "Протокол приймає нового автора. ECHO більше не запис. Станція відкриває архів, старий цикл завершено."
+
+msgid "CAM_CREDITS"
+msgstr "ТИТРИ"
+
+msgid "CAM_CREDIT_TEXT"
+msgstr "SAPERROR\nНезалежна логічна горор-гра.\nРушій: Godot.\nЗвук: finntastico / Dragon Studio (надані джерела).\nДякуємо за відновлення архіву."
+
+msgid "CAM_GALLERY"
+msgstr "ГАЛЕРЕЯ ФІНАЛІВ"
+
+msgid "CAM_UNLOCKED"
+msgstr "ВІДКРИТО"
+
+msgid "CAM_LOCKED"
+msgstr "ЗАБЛОКОВАНО"
