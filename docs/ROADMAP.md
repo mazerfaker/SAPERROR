@@ -67,3 +67,5 @@ Alpha.7 LIAR authored boss trial, no intermediate CI. Full combined v0.5 Beta ga
 0.7 alpha.7: persistent local collection, bilingual archive texts, ending thumbnails and lab completion. No CI until combined content beta.
 
 0.7 Beta.1: combined Windows CI after seven deferred stages; new authored anomaly, Classic, art, atmosphere, and collection tests, all previous campaign and live-environment regression. Candidate only until CI and manual QA; remaining full SFX coverage, generalized anomaly combinations, final asset acceptance and release readiness go into 0.8.
+
+0.7.0-beta.1 verified Windows CI 46035015964, commit 6a41495. Product Beta 0.8.0-beta.1: staged save and integrity checks, backup recovery and fault-injection tests. Restore CI per stabilization milestone; do not proceed on failed QA. Next: performance instrumentation, long-run stress, balance, accessibility and final sound/presentation. Manual Windows acceptance remains mandatory.

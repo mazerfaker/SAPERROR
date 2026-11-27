@@ -1,4 +1,7 @@
 # Changelog
+## 0.8.0-beta.1 — save resilience candidate
+Staged checksum-sealed version-1 config, verified previous-generation backup, primary/backup/staged recovery, visible recovery warning, legacy migration and failure-path tests. No board schema or approved art/audio changes. Full CI required; not a guarantee against physical disk failure or simultaneous writers.
+
 ## 0.7.0-beta.1 — MAGNET certification repair
 CI 46034527457 rejected post-exchange board (13/21 safe cells reached by independent reproduction). Use swap of closed indices 1 and 2 instead, both states solvable in independent direct/subset simulation with identical initial visibility. Keep native Godot certification mandatory, assert exactly two announced endpoints change. Full CI rerun pending.
 

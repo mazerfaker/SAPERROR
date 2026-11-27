@@ -100,6 +100,7 @@ var sessions: int = 0
 var wins: int = 0
 var losses: int = 0
 var save_failed: bool = false
+var save_recovered: bool = false
 var cfg := ConfigFile.new()
 var tutorial: Tutorial
 var tutorial_done: int = 0
@@ -221,7 +222,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.7.0-b1",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.8.0-b1",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -270,6 +271,7 @@ func _menu() -> void:
 	_label(tr("VIS_STATS")+"\n"+tr("VIS_RUNS")+" "+str(sessions)+"\n"+tr("VIS_WINS")+" "+str(wins)+"\n"+tr("VIS_LOSSES")+" "+str(losses),Rect2(820,345,500,285),page,32)
 	_label(tr("VIS_LESSONS")+" %d / 9" % tutorial_done,Rect2(820,650,500,62),page,29,AMBER)
 	if save_failed: _label(tr("VIS_SAVE_ERROR"),Rect2(820,714,500,80),page,27,RED)
+	elif save_recovered: _label(tr("VIS_SAVE_RECOVERED"),Rect2(820,714,500,80),page,25,AMBER)
 	_button(tr("CH_MENU"),Rect2(820,810,245,60),page,func(): _show("challenges"),21)
 	_button(tr("COLLECTION_MENU"),Rect2(1075,810,245,60),page,func(): _show("gallery"),21)
 func _profiles() -> void:
@@ -362,7 +364,11 @@ func _tutorial() -> void:
 	tutorial.back.connect(func(): _show("menu"))
 	page.add_child(tutorial)
 func _load_session() -> void:
-	if DisplayServer.get_name() != "headless": cfg = Store.load_config()
+	if DisplayServer.get_name() != "headless":
+		var report: Dictionary=Store.load_report()
+		cfg=report["config"]
+		save_recovered=report["source"] in ["backup","staged"]
+		save_failed=report["source"]=="invalid"
 	is_uk = bool(cfg.get_value("settings","uk",false))
 	amount = clampf(float(cfg.get_value("settings","crt",0.45)),0.0,1.0)
 	glass = bool(cfg.get_value("settings","glass",true))
@@ -471,6 +477,7 @@ func _save_session() -> void:
 	cfg.set_value("run","rewinds",rewinds_left)
 	cfg.set_value("run","rewind_data",rewind_data if board!=null and not board.finished() else {})
 	save_failed = Store.write_config(cfg) != OK
+	if not save_failed: save_recovered=false
 func begin_boot() -> void:
 	boot_overlay = ColorRect.new()
 	(boot_overlay as ColorRect).color = Color("081710")

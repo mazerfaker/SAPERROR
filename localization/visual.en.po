@@ -799,3 +799,6 @@ msgstr "OPERATOR ECHO"
 
 msgid "COL_BODY_MEMORY_08"
 msgstr "MINE / RECOVERED OPERATOR RECORD\n\nThe same clearance procedure has been repeated under different authorization numbers. A voice persists between resets. Its origin matches the operator archive.\n\nECHO: Stop the cycle, or rewrite the instruction that keeps it running."
+
+msgid "VIS_SAVE_RECOVERED"
+msgstr "Recovered a previous valid save. Some recent actions may be lost."
