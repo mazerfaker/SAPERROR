@@ -394,3 +394,42 @@ msgstr "Select the center of a 3×3 group."
 
 msgid "VIS_GROUP_MINES"
 msgstr "mines in group"
+
+msgid "VIS_JOURNAL"
+msgstr "Journal"
+
+msgid "VIS_CLEANSE"
+msgstr "Cleanse"
+
+msgid "VIS_PHANTOM_ALERT"
+msgstr "PHANTOM: clue hidden"
+
+msgid "VIS_PHANTOM_SHIELDED"
+msgstr "PHANTOM: shielding absorbed effect"
+
+msgid "VIS_PHANTOM_CLEAR"
+msgstr "Data restored"
+
+msgid "VIS_PHANTOM_HIDDEN"
+msgstr "PHANTOM — see journal"
+
+msgid "MOD_SHIELDING"
+msgstr "Shielding"
+
+msgid "MOD_HOTFIX"
+msgstr "Hotfix"
+
+msgid "DESC_SHIELDING"
+msgstr "Blocks the first PHANTOM effect per sector."
+
+msgid "DESC_HOTFIX"
+msgstr "One free anomaly zone cleanse per sector."
+
+msgid "TUT_TITLE_8"
+msgstr "First anomaly — PHANTOM"
+
+msgid "TUT_HINT_8_0"
+msgstr "The highlighted clue is hidden. Open Journal: the system has retained the actual value."
+
+msgid "TUT_HINT_8_1"
+msgstr "Journal: cell #2, CLASSIC = 1. Press Cleanse to restore the clue."

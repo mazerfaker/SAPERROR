@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 45
     env:
       GODOT_VERSION: '4.7.2-stable'
-      GAME_VERSION: '0.4.0-alpha.3-live.1'
+      GAME_VERSION: '0.5.0-alpha.1'
     steps:
       - name: Windows prerequisites
         shell: pwsh
@@ -131,6 +131,8 @@ jobs:
           Invoke-Godot 'live-tests.txt' @('--headless','--path','.','--script','res://tests/live_environment_test.gd')
           if (-not (Select-String -Path build/logs/live-tests.txt -Pattern 'LIVE_QA.*failures=0' -Quiet)) { throw 'Missing live QA marker' }
           if ($env:LIVE_ASSETS_READY -ne 'true') { throw 'Live integration requires all approved files; no fallback release packaging' }
+          Invoke-Godot 'phantom-tests.txt' @('--headless','--path','.','--script','res://tests/phantom_test.gd')
+          if (-not (Select-String -Path build/logs/phantom-tests.txt -Pattern 'PHANTOM_QA.*failures=0' -Quiet)) { throw 'Missing phantom QA marker' }
           Invoke-Godot 'export.txt' @('--headless','--path','.','--export-release','Windows Desktop','build/windows/SAPERROR.exe')
       - name: Native render and audio QA
         shell: pwsh

@@ -1,7 +1,7 @@
 extends RefCounted
 # Deterministic, bounded run economy. No random state, no access to hidden board data.
-const MODULES := ["XRAY","CHAIN","CAPACITOR","ASSISTANT","CHRONOMANCER","SECOND_LIFE","FUSE","AUDITOR","RESONANCE","PROFIT","THIRD_EYE"]
-const PRICES := [32,36,28,30,34,40,35,34,32,45,30]
+const MODULES := ["XRAY","CHAIN","CAPACITOR","ASSISTANT","CHRONOMANCER","SECOND_LIFE","FUSE","AUDITOR","RESONANCE","PROFIT","THIRD_EYE","SHIELDING","HOTFIX"]
+const PRICES := [32,36,28,30,34,40,35,34,32,45,30,28,26]
 const MAX_MODULES := 4
 const MAX_CREDITS := 1000000
 var credits: int = 30

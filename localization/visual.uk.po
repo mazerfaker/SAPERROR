@@ -394,3 +394,42 @@ msgstr "Обери центр групи 3×3."
 
 msgid "VIS_GROUP_MINES"
 msgstr "мін у групі"
+
+msgid "VIS_JOURNAL"
+msgstr "Журнал"
+
+msgid "VIS_CLEANSE"
+msgstr "Очищення"
+
+msgid "VIS_PHANTOM_ALERT"
+msgstr "PHANTOM: число приховано"
+
+msgid "VIS_PHANTOM_SHIELDED"
+msgstr "PHANTOM: екранування спрацювало"
+
+msgid "VIS_PHANTOM_CLEAR"
+msgstr "Дані відновлено"
+
+msgid "VIS_PHANTOM_HIDDEN"
+msgstr "PHANTOM — дивись журнал"
+
+msgid "MOD_SHIELDING"
+msgstr "Екранування"
+
+msgid "MOD_HOTFIX"
+msgstr "Патч"
+
+msgid "DESC_SHIELDING"
+msgstr "Блокує перший ефект PHANTOM за сектор."
+
+msgid "DESC_HOTFIX"
+msgstr "Одне безкоштовне очищення аномальної зони за сектор."
+
+msgid "TUT_TITLE_8"
+msgstr "Перша аномалія — PHANTOM"
+
+msgid "TUT_HINT_8_0"
+msgstr "Число у виділеній клітинці приховано. Відкрий Журнал: система зберегла справжнє значення."
+
+msgid "TUT_HINT_8_1"
+msgstr "Журнал: клітинка №2, CLASSIC = 1. Натисни Очищення, щоб повернути число."

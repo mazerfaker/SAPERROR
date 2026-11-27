@@ -3,6 +3,8 @@ const Board = preload("res://scripts/board/state.gd")
 const Rules = preload("res://scripts/board/rules.gd")
 const Tools = preload("res://scripts/board/onboarding_tools.gd")
 const Economy = preload("res://scripts/run/economy.gd")
+const Phantom = preload("res://scripts/board/phantom.gd")
+var phantom := Phantom.new()
 var practice := Economy.new()
 var practice_label: Label
 var prior: Dictionary = {}
@@ -19,7 +21,7 @@ var tiles: Array[Button] = []
 var hint: Label
 var next_button: Button
 func _ready() -> void:
-	step = clampi(start_at,0,7)
+	step = clampi(start_at,0,8)
 	_build()
 func _label(value: String, p: Vector2, extent: Vector2, font_size: int) -> Label:
 	var l := Label.new()
@@ -47,6 +49,7 @@ func _build() -> void:
 	add_child(body)
 	phase = 0
 	solved = false
+	phantom = Phantom.new()
 	var mask := PackedByteArray()
 	mask.resize(16)
 	mask[0] = 1
@@ -65,16 +68,19 @@ func _build() -> void:
 		mask[4]=1
 		board = Board.new(4,4,mask,3)
 		board.reveal(5)
+	if step==8:
+		board.reveal(1)
+		phantom.trigger(board,1)
 	if step == 3: board.reveal(2)
 	if step == 4:
 		board.reveal(4)
 		board.flag(0)
-	_label(tr("VIS_TUTORIAL")+" %d / 8" % (step+1),Vector2(0,0),Vector2(1266,60),40)
+	_label(tr("VIS_TUTORIAL")+" %d / 9" % (step+1),Vector2(0,0),Vector2(1266,60),40)
 	_label(tr("TUT_TITLE_"+str(step)),Vector2(0,76),Vector2(1266,65),35)
 	hint = _label("",Vector2(550,158),Vector2(700,360),33)
 	tool_button = null
 	if step>=5:
-		tool_button = _button(tr("VIS_REWIND") if step==5 else ("CLASSIC" if step==6 else tr("MOD_CAPACITOR")+" / 28 CR"),Vector2(550,530),Vector2(700,64),_lesson_tool)
+		tool_button = _button(tr("VIS_REWIND") if step==5 else ("CLASSIC" if step==6 else (tr("MOD_CAPACITOR")+" / 28 CR" if step==7 else tr("VIS_JOURNAL"))),Vector2(550,530),Vector2(700,64),_lesson_tool)
 	if step==7:
 		practice.reset(1)
 		practice.reward(1,54,0)
@@ -149,7 +155,7 @@ func _action(i: int, kind: String) -> void:
 	if solved: completed.emit(step)
 	_refresh()
 func _next() -> void:
-	if step >= 7:
+	if step >= 8:
 		back.emit()
 		return
 	step += 1
@@ -161,13 +167,15 @@ func _refresh() -> void:
 	if is_instance_valid(tool_button):
 		tool_button.disabled = solved or (step==5 and phase==0)
 		if step==6: tool_button.text = Tools.NAMES[board.rule]
+		if step==8: tool_button.text = tr("VIS_JOURNAL") if phase==0 else tr("VIS_CLEANSE")
 		if step==7:
 			practice_label.text = "CR %d\n%s %d/%d\n%s %d/4" % [practice.credits,tr("VIS_STOCK"),practice.stock,practice.capacity(),tr("VIS_MODULES"),practice.owned.size()]
 	for i in range(tiles.size()):
 		var state: int = board.cells[i]
 		var b: Button = tiles[i]
 		b.text = str(board.clue(i,board.rule)) if state == Board.Cell.OPEN else ("⚑" if state == Board.Cell.FLAG else ("×" if state==Board.Cell.NEUTRALIZED else "·"))
-		var marked: bool = (step==0 and i==1) or (step==1 and (i==1 or Rules.neighbors(4,4,1).has(i))) or (step==2 and i==0) or (step==3 and i in [0,1,2]) or (step==4 and i==(4 if phase==0 else 8))
+		if step==8 and phantom.hidden(i,board.rule): b.text = "?"
+		var marked: bool = (step==8 and i==1) or (step==0 and i==1) or (step==1 and (i==1 or Rules.neighbors(4,4,1).has(i))) or (step==2 and i==0) or (step==3 and i in [0,1,2]) or (step==4 and i==(4 if phase==0 else 8))
 		marked = marked or (step==5 and i==0) or (step==6 and (i==5 or Rules.neighbors(4,4,5,board.rule).has(i)))
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color("081a11") if state == Board.Cell.OPEN else Color("183b27")
@@ -186,5 +194,8 @@ func _lesson_tool() -> void:
 		if phase>=2: solved = board.clue(5,Rules.Rule.DIAGONAL)==1
 	elif step==7:
 		solved = practice.buy("CAPACITOR") and practice.capacity()==6 and practice.credits==47
+	elif step==8:
+		if phase==0 and phantom.active() and phantom.value==board.clue(1,board.rule): phase=1
+		elif phase==1: solved = phantom.clear_zone() and not phantom.active()
 	if solved: completed.emit(step)
 	_refresh()

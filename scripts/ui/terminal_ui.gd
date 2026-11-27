@@ -9,6 +9,10 @@ const Tutorial = preload("res://scripts/ui/tutorial.gd")
 const Protocol = preload("res://scripts/ui/protocol_k30.gd")
 const Tools = preload("res://scripts/board/onboarding_tools.gd")
 const Economy = preload("res://scripts/run/economy.gd")
+const Phantom = preload("res://scripts/board/phantom.gd")
+var phantom := Phantom.new()
+var journal_button: Button
+var cleanse_button: Button
 const Rules = preload("res://scripts/board/rules.gd")
 signal effects_changed(amount: float, glass: bool, reduced: bool, flicker: bool, global_amount: float, glitches: bool)
 signal protocol_triggered
@@ -191,7 +195,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.4.0-a3",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.5.0-a1",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -217,7 +221,7 @@ func _menu() -> void:
 	_button(tr("VIS_SETTINGS"),Rect2(124,657,640,65),page,func(): _show("settings"))
 	_button(tr("VIS_EXIT"),Rect2(124,735,640,65),page,func(): _save_session(); shutdown_requested.emit())
 	_label(tr("VIS_STATS")+"\n"+tr("VIS_RUNS")+" "+str(sessions)+"\n"+tr("VIS_WINS")+" "+str(wins)+"\n"+tr("VIS_LOSSES")+" "+str(losses),Rect2(820,345,500,285),page,32)
-	_label(tr("VIS_LESSONS")+" %d / 8" % tutorial_done,Rect2(820,650,500,62),page,29,AMBER)
+	_label(tr("VIS_LESSONS")+" %d / 9" % tutorial_done,Rect2(820,650,500,62),page,29,AMBER)
 	if save_failed: _label(tr("VIS_SAVE_ERROR"),Rect2(820,714,500,80),page,27,RED)
 	_button("EN" if is_uk else "UA",Rect2(1100,810,210,60),page,_language)
 func _profiles() -> void:
@@ -277,7 +281,7 @@ func _tutorial() -> void:
 	tutorial.size = Vector2(1266,710)
 	tutorial.position = Vector2(80,180)
 	tutorial.theme = theme
-	tutorial.start_at = mini(tutorial_done,7)
+	tutorial.start_at = mini(tutorial_done,8)
 	tutorial.completed.connect(func(step: int):
 		tutorial_done = maxi(tutorial_done,step+1)
 		_save_session())
@@ -292,7 +296,7 @@ func _load_session() -> void:
 	flicker = bool(cfg.get_value("settings","flicker_v2",true))
 	glitches = bool(cfg.get_value("settings","glitches",true))
 	global_amount = clampf(float(cfg.get_value("settings","grade",0.0)),0.0,1.0)
-	tutorial_done = clampi(int(cfg.get_value("stats","tutorial",0)),0,8)
+	tutorial_done = clampi(int(cfg.get_value("stats","tutorial",0)),0,9)
 	sessions = maxi(0,int(cfg.get_value("stats","sessions",0)))
 	wins = maxi(0,int(cfg.get_value("stats","wins",0)))
 	losses = maxi(0,int(cfg.get_value("stats","losses",0)))
@@ -320,6 +324,7 @@ func _load_session() -> void:
 			save_failed = true
 		else:
 			board = resumed["board"]
+			phantom = resumed["phantom"]
 			pending_sector = false
 			sector_ready = false
 			profile = resumed["profile"]
@@ -492,8 +497,10 @@ func _game() -> void:
 	progress_fill.color = GREEN
 	progress_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_place(progress_fill,Rect2(0,0,0,10),track)
-	flag_count = _label("",Rect2(16,450,252,80),left,27)
-	credit_label = _label("",Rect2(16,535,252,60),left,27,AMBER)
+	flag_count = _label("",Rect2(16,440,252,64),left,24)
+	credit_label = _label("",Rect2(16,504,252,35),left,24,AMBER)
+	journal_button = _button(tr("VIS_JOURNAL"),Rect2(16,548,122,48),left,_open_journal,18)
+	cleanse_button = _button(tr("VIS_CLEANSE"),Rect2(146,548,122,48),left,_cleanse,18)
 	_label(tr("VIS_RULE"),Rect2(16,17,252,44),right,30,DIM)
 	rule_button = _button("CLASSIC",Rect2(16,64,252,56),right,_cycle_rule,28)
 	_label(tr("VIS_RULE_HOVER"),Rect2(16,132,252,82),right,24,DIM)
@@ -638,11 +645,16 @@ func _chord_action(i: int) -> void:
 		_remember_move(saved)
 		_after_action("flood" if board.opened-before > 1 else "reveal")
 func _after_action(sound: String = "") -> void:
+	var anomaly_event: String = ""
+	if not protocol_active: anomaly_event = phantom.advance(board,sector_number>=3,economy.owned.has("SHIELDING"))
 	_clear_inspection()
 	hint_cell = -1
 	hint_sources.clear()
 	if board.finished(): rewind_data.clear()
 	message_key = "CORE_ACTIVE"
+	if anomaly_event=="hidden": message_key = "VIS_PHANTOM_ALERT"
+	elif anomaly_event=="shielded": message_key = "VIS_PHANTOM_SHIELDED"
+	elif anomaly_event=="expired": message_key = "VIS_PHANTOM_CLEAR"
 	if board.hits > last_hits:
 		message_key = "VIS_PROTECTED" if protected_this_move==board.hits-last_hits else "CORE_HIT"
 		fault_triggered.emit()
@@ -684,6 +696,8 @@ func _refresh() -> void:
 	status.text = "> " + tr(message_key)
 	if hint_cell >= 0: status.text += "  #%d" % (hint_cell+1)
 	if not inspect_result.is_empty(): status.text = "> "+inspect_result
+	elif phantom.active() and not protocol_active and board!=null and not board.finished():
+		status.text += " // PHANTOM #%d [%d]" % [phantom.cell+1,phantom.until_action-phantom.actions]
 	if pending_sector and last_reward>0: status.text += "  +%d CR" % last_reward
 	status.add_theme_color_override("font_color",RED if message_key == "CORE_LOSS" else (AMBER if message_key in ["CORE_HIT","CORE_FAIL","CORE_SEED_BAD"] else GREEN))
 	for i in range(buttons.size()):
@@ -702,6 +716,11 @@ func _refresh() -> void:
 			fill = Color("081a11")
 			edge = Color("2c5238")
 			desc = b.text
+			if not protocol_active and not board.finished() and phantom.hidden(i,board.rule):
+				b.text = "?"
+				color = AMBER
+				edge = AMBER
+				desc = tr("VIS_PHANTOM_HIDDEN")
 		elif state == Board.Cell.FLAG:
 			b.text = "⚑"
 			color = AMBER
@@ -794,6 +813,7 @@ func _process(delta: float) -> void:
 		_after_action()
 
 func _reset_tools() -> void:
+	phantom = Phantom.new()
 	hints_left = _hint_limit()
 	rewinds_left = _rewind_limit()
 	rewind_data.clear()
@@ -813,6 +833,7 @@ func _rewind() -> void:
 	var restored: Dictionary = Store.restore(rewind_data)
 	if restored.is_empty(): return
 	board = restored["board"]
+	phantom = restored["phantom"]
 	run_hp = board.hp
 	sector_start_hp = restored["start_hp"]
 	protected_hits = restored["protected_hits"]
@@ -829,6 +850,16 @@ func _rewind() -> void:
 func _request_hint() -> void:
 	if protocol_active or board==null or board.finished() or (hints_left<=0 and economy.stock<=0) or hint_cell>=0: return
 	_clear_inspection()
+	if phantom.active():
+		if hints_left>0: hints_left -= 1
+		else: economy.stock -= 1
+		phantom.clear_zone()
+		rewind_data.clear()
+		message_key = "VIS_PHANTOM_CLEAR"
+		audio.play_event("key")
+		_refresh()
+		_save_session()
+		return
 	var available: Array[int] = [board.rule]
 	var result: Dictionary = Tools.safe_hint(board.observation(available))
 	if result.is_empty():
@@ -865,6 +896,9 @@ func _leave_cell(i: int) -> void:
 		_refresh_marks()
 func _refresh_tools() -> void:
 	var active: bool = board!=null and not board.finished() and not protocol_active
+	if is_instance_valid(journal_button): journal_button.disabled = not active or phantom.cell<0
+	if is_instance_valid(cleanse_button):
+		cleanse_button.disabled = not active or not phantom.active() or (economy.stock<=0 and not _free_cleanse())
 	if is_instance_valid(rule_button):
 		rule_button.text = Tools.NAMES[board.rule] if board!=null else "CLASSIC"
 		rule_button.disabled = not active
@@ -951,7 +985,9 @@ func _reroll_shop() -> void:
 		_show("shop")
 
 func _snapshot_board() -> Dictionary:
-	return Store.snapshot(board,profile,active_seed,first_cell,sector_start_hp,protected_hits)
+	var data: Dictionary = Store.snapshot(board,profile,active_seed,first_cell,sector_start_hp,protected_hits)
+	if not data.is_empty(): data["phantom"] = phantom.snapshot()
+	return data
 func _guarded_reveal(i: int) -> void:
 	if board.finished() or i<0 or i>=board.cells.size() or board.cells[i]!=Board.Cell.CLOSED: return
 	if not economy.can_protect():
@@ -1049,6 +1085,29 @@ func _inspect_target(i: int) -> void:
 	inspect_marks.assign(result["cells"])
 	inspect_mode = ""
 	rewind_data.clear()
+	audio.play_event("key")
+	_refresh()
+	_save_session()
+
+func _free_cleanse() -> bool:
+	return economy.owned.has("HOTFIX") and not phantom.hotfix_used
+func _open_journal() -> void:
+	if protocol_active or board==null or board.finished() or phantom.cell<0: return
+	_clear_inspection()
+	inspect_result = "%s: #%d / %s = %d" % [tr("VIS_JOURNAL"),phantom.cell+1,Tools.NAMES[phantom.rule],phantom.value]
+	inspect_marks.assign(Rules.neighbors(board.width,board.height,phantom.cell,phantom.rule))
+	inspect_marks.append(phantom.cell)
+	audio.play_event("key")
+	_refresh()
+func _cleanse() -> void:
+	if protocol_active or board==null or board.finished() or not phantom.active(): return
+	var free: bool = _free_cleanse()
+	if not free and economy.stock<=0: return
+	if not phantom.clear_zone(free): return
+	if not free: economy.stock -= 1
+	rewind_data.clear()
+	_clear_inspection()
+	message_key = "VIS_PHANTOM_CLEAR"
 	audio.play_event("key")
 	_refresh()
 	_save_session()
