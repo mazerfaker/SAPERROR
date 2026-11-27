@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 45
     env:
       GODOT_VERSION: '4.7.2-stable'
-      GAME_VERSION: '0.7.0-alpha.5'
+      GAME_VERSION: '0.7.0-alpha.6'
     steps:
       - name: Windows prerequisites
         shell: pwsh
@@ -149,6 +149,8 @@ jobs:
           if (-not (Select-String -Path build/logs/act-art-tests.txt -Pattern 'ACT_ART_QA.*failures=0' -Quiet)) { throw 'Missing act art QA marker' }
           Invoke-Godot 'ending-art-tests.txt' @('--headless','--path','.','--script','res://tests/ending_art_test.gd')
           if (-not (Select-String -Path build/logs/ending-art-tests.txt -Pattern 'ENDING_ART_QA.*failures=0' -Quiet)) { throw 'Missing ending art QA marker' }
+          Invoke-Godot 'atmosphere-tests.txt' @('--headless','--path','.','--script','res://tests/atmosphere_test.gd')
+          if (-not (Select-String -Path build/logs/atmosphere-tests.txt -Pattern 'ATMOSPHERE_QA.*failures=0' -Quiet)) { throw 'Missing atmosphere QA marker' }
           Invoke-Godot 'export.txt' @('--headless','--path','.','--export-release','Windows Desktop','build/windows/SAPERROR.exe')
       - name: Native render and audio QA
         shell: pwsh

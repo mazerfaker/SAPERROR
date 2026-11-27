@@ -61,3 +61,5 @@ Alpha.7 LIAR authored boss trial, no intermediate CI. Full combined v0.5 Beta ga
 0.7 alpha.4: four original illustrated act intros, localized live story and sector ranges, nonblocking accessible fade. No CI until Beta; final cinematic art acceptance remains open.
 
 0.7 alpha.5: three illustrated final scenes, independent short accessible transitions and corrected gallery back navigation. Existing ending gates and audio unchanged. CI deferred; manual art acceptance pending.
+
+0.7 alpha.6: original procedural narrative score (4 acts, 4 bosses, 3 endings), music slider, preview, smooth transitions, bounded cache. Existing approved audio untouched. CI and listening deferred.

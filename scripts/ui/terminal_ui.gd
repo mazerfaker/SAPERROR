@@ -3,6 +3,7 @@ const Board = preload("res://scripts/board/state.gd")
 const Generator = preload("res://scripts/board/generator.gd")
 const Geometry = preload("res://scripts/ui/crt_geometry.gd")
 const TerminalAudio = preload("res://scripts/audio/terminal_audio.gd")
+const Atmosphere = preload("res://scripts/audio/atmosphere.gd")
 const Profiles = preload("res://scripts/board/profiles.gd")
 const Store = preload("res://scripts/save/session_store.gd")
 const Tutorial = preload("res://scripts/ui/tutorial.gd")
@@ -128,6 +129,7 @@ func _ready() -> void:
 	theme = _terminal_theme()
 	audio = TerminalAudio.new()
 	audio.set_levels(float(cfg.get_value("settings","sfx",0.55)),float(cfg.get_value("settings","hum",0.28)),bool(cfg.get_value("settings","sound",true)))
+	audio.set_music_level(float(cfg.get_value("settings","music",Atmosphere.DEFAULT_LEVEL)))
 	add_child(audio)
 	var bg := ColorRect.new()
 	bg.color = Color("081710")
@@ -216,7 +218,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.7.0-a5",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.7.0-a6",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -249,6 +251,7 @@ func _show(next: String) -> void:
 	elif screen == "challenges": _challenges()
 	elif screen == "challenge": _challenge()
 	else: _menu()
+	_update_music()
 func _menu() -> void:
 	_label(tr("VIS_BOOT"),Rect2(124,190,1170,80),page,36)
 	_label(tr("VIS_TAGLINE"),Rect2(124,266,1170,62),page,28,DIM)
@@ -438,6 +441,7 @@ func _save_session() -> void:
 	cfg.set_value("settings","grade",global_amount)
 	cfg.set_value("settings","sfx",audio.sfx_level)
 	cfg.set_value("settings","hum",audio.hum_level)
+	cfg.set_value("settings","music",audio.music_level)
 	cfg.set_value("settings","sound",audio.enabled)
 	cfg.set_value("stats","tutorial",tutorial_done)
 	cfg.set_value("stats","sessions",sessions)
@@ -544,23 +548,29 @@ func _settings() -> void:
 	_button(tr("VIS_BACK"),Rect2(124,803,350,57),page,func(): _show("menu"))
 func _audio_settings() -> void:
 	_label(tr("VIS_AUDIO"),Rect2(124,212,1150,60),page,41)
-	_button(tr("VIS_SOUND")+": "+_on_off(audio.enabled),Rect2(124,300,1040,70),page,func(): audio.set_levels(audio.sfx_level,audio.hum_level,not audio.enabled); _save_session(); _show("audio"))
-	_audio_slider(tr("VIS_SFX"),audio.sfx_level,410,true)
-	_audio_slider(tr("VIS_HUM"),audio.hum_level,570,false)
-	_button(tr("VIS_AUDIO_TEST"),Rect2(124,718,640,60),page,func(): audio.play_event("reveal"))
-	_button(tr("VIS_BACK"),Rect2(124,803,350,57),page,func(): _show("settings"))
-func _audio_slider(caption: String, value: float, y: float, sfx: bool) -> void:
-	var readout := _label(caption+": "+str(roundi(value*100))+"%",Rect2(124,y,1040,55),page,32)
+	_button(tr("VIS_SOUND")+": "+_on_off(audio.enabled),Rect2(124,300,1040,62),page,func(): audio.set_levels(audio.sfx_level,audio.hum_level,not audio.enabled); _save_session(); _show("audio"))
+	_audio_slider(tr("VIS_SFX"),audio.sfx_level,390,"sfx")
+	_audio_slider(tr("VIS_HUM"),audio.hum_level,500,"hum")
+	_audio_slider(tr("VIS_MUSIC"),audio.music_level,610,"music")
+	_button(tr("VIS_AUDIO_TEST"),Rect2(124,730,500,55),page,func(): audio.play_event("reveal"))
+	var preview:=_button(tr("VIS_MUSIC_TEST"),Rect2(644,730,520,55),page,func():
+		audio.select_music("" if audio.music.requested=="act_boot" else "act_boot"))
+	preview.name="MusicPreview"
+	_button(tr("VIS_BACK"),Rect2(124,810,350,57),page,func(): _show("settings"))
+func _audio_slider(caption: String, value: float, y: float, channel: String) -> void:
+	var readout := _label(caption+": "+str(roundi(value*100))+"%",Rect2(124,y,1040,42),page,28)
 	var slider := HSlider.new()
 	slider.min_value = 0.0
 	slider.max_value = 1.0
 	slider.step = 0.05
 	slider.value = value
-	_place(slider,Rect2(124,y+65,1040,46),page)
+	slider.name="AudioSlider_"+channel
+	_place(slider,Rect2(124,y+45,1040,34),page)
 	slider.value_changed.connect(func(v: float):
 		readout.text = caption+": "+str(roundi(v*100))+"%"
-		if sfx: audio.set_levels(v,audio.hum_level,audio.enabled)
-		else: audio.set_levels(audio.sfx_level,v,audio.enabled)
+		if channel=="sfx": audio.set_levels(v,audio.hum_level,audio.enabled)
+		elif channel=="hum": audio.set_levels(audio.sfx_level,v,audio.enabled)
+		else: audio.set_music_level(v)
 		_save_session())
 func _fullscreen_active() -> bool:
 	if DisplayServer.get_name() == "headless": return int(ProjectSettings.get_setting("display/window/size/mode",0)) == 3
@@ -1541,3 +1551,8 @@ func _free_complete() -> void:
 	_label(tr("MODE_FREE_COMPLETE"),Rect2(124,215,1170,100),page,42,AMBER)
 	_label(tr("MODE_FREE_RESULT")+"\nCR %d / HP %d" % [economy.credits,run_hp],Rect2(124,350,1170,300),page,32)
 	_button(tr("VIS_BACK"),Rect2(124,810,570,60),page,func(): _show("menu"))
+
+func _update_music() -> void:
+	if not is_instance_valid(audio): return
+	var ending_id: String=gallery_preview if screen=="gallery_preview" else campaign.ending
+	audio.select_music(Atmosphere.scene_theme(screen,campaign.active,campaign.act_index(sector_number),campaign.boss_pending(sector_number),ending_id,challenge_kind))

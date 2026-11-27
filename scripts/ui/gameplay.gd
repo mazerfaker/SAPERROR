@@ -150,6 +150,7 @@ func _process(delta: float) -> void:
 		ui.end_boot()
 	if lifecycle.phase == Lifecycle.Phase.SHUTDOWN:
 		ui.audio.fade_hum(1.0-lifecycle.progress())
+		ui.audio.fade_music(1.0-lifecycle.progress())
 	elif lifecycle.phase == Lifecycle.Phase.OFF:
 		get_tree().quit()
 	_apply_lifecycle()

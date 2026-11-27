@@ -1,5 +1,6 @@
 extends Node
 ## Deterministic procedural SFX and approved menu click; long periodic hum.
+const Atmosphere = preload("res://scripts/audio/atmosphere.gd")
 const RATE: int = 22050
 const HUM_RATE: int = 48000
 const HUM_PERIOD_SECONDS: int = 2
@@ -16,6 +17,8 @@ var next_voice: int = 0
 var sfx_level: float = 0.55
 var hum_level: float = 0.28
 var enabled: bool = true
+var music_level: float=Atmosphere.DEFAULT_LEVEL
+var music: Atmosphere
 
 static func synth(kind: String) -> AudioStreamWAV:
 	var duration: float = 0.10
@@ -111,6 +114,9 @@ static func admin_intro_stream() -> AudioStreamMP3:
 	return source
 
 func _ready() -> void:
+	music=Atmosphere.new()
+	music.set_levels(music_level,enabled)
+	add_child(music)
 	if DisplayServer.get_name() == "headless": return
 	for kind in EVENTS:
 		sounds[kind] = synth(kind)
@@ -134,6 +140,7 @@ func set_levels(sfx: float, hum: float, active: bool) -> void:
 	sfx_level = clampf(sfx,0.0,1.0)
 	hum_level = clampf(hum,0.0,1.0)
 	enabled = active
+	if is_instance_valid(music): music.set_levels(music_level,enabled)
 	_apply_levels()
 
 func _apply_levels() -> void:
@@ -158,3 +165,11 @@ func play_event(kind: String) -> void:
 func fade_hum(factor: float) -> void:
 	if is_instance_valid(ambience) and enabled:
 		ambience.volume_db = linear_to_db(maxf(hum_level*clampf(factor,0.0,1.0),0.0001))
+
+func set_music_level(value: float) -> void:
+	music_level=clampf(value,0.0,1.0)
+	if is_instance_valid(music): music.set_levels(music_level,enabled)
+func select_music(id: String) -> void:
+	if is_instance_valid(music): music.select(id)
+func fade_music(factor: float) -> void:
+	if is_instance_valid(music): music.fade_power(factor)

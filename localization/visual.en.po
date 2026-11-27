@@ -760,3 +760,9 @@ msgstr "ARCHIVE SEALED"
 
 msgid "CAM_END_STATUS_REWRITE"
 msgstr "PROTOCOL REWRITTEN"
+
+msgid "VIS_MUSIC"
+msgstr "Music / atmosphere"
+
+msgid "VIS_MUSIC_TEST"
+msgstr "MUSIC PREVIEW / STOP"

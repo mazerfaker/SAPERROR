@@ -1,4 +1,7 @@
 # Changelog
+## 0.7.0-alpha.6 — narrative audio (CI deferred)
+Eleven original procedural quiet atmospheric cues: four act pads, four boss variations, three ending themes. 48 kHz native 32-second loops from phase-matched eight-second periods, fade-out/switch/fade-in, bounded three-stream cache, independent persistent Music slider and preview. Original hum synthesis, supplied MP3s and lamp audio unchanged. QA authored, listening and CI pending.
+
 ## 0.7.0-alpha.5 — illustrated endings (CI deferred)
 Three original imported SVG illustrations for SHUTDOWN, CONTAINMENT and REWRITE, localized result status and short distinct nonblocking transitions. Reduced Motion keeps illustrations static. Gallery replay returns to gallery and does not mutate story progress. Existing audio preserved for the next dedicated audio stage. QA authored, not executed.
 
