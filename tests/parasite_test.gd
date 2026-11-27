@@ -91,6 +91,12 @@ func run() -> void:
 			check(ui.buttons[target].disabled and not ui.cleanse_button.disabled,"emergency cleanse accessible")
 			ui._cleanse()
 			check(not ui.parasite.active() and ui.board.blocked_cell==-1 and ui.economy.stock==0,"no-resource emergency cleanse")
+			# Test the real override with a locked, falsely flagged safe tile.
+			ui.parasite = Parasite.new()
+			ui.parasite.mark(ui.board,target)
+			ui.board.flag(target)
+			ui.parasite.actions=ui.parasite.deadline
+			ui.board.blocked_cell=target
 			ui._begin_protocol()
 			ui._process(4.0)
 			ui._process(2.0)

@@ -753,7 +753,7 @@ func _refresh() -> void:
 			edge = Color("b15a50")
 			desc = tr("CORE_NEUTRAL")
 		if board!=null and not protocol_active and not board.finished() and parasite.active() and i==parasite.cell:
-			b.text = "X" if parasite.blocked() else "!"+str(parasite.remaining())
+			b.text = "X" if parasite.blocked() else (("⚑" if state==Board.Cell.FLAG else "!")+str(parasite.remaining()))
 			color = RED if parasite.blocked() else AMBER
 			edge = color
 			fill = Color("49221a") if parasite.blocked() else Color("382e15")

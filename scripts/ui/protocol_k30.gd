@@ -52,7 +52,8 @@ func advance(board: Board, batch: int = 1) -> void:
 		if board._mask[index] == 1:
 			if board.cells[index] == Board.Cell.CLOSED: board.flag(index)
 		else:
-			if board.cells[index] == Board.Cell.FLAG: board.flag(index)
+			# Administrator override also bypasses an anomaly-locked safe flag.
+			if board.cells[index] == Board.Cell.FLAG: board.cells[index] = Board.Cell.CLOSED
 			# Intentional administrator override, not a normal move: exact single-cell
 			# reveal (no flood) so each tile can be animated. Never touch a mine,
 			# health, hits, resources or normal BoardState methods/solver.
