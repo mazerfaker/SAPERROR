@@ -1,6 +1,11 @@
 extends Node
-## Original deterministic procedural PCM, no external audio assets.
+## Deterministic procedural SFX and approved menu click; long periodic hum.
 const RATE: int = 22050
+const HUM_RATE: int = 48000
+const HUM_PERIOD_SECONDS: int = 2
+const HUM_COPIES: int = 30
+const MENU_CLICK_PATH := "res://assets/audio/finntastico-old-computer-click-152513.mp3"
+const MENU_CLICK_SHA := "7ebe2a698a203d0682cfdf0d13c2a352bae46c69d989259698d9a87787a2d034"
 const EVENTS := ["key","reveal","flood","flag","unflag","fault","win","loss","invalid","boot","shutdown","k30","hum"]
 var sounds: Dictionary = {}
 var ambience: AudioStreamPlayer
@@ -24,14 +29,15 @@ static func synth(kind: String) -> AudioStreamWAV:
 		"shutdown": duration = 0.60
 		"k30": duration = 0.42
 		"hum": duration = 2.0
-	var count: int = roundi(duration * RATE)
+	var rate: int = HUM_RATE if kind=="hum" else RATE
+	var count: int = roundi(duration * rate)
 	var pcm := PackedByteArray()
 	pcm.resize(count * 2)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 17301
 	var lp: float = 0.0
 	for i in range(count):
-		var t: float = float(i) / RATE
+		var t: float = float(i) / rate
 		var x: float = t / duration
 		var noise: float = rng.randf_range(-1.0,1.0)
 		lp = lerpf(lp,noise,0.12)
@@ -73,19 +79,37 @@ static func synth(kind: String) -> AudioStreamWAV:
 		pcm.encode_s16(i*2,roundi(clampf(sample,-0.9,0.9)*32767.0))
 	var stream := AudioStreamWAV.new()
 	stream.format = AudioStreamWAV.FORMAT_16_BITS
-	stream.mix_rate = RATE
+	stream.mix_rate = rate
 	stream.stereo = false
-	stream.data = pcm
 	if kind == "hum":
+		# 2 seconds is an exact common period of all oscillator frequencies.
+		# Repeat the same phase-locked samples in memory so the audio backend
+		# only wraps once per minute, with no stop/restart or silence at joins.
+		var cycle: PackedByteArray = pcm.duplicate()
+		for _i in range(1,HUM_COPIES): pcm.append_array(cycle)
 		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 		stream.loop_begin = 0
-		stream.loop_end = count
+		stream.loop_end = count*HUM_COPIES
+	stream.data = pcm
 	return stream
+
+static func button_event(screen: String) -> String:
+	return "menu_click" if screen=="menu" else "key"
+
+static func menu_click_stream() -> AudioStreamMP3:
+	if not ResourceLoader.exists(MENU_CLICK_PATH): return null
+	var source := load(MENU_CLICK_PATH) as AudioStreamMP3
+	if source!=null: source.loop = false
+	return source
 
 func _ready() -> void:
 	if DisplayServer.get_name() == "headless": return
 	for kind in EVENTS:
 		sounds[kind] = synth(kind)
+	var menu_click := menu_click_stream()
+	# Source checkout stays usable while original asset is awaiting upload.
+	# The old procedural click is only a fallback, never a replacement asset.
+	sounds["menu_click"] = menu_click if menu_click!=null else sounds["key"]
 	ambience = AudioStreamPlayer.new()
 	ambience.stream = sounds["hum"]
 	add_child(ambience)

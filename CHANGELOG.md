@@ -1,4 +1,7 @@
 # Changelog
+## 0.5.0-alpha.1-audio.1 — terminal hum loop and menu click
+- Preserve the hum timbre while expanding its native phase-locked PCM loop to 60 seconds at 48 kHz. Test wrap slope and all internal joins. Menu-only one-shot MP3 path with original byte hash and existing SFX volume; original procedural fallback until supplied asset is uploaded. All other sounds and live lamp audio unchanged. Manual listening pending.
+
 ## 0.5.0-alpha.1-ui.1 — language settings
 - English is the default for new settings; saved language selections remain respected. The only language toggle is Settings, with localized current-language label and instant update. Remove menu and board language shortcuts, reclaim board footer space. K-30, PHANTOM and approved live assets unchanged. Add default, toggle, screen visibility and preference regression tests. Manual layout verification pending.
 

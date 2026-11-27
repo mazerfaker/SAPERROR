@@ -17,7 +17,7 @@ func run() -> void:
 		var stream: AudioStreamWAV = Audio.synth(kind)
 		check(stream != null,"synthesis returns stream "+kind)
 		if stream == null: continue
-		check(stream.mix_rate == Audio.RATE and not stream.stereo,"PCM format "+kind)
+		check(stream.mix_rate == (Audio.HUM_RATE if kind=="hum" else Audio.RATE) and not stream.stereo,"PCM format "+kind)
 		check(stream.data.size() > 0 and stream.data.size()%2 == 0,"PCM length "+kind)
 		var peak: int = 0
 		var data: PackedByteArray = stream.data
@@ -28,9 +28,29 @@ func run() -> void:
 		check(repeat != null and repeat.data == data,"deterministic PCM "+kind)
 		if kind == "hum":
 			check(stream.loop_mode == AudioStreamWAV.LOOP_FORWARD and stream.loop_end == data.size()/2,"hum loop")
-			check(absi(data.decode_s16(0)-data.decode_s16(data.size()-2)) < 3000,"hum seam")
+			var period_bytes: int = Audio.HUM_RATE*Audio.HUM_PERIOD_SECONDS*2
+			check(data.size()==period_bytes*Audio.HUM_COPIES and is_equal_approx(stream.get_length(),60.0),"60 second hum")
+			var seam: int = data.decode_s16(0)-data.decode_s16(data.size()-2)
+			var first_slope: int = data.decode_s16(2)-data.decode_s16(0)
+			var last_slope: int = data.decode_s16(data.size()-2)-data.decode_s16(data.size()-4)
+			check(absi(seam)<150 and absi(first_slope-seam)<5 and absi(last_slope-seam)<5,"phase and derivative continuous at wrap")
+			var period: PackedByteArray = data.slice(0,period_bytes)
+			for i in range(1,Audio.HUM_COPIES):
+				check(data.slice(i*period_bytes,(i+1)*period_bytes)==period,"phase locked repeated PCM")
+			check(data.decode_s16(period_bytes)-data.decode_s16(period_bytes-2)==seam,"internal and external join equal")
 		else:
 			check(stream.loop_mode == AudioStreamWAV.LOOP_DISABLED,"one-shot "+kind)
+	check(Audio.button_event("menu")=="menu_click","menu uses dedicated click")
+	for screen in ["game","settings","audio","shop","profiles","help"]:
+		check(Audio.button_event(screen)=="key","non-menu sounds unchanged "+screen)
+	var menu_click := Audio.menu_click_stream()
+	if FileAccess.file_exists(Audio.MENU_CLICK_PATH):
+		check(FileAccess.get_sha256(Audio.MENU_CLICK_PATH)==Audio.MENU_CLICK_SHA,"exact original menu MP3 bytes")
+		check(menu_click!=null,"menu MP3 loads")
+		if menu_click!=null:
+			check(not menu_click.loop and menu_click.get_length()>0.1 and menu_click.get_length()<0.3,"short one-shot menu click")
+	else:
+		print("MENU_CLICK_ASSET_PENDING: original MP3 upload required; procedural fallback only")
 	var player := Audio.new()
 	root.add_child(player)
 	player.set_levels(-1.0,2.0,false)

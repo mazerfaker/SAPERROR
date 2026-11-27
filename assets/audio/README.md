@@ -1,0 +1,2 @@
+# Menu click asset
+Upload the exact unmodified user-provided `finntastico-old-computer-click-152513.mp3` here. SHA-256: `7ebe2a698a203d0682cfdf0d13c2a352bae46c69d989259698d9a87787a2d034`. Mono MP3, 44100 Hz, approximately 0.183 s. Used exclusively by main menu button presses, no loop, original SFX slider/mute. The engine temporarily uses the original procedural key click if the file is absent. Source attribution/license to be confirmed before public distribution.

@@ -165,7 +165,7 @@ func _button(value: String, rect: Rect2, parent: Control, action: Callable, font
 	b.add_theme_font_size_override("font_size",font_size)
 	b.pressed.connect(func():
 		if protocol_active: return
-		audio.play_event("key")
+		audio.play_event(TerminalAudio.button_event(screen))
 		action.call())
 	_place(b,rect,parent)
 	return b
@@ -195,7 +195,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.5.0-a1-ui.1",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.5.0-a1-audio.1",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
