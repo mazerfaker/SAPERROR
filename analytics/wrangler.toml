@@ -2,6 +2,7 @@ name = "saperror-analytics"
 main = "src/worker.mjs"
 compatibility_date = "2026-11-28"
 workers_dev = true
+preview_urls = false
 [vars]
 INGEST_ENABLED = "false"
 [observability]
@@ -9,7 +10,7 @@ enabled = false
 [[d1_databases]]
 binding = "DB"
 database_name = "saperror-analytics"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "ade987a1-2f53-45b4-811d-3bbb387650db"
 migrations_dir = "migrations"
 [[ratelimits]]
 name = "INGEST_LIMIT"
