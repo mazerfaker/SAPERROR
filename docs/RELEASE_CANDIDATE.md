@@ -11,3 +11,15 @@ Verified beta baseline: 6826dcd / CI 46047792977 (30 suites, 686123 assertions, 
 - Installer and opt-in analytics only as separately reviewed release preparation, preserve offline gameplay, no credentials in repo, no analytics activated without consent. Audit asset license evidence and Steam package/capsules; release notes and checksums.
 ## Release gate
 No 1.0 until confirmed manual acceptance, unresolved critical/high issues closed, audio redistribution rights documented, verified Windows/source/patch, and explicit approval. Existing GitHub runner Node 20 warning is noncritical. Native smoke is not a real 72-hour hardware run.
+
+## RC.8 — Final Release Validation
+Baseline RC.7 commit 64abdbfc6ccb1e59deb9fb2f71f4b05cc2aca9ca. Analytics unit, isolated D1 integration, production read-only smoke and Windows package workflows passed. RC.8 adds automated privacy settings/restart and simulated transport failure checks; pending CI. Existing production analytics uses explicit v4 consent and schema 2. No synthetic production session is inserted.
+
+### Manual release acceptance (not yet confirmed)
+- [ ] Install the new Retro98 package on a real Windows PC; default unchecked; launch and play without internet, then test the portable package.
+- [ ] With explicit consent, play Classic or Campaign actively for at least 65 seconds; verify the RC.8 version/mode in the authenticated dashboard. This is a real voluntary session, not an automated production write.
+- [ ] Withdraw consent in Settings > Privacy; play again and confirm no new session or updates from that client; accepted records are retained according to PRIVACY.md.
+- [ ] Restart after withdrawal, confirm Off; opt in again and verify a fresh session. Disconnect internet while opted in and ensure gameplay continues.
+- [ ] Review clean install/upgrade/uninstall, both locales, accessibility and physical display/audio performance.
+- [ ] Obtain documented redistribution rights for all external audio identified in LICENSES.md, including the ballast recording; review source-package rights.
+- [ ] Obtain explicit public release approval. CI is not manual acceptance. No public release or main merge in RC.8.

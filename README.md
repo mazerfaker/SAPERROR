@@ -1,10 +1,10 @@
-# SAPERROR — 0.9.0-rc.6 (Release Candidate)
+# SAPERROR — 0.9.0-rc.8 (Release Candidate)
 The numbers don't lie. Usually. / Числа не брешуть. Зазвичай.
 
 Offline Windows x64 analog-horror minesweeper roguelite. Godot 4.7.2 stable. This is a feature-frozen release candidate, not 1.0 or a manually accepted release.
 
 ## Play
-Extract the whole Windows x64 ZIP into one folder and run SAPERROR.exe. Keep SAPERROR.pck next to it. No Godot installation needed. Campaign: four acts, ten sectors, four difficulties and three endings. Anomaly Lab and Classic are separate modes; finite Free Run unlocks after an ending. Endless mode is also available. Settings include Ukrainian/English, audio mixer, CRT and accessibility. Local save is in Godot user:// (normally %APPDATA%/Godot/app_userdata/SAPERROR/ on Windows); back up the session files before upgrading. No telemetry in this RC.
+Extract the whole Windows x64 ZIP into one folder and run SAPERROR.exe. Keep SAPERROR.pck next to it. No Godot installation needed. Campaign: four acts, ten sectors, four difficulties and three endings. Anomaly Lab and Classic are separate modes; finite Free Run unlocks after an ending. Endless mode is also available. Settings include Ukrainian/English, audio mixer, CRT and accessibility. Local save is in Godot user:// (normally %APPDATA%/Godot/app_userdata/SAPERROR/ on Windows); back up the session files before upgrading. Optional session analytics are off by default; opt in or revoke in Settings > Privacy. The installer also offers an unchecked opt-in. No internet connection is required for play. See [PRIVACY.md](PRIVACY.md).
 
 Controls: left click reveal, right click or physical F flag, middle click or Space on open cell chord, arrows move focus, Tab changes control, Enter/Space activates, Escape goes back, F11 toggles fullscreen when CRT has focus. Horror, sudden audio and flashing light: adjust audio and accessibility options. The first-launch warning offers a reduced-effects and mute preset; room lamp flicker can be switched off separately.
 

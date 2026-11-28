@@ -1,4 +1,7 @@
 # Changelog
+### RC.8 final release validation
+Synchronize game, Windows packaging and documentation versions. Expand isolated Godot privacy regression: missing and retired consent, actual settings toggle and restart persistence, denial, revocation, simulated transport failure, fresh session ID after opt-in, and offline Classic UI access. Require the RC8 privacy marker in CI. No gameplay or approved asset changes; no synthetic production sessions or automatic public release. Manual real-client and license acceptance remain open.
+
 ### RC.7 voluntary analytics foundation
 Add opt-in session summaries, v2 consent (old v1 ignored), no disk queue or permanent user ID, HTTPS-only client disabled until endpoint is configured, private Cloudflare Worker dashboard and D1 migration with 30-day expiry. Separate server and client QA; no production deployment yet.
 
