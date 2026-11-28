@@ -329,7 +329,7 @@ func _menu() -> void:
 	_button(tr("VIS_TUTORIAL"),Rect2(124,501,640,65),page,func(): _show("tutorial"))
 	_button(tr("VIS_HELP"),Rect2(124,579,640,65),page,func(): _show("help"))
 	_button(tr("VIS_SETTINGS"),Rect2(124,657,640,65),page,func(): _show("settings"))
-	_button(tr("VIS_EXIT"),Rect2(124,735,640,65),page,func(): _show("confirm_exit"))
+	_button("power off",Rect2(124,735,640,65),page,func(): _show("confirm_exit"))
 	_label(tr("VIS_STATS")+"\n"+tr("VIS_RUNS")+" "+str(sessions)+"\n"+tr("VIS_WINS")+" "+str(wins)+"\n"+tr("VIS_LOSSES")+" "+str(losses),Rect2(820,345,500,285),page,32)
 	_label(tr("VIS_LESSONS")+" %d / 9" % tutorial_done,Rect2(820,650,500,62),page,29,AMBER)
 	if save_failed: _label(tr("VIS_SAVE_ERROR"),Rect2(820,714,500,80),page,27,RED)
