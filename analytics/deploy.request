@@ -1,1 +1,1 @@
-Initial deployment requested by repository owner. Ingestion disabled; verify dashboard and health before enabling.
+Retry initial deployment: normalize credential whitespace, validate without printing, Node.js 24 actions. Ingestion remains disabled.
