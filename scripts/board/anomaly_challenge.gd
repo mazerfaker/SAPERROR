@@ -4,6 +4,7 @@ const Board = preload("res://scripts/board/state.gd")
 const Validator = preload("res://scripts/solver/validator.gd")
 const Rules = preload("res://scripts/board/rules.gd")
 const Tools = preload("res://scripts/board/onboarding_tools.gd")
+const Protocol = preload("res://scripts/ui/protocol_k30.gd")
 const SIZE := 5
 const FIRST := 12
 const MASK_A := [0,1,14,21]
@@ -147,6 +148,21 @@ func act(index: int, flag: bool = false, chord: bool = false) -> bool:
 		watcher_closed=true
 		notice="CH_WATCHER_CLOSED"
 	return true
+# Secret K-30 override satisfies authored gates without changing normal moves.
+func protocol_complete() -> bool:
+	if not valid or lost(): return false
+	if kind=="MAGNET" and not magnet_committed and not commit_magnet(): return false
+	if kind=="LIAR" and not liar_solved and not submit_sensor(liar_bad): return false
+	if kind in ["LOOP","LOOP_B"]: loop_done=true
+	var override:=Protocol.new()
+	for b in boards:
+		if b.won(): continue
+		if not override.prepare(b): return false
+		override.advance(b,b.cells.size())
+		if not b.won(): return false
+	notice=""
+	scan_cell=-1
+	return won()
 func apply_loop() -> void:
 	var b: Board = board()
 	# Rewind the marked local region only once. Neutralized mines and health are never refunded.

@@ -139,6 +139,14 @@ func _tile_input(event: InputEvent, i: int) -> void:
 func _move(i: int, flag: bool, chord: bool) -> void:
 	if model.act(i,flag,chord): clicked.emit()
 	refresh()
+func can_protocol_complete() -> bool:
+	return model.valid and not model.lost() and (not model.won() or campaign_encounter)
+func complete_with_protocol() -> bool:
+	if not can_protocol_complete(): return false
+	if not model.protocol_complete(): return false
+	refresh()
+	if campaign_encounter: _proceed()
+	return true
 func _proceed() -> void:
 	if campaign_encounter and model.won(): encounter_won.emit()
 func _select_sensor(index: int) -> void:

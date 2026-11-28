@@ -1,6 +1,7 @@
 extends SceneTree
 const BossEmblem = preload("res://scripts/ui/boss_emblem.gd")
 const ChallengeUI = preload("res://scripts/ui/anomaly_challenge_ui.gd")
+const Challenge = preload("res://scripts/board/anomaly_challenge.gd")
 var checks: int=0
 var failures: int=0
 func check(ok: bool,message: String) -> void:
@@ -11,7 +12,7 @@ func check(ok: bool,message: String) -> void:
 func _initialize() -> void:
 	call_deferred("run")
 func run() -> void:
-	for id in ["WATCHER","LIAR","LOOP","ADMIN"]:
+	for id in BossEmblem.ART:
 		var art: Texture2D=BossEmblem.ART[id]
 		check(art!=null and art.get_size()==Vector2(320,256),"real imported SVG "+id)
 		var emblem:=BossEmblem.new()
@@ -21,7 +22,7 @@ func run() -> void:
 		root.add_child(emblem)
 		check(not emblem.is_processing() and emblem.mouse_filter==Control.MOUSE_FILTER_IGNORE,"static accessible art "+id)
 		emblem.queue_free()
-	for kind in ["LOOP","LOOP_B","WATCHER","LIAR","ADMIN_LINK","DOUBLE"]:
+	for kind in Challenge.KINDS+Challenge.EXTRA_KINDS:
 		var view:=ChallengeUI.new()
 		view.kind=kind
 		view.reduced_motion=true
@@ -36,5 +37,19 @@ func run() -> void:
 		view.restart()
 		check(is_instance_valid(view.emblem) and view.tiles.size()==25,"retry preserves layout "+kind)
 		view.queue_free()
+		var host:=Control.new()
+		host.size=Vector2(110,88)
+		root.add_child(host)
+		var embedded:=ChallengeUI.new()
+		embedded.kind=kind
+		embedded.reduced_motion=true
+		embedded.emblem_host=host
+		embedded.size=Vector2(1266,710)
+		root.add_child(embedded)
+		check(host.get_child_count()==1 and embedded.emblem.get_parent()==host,"external header "+kind)
+		embedded.restart()
+		check(host.get_child_count()==1 and embedded.emblem.size==Vector2(110,88),"aspect and retry "+kind)
+		embedded.queue_free()
+		host.queue_free()
 	print("BOSS_ART_QA checks=",checks," failures=",failures)
 	quit(0 if failures==0 else 1)

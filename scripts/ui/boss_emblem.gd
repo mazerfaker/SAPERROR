@@ -4,9 +4,15 @@ const ART := {
 	"WATCHER": preload("res://assets/narrative/bosses/watcher.svg"),
 	"LIAR": preload("res://assets/narrative/bosses/liar.svg"),
 	"LOOP": preload("res://assets/narrative/bosses/loop.svg"),
-	"ADMIN": preload("res://assets/narrative/bosses/admin.svg")
+	"ADMIN": preload("res://assets/narrative/bosses/admin.svg"),
+	"DOUBLE": preload("res://assets/narrative/bosses/double.svg"),
+	"MIMIC": preload("res://assets/narrative/bosses/mimic.svg"),
+	"NULL": preload("res://assets/narrative/bosses/null.svg"),
+	"INSTABILITY": preload("res://assets/narrative/bosses/instability.svg"),
+	"MAGNET": preload("res://assets/narrative/bosses/magnet.svg"),
+	"REWRITE": preload("res://assets/narrative/bosses/rewrite.svg")
 }
-const TINTS := {"WATCHER":Color("a1d8a0"),"LIAR":Color("e5b86c"),"LOOP":Color("a0c2c4"),"ADMIN":Color("d36c60")}
+const TINTS := {"WATCHER":Color("a1d8a0"),"LIAR":Color("e5b86c"),"LOOP":Color("a0c2c4"),"ADMIN":Color("d36c60"),"DOUBLE":Color("a0c2c4"),"MIMIC":Color("b3ce9a"),"NULL":Color("94a9b7"),"INSTABILITY":Color("d4b27b"),"MAGNET":Color("d08d7d"),"REWRITE":Color("a0c2c4")}
 var boss_id: String="WATCHER"
 var reduced_motion: bool=false
 var phase: float=0.0

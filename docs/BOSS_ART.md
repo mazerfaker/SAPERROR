@@ -1,2 +1,5 @@
 # Boss art — alpha.3
 Four original SVG assets at 320×256: WATCHER optical iris, LIAR three contradictory sensors, LOOP temporal circuit/hourglass, ADMIN sealed root-access eye. Muted green/amber/cool desaturated/red accent. Rendered only inside CRT UI, header at x1070 y0 within authored trial; larger on ADMIN intro. Slow low-opacity scan, no flashing, static with Reduced Motion. UI art cannot intercept pointer input. All ADMIN phases retain ADMIN symbol. Actual imported vectors, not mockups. No original room, live layers, CRT geometry, audio or gameplay edits. Manual 720p/1080p visual acceptance and Beta CI remain pending.
+
+## RC.2 header and K-30 update
+All authored trials use the common terminal header slot when embedded. Six new vector emblems cover DOUBLE, MIMIC, NULL, INSTABILITY, MAGNET and REWRITE; original four assets remain unchanged. ADMIN phases keep ADMIN identity, LOOP_B keeps LOOP. K-30 completes the active trial only and invokes its normal completion route, including individual campaign phases. Reduced Motion remains respected. Manual CRT verification pending.

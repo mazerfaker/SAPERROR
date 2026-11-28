@@ -141,6 +141,7 @@ var refresh_style_writes: int=0
 var page: Control
 var header_title: Label
 var header_emblem_slot: Control
+var active_trial: ChallengeUI
 var header_caret_elapsed: float=0.0
 const HEADER_CARET_INTERVAL: float=0.5
 var grid: GridContainer
@@ -241,6 +242,7 @@ func _show(next: String) -> void:
 		seed_value = seed_input.text
 		seed_input = null
 	screen = next
+	active_trial=null
 	if is_instance_valid(page):
 		remove_child(page)
 		page.queue_free()
@@ -254,7 +256,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_build_terminal_header()
-	var version := _label("MINE // 0.9.0-rc2",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("0.9.0-rc2",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -1010,6 +1012,15 @@ func _refresh() -> void:
 # Hidden input is intercepted before forwarding normal UI key events.
 func protocol_input(event: InputEventKey) -> bool:
 	if protocol_active: return true
+	if screen in ["challenge","campaign_boss","campaign_archive","rewrite_trial"] and is_instance_valid(active_trial):
+		if not active_trial.can_protocol_complete():
+			protocol.reset_input()
+			return false
+		if protocol.feed(event):
+			audio.play_event("k30")
+			active_trial.complete_with_protocol()
+			return true
+		return false
 	if screen != "game" or board == null or board.finished() or pending_sector:
 		protocol.reset_input()
 		return false
@@ -1472,6 +1483,7 @@ func _challenge() -> void:
 	challenge.clicked.connect(func(): audio.play_event("key"))
 	challenge.trial_completed.connect(func(id: String):
 		if screen=="challenge" and challenge.model.won() and collection.finish_trial(id): _save_session())
+	active_trial=challenge
 	page.add_child(challenge)
 
 func _modes() -> void:
@@ -1541,6 +1553,7 @@ func _campaign_boss() -> void:
 		_save_session()
 		_advance_sector()
 		if screen=="game": _show("shop"))
+	active_trial=trial
 	page.add_child(trial)
 
 func _campaign_boundary() -> void:
@@ -1623,6 +1636,7 @@ func _campaign_archive() -> void:
 		_save_session()
 		_advance_sector()
 		if screen=="game": _show("shop"))
+	active_trial=trial
 	page.add_child(trial)
 
 func _admin_intro() -> void:
@@ -1676,6 +1690,7 @@ func _rewrite_trial() -> void:
 		campaign.rewrite_done=true
 		_save_session()
 		_show("ending_choice"))
+	active_trial=trial
 	page.add_child(trial)
 func _choose_ending(id: String) -> void:
 	if not campaign.choose_ending(id): return

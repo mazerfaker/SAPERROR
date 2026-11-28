@@ -3,6 +3,7 @@ const Protocol = preload("res://scripts/ui/protocol_k30.gd")
 const Profiles = preload("res://scripts/board/profiles.gd")
 const Board = preload("res://scripts/board/state.gd")
 const Store = preload("res://scripts/save/session_store.gd")
+const Challenge=preload("res://scripts/board/anomaly_challenge.gd")
 var checks: int = 0
 var failures: int = 0
 func check(ok: bool, message: String) -> void:
@@ -72,6 +73,13 @@ func run() -> void:
 		for i in range(board.cells.size()):
 			check(board.cells[i]==(Board.Cell.FLAG if board._mask[i]==1 else Board.Cell.OPEN),"correct final cell")
 		check(not code.prepare(board),"finished board cannot repeat")
+	for kind in Challenge.KINDS+Challenge.EXTRA_KINDS:
+		var model:=Challenge.new()
+		check(model.start(kind),"trial starts "+kind)
+		check(model.protocol_complete() and model.won(),"K-30 wins "+kind)
+		for b in model.boards:
+			check(b.won() and b.hp==3 and b.hits==0,"K-30 safe layer "+kind)
+		check(model.protocol_complete(),"repeat safe "+kind)
 	var scene: PackedScene = load("res://scenes/game/gameplay.tscn") as PackedScene
 	check(scene!=null,"scene loads")
 	if scene != null:
@@ -116,6 +124,30 @@ func run() -> void:
 				ui._process(4.0)
 				ui._process(2.0)
 				check(ui.sector_number==3 and ui.wins==before_wins+2,"one win per activation")
+		for kind in Challenge.KINDS:
+			ui._start_challenge(kind)
+			send_window_code(true)
+			check(ui.active_trial.model.won(),"window K-30 trial "+kind)
+			check(ui.collection.trials.has(kind),"collection completion "+kind)
+		ui._start_challenge("LIAR")
+		send_window_code()
+		check(ui.active_trial.model.won(),"repeat lab entry")
+		ui._start_profile(1,true)
+		ui.sector_number=9
+		ui.pending_sector=true
+		ui._show("campaign_boss")
+		send_window_code()
+		check(ui.campaign.loop_phase==1 and ui.screen=="campaign_boss","LOOP phase 1")
+		send_window_code()
+		check(ui.campaign.loop_phase==2 and ui.campaign.cleared.has(9),"LOOP phase 2")
+		ui.sector_number=10
+		ui.pending_sector=true
+		ui.campaign.admin_intro_seen=true
+		ui._show("campaign_boss")
+		for phase in range(3):
+			send_window_code()
+			check(ui.campaign.admin_phase==phase+1,"ADMIN phase "+str(phase+1))
+		check(ui.campaign.cleared.has(10) and ui.screen=="ending_choice","ADMIN completes through normal transition")
 		game.queue_free()
 	print("PROTOCOL_QA checks=",checks," failures=",failures)
 	quit(0 if failures == 0 else 1)
