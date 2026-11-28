@@ -1,0 +1,23 @@
+name = "saperror-analytics"
+main = "src/worker.mjs"
+compatibility_date = "2026-11-28"
+workers_dev = true
+[vars]
+INGEST_ENABLED = "false"
+[observability]
+enabled = false
+[[d1_databases]]
+binding = "DB"
+database_name = "saperror-analytics"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"
+[[ratelimits]]
+name = "INGEST_LIMIT"
+namespace_id = "861701"
+simple = { limit = 30, period = 60 }
+[[ratelimits]]
+name = "ADMIN_LIMIT"
+namespace_id = "861702"
+simple = { limit = 20, period = 60 }
+[triggers]
+crons = ["17 3 * * *"]

@@ -1,0 +1,16 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { DatabaseSync } from "node:sqlite";
+import { readFileSync } from "node:fs";
+import worker,{valid} from "../src/worker.mjs";
+const db=new DatabaseSync(":memory:");
+db.exec(readFileSync(new URL("../migrations/0001_sessions.sql",import.meta.url),"utf8"));
+const DB={prepare(sql){return {bind(...args){const s=db.prepare(sql);return {run:async()=>s.run(...args),first:async()=>s.get(...args),all:async()=>({results:s.all(...args)})}}}}};
+const limit={limit:async()=>({success:true})};
+const env={DB,INGEST_LIMIT:limit,ADMIN_LIMIT:limit,INGEST_ENABLED:"true",DASHBOARD_PASSWORD:"a".repeat(40)};
+const payload={schema:2,id:"a".repeat(32),version:"0.9.0-rc.7",mode:"campaign",difficulty:1,seconds:60,wins:1,losses:0,sector:2};
+const request=(body,override={})=>new Request("https://example.test/v2/session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body),...override});
+test("schema rejects extra fields and invalid values",()=>{assert(valid(payload));for(const x of [{...payload,ip:"1"},{...payload,seconds:-1},{...payload,mode:"other"},{...payload,schema:1}])assert(!valid(x))});
+test("ingest, idempotency, disabled and rate limit",async()=>{assert.equal((await worker.fetch(request(payload),{...env,INGEST_ENABLED:"false"})).status,503);assert.equal((await worker.fetch(request(payload),{...env,INGEST_LIMIT:{limit:async()=>({success:false})}})).status,429);assert.equal((await worker.fetch(request({...payload,extra:"x"}),env)).status,400);assert.equal((await worker.fetch(request(payload),env)).status,204);assert.equal((await worker.fetch(request({...payload,seconds:120,wins:2}),env)).status,204);assert.equal((await worker.fetch(request(payload),env)).status,204);assert.equal(db.prepare("SELECT COUNT(*) n FROM sessions").get().n,1);assert.equal(db.prepare("SELECT wins FROM sessions").get().wins,2)});
+test("private dashboard and aggregate data",async()=>{assert.equal((await worker.fetch(new Request("https://example.test/"),env)).status,401);const auth="Basic "+btoa("admin:"+env.DASHBOARD_PASSWORD);const r=await worker.fetch(new Request("https://example.test/api/summary",{headers:{Authorization:auth}}),env);assert.equal(r.status,200);assert.equal((await r.json()).totals.wins,2);const html=await worker.fetch(new Request("https://example.test/",{headers:{Authorization:auth}}),env);assert.match(await html.text(),/SAPERROR \/\/ ANALYTICS/);assert.equal(html.headers.get("Cache-Control"),"no-store")});
+test("retention",async()=>{db.prepare("UPDATE sessions SET updated=0").run();let promise;await worker.scheduled(null,env,{waitUntil:p=>promise=p});await promise;assert.equal(db.prepare("SELECT COUNT(*) n FROM sessions").get().n,0)});

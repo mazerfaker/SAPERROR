@@ -1,0 +1,16 @@
+name: Analytics QA
+on:
+  push:
+    branches: [visual-foundation]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test analytics/test/worker.test.mjs
