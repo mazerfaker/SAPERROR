@@ -284,8 +284,6 @@ msgstr "Shop"
 msgid "VIS_STOCK"
 msgstr "Charges"
 
-msgid "VIS_MODULES"
-msgstr "Modules"
 
 msgid "VIS_BUY_CHARGE"
 msgstr "Buy charge"
@@ -874,3 +872,27 @@ msgstr "Reduced effects + mute"
 
 msgid "RC_LAMP"
 msgstr "Room lamp flicker"
+
+msgid "POLISH_REPLACE_TITLE"
+msgstr "REPLACE CURRENT RUN?"
+
+msgid "POLISH_REPLACE_BODY"
+msgstr "Starting a new run replaces the current run and its checkpoint. Your unlocked collection and settings remain."
+
+msgid "POLISH_REPLACE_CONFIRM"
+msgstr "Replace and start"
+
+msgid "POLISH_CANCEL"
+msgstr "Cancel"
+
+msgid "POLISH_EXIT_TITLE"
+msgstr "EXIT SAPERROR?"
+
+msgid "POLISH_EXIT_BODY"
+msgstr "Your current run is saved before shutdown. Return to the menu to continue playing."
+
+msgid "POLISH_TEXT_SCALE"
+msgstr "Text size"
+
+msgid "POLISH_SCALE_DESC"
+msgstr "Choose a preferred text size. Text is fitted to the fixed terminal display; narrow controls may use a smaller size to remain readable."

@@ -284,8 +284,6 @@ msgstr "Магазин"
 msgid "VIS_STOCK"
 msgstr "Заряди"
 
-msgid "VIS_MODULES"
-msgstr "Модулі"
 
 msgid "VIS_BUY_CHARGE"
 msgstr "Купити заряд"
@@ -874,3 +872,27 @@ msgstr "Зменшені ефекти + без звуку"
 
 msgid "RC_LAMP"
 msgstr "Мерехтіння лампи"
+
+msgid "POLISH_REPLACE_TITLE"
+msgstr "ЗАМІНИТИ ПОТОЧНИЙ ЗАБІГ?"
+
+msgid "POLISH_REPLACE_BODY"
+msgstr "Новий забіг замінить поточний забіг і його контрольну точку. Відкрита колекція та налаштування збережуться."
+
+msgid "POLISH_REPLACE_CONFIRM"
+msgstr "Замінити й почати"
+
+msgid "POLISH_CANCEL"
+msgstr "Скасувати"
+
+msgid "POLISH_EXIT_TITLE"
+msgstr "ВИЙТИ З SAPERROR?"
+
+msgid "POLISH_EXIT_BODY"
+msgstr "Поточний забіг буде збережено перед виходом. Повернися до меню, щоб продовжити гру."
+
+msgid "POLISH_TEXT_SCALE"
+msgstr "Розмір тексту"
+
+msgid "POLISH_SCALE_DESC"
+msgstr "Обери бажаний розмір тексту. Написи адаптуються до фіксованого екрана термінала; вузькі елементи можуть використовувати менший розмір."

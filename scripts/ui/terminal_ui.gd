@@ -52,6 +52,10 @@ const Access=preload("res://scripts/ui/accessibility.gd")
 var high_contrast: bool=false
 var large_symbols: bool=false
 var clear_display: bool=false
+var text_scale: float=1.0
+var requested_profile: int=1
+var requested_campaign: bool=false
+var requested_finite: bool=false
 var lamp_animation: bool=true
 var require_content_warning: bool=false
 var warning_acknowledged: bool=false
@@ -178,7 +182,7 @@ func _terminal_theme() -> Theme:
 	var mono := SystemFont.new()
 	mono.font_names = PackedStringArray(["Consolas","Cascadia Mono","DejaVu Sans Mono","Courier New"])
 	t.default_font = mono
-	t.default_font_size = 29
+	t.default_font_size = roundi(29*text_scale)
 	t.set_color("font_color","Label",Access.readable(GREEN,high_contrast))
 	for state in ["normal","hover","pressed","disabled","focus"]:
 		var fill := Color("0c2117")
@@ -203,7 +207,7 @@ func _place(n: Control, rect: Rect2, parent: Control) -> void:
 func _label(value: String, rect: Rect2, parent: Control, font_size: int = 28, color: Color = GREEN) -> Label:
 	var l := Label.new()
 	l.text = value
-	l.add_theme_font_size_override("font_size",font_size)
+	l.add_theme_font_size_override("font_size",Access.fit_font(theme.default_font,value,font_size,text_scale,rect.size,true))
 	l.add_theme_color_override("font_color",Access.readable(color,high_contrast))
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_place(l,rect,parent)
@@ -211,7 +215,9 @@ func _label(value: String, rect: Rect2, parent: Control, font_size: int = 28, co
 func _button(value: String, rect: Rect2, parent: Control, action: Callable, font_size: int = 27) -> Button:
 	var b := Button.new()
 	b.text = value
-	b.add_theme_font_size_override("font_size",font_size)
+	b.add_theme_font_size_override("font_size",Access.fit_font(theme.default_font,value,font_size,text_scale,rect.size-Vector2(16,8),false))
+	b.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS
+	b.tooltip_text=value
 	b.pressed.connect(func():
 		if protocol_active: return
 		audio.play_event(TerminalAudio.button_event(screen))
@@ -244,7 +250,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
-	var version := _label("MINE // 0.9.0-rc1",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("MINE // 0.9.0-rc2",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -258,6 +264,9 @@ func _show(next: String) -> void:
 	elif screen == "audio": _audio_settings()
 	elif screen == "accessibility": _accessibility()
 	elif screen == "profiles": _profiles()
+	elif screen == "confirm_run": _confirm_run()
+	elif screen == "confirm_exit": _confirm_exit()
+	elif screen == "text_scale": _text_scale_page()
 	elif screen == "modes": _modes()
 	elif screen == "classic": _classic()
 	elif screen == "free_complete": _free_complete()
@@ -284,6 +293,9 @@ func _show(next: String) -> void:
 	else: _menu()
 	_update_music()
 	if screen!="game" or not Access.focus_tiles(buttons): Access.focus_first(page)
+	if screen in ["confirm_run","confirm_exit"]:
+		var cancel:=page.find_child("ConfirmCancel",true,false) as Button
+		if is_instance_valid(cancel): cancel.grab_focus()
 func _menu() -> void:
 	_label(tr("VIS_BOOT"),Rect2(124,190,1170,80),page,36)
 	_label(tr("VIS_TAGLINE"),Rect2(124,266,1170,62),page,28,DIM)
@@ -293,7 +305,7 @@ func _menu() -> void:
 	_button(tr("VIS_TUTORIAL"),Rect2(124,501,640,65),page,func(): _show("tutorial"))
 	_button(tr("VIS_HELP"),Rect2(124,579,640,65),page,func(): _show("help"))
 	_button(tr("VIS_SETTINGS"),Rect2(124,657,640,65),page,func(): _show("settings"))
-	_button(tr("VIS_EXIT"),Rect2(124,735,640,65),page,func(): _save_session(); shutdown_requested.emit())
+	_button(tr("VIS_EXIT"),Rect2(124,735,640,65),page,func(): _show("confirm_exit"))
 	_label(tr("VIS_STATS")+"\n"+tr("VIS_RUNS")+" "+str(sessions)+"\n"+tr("VIS_WINS")+" "+str(wins)+"\n"+tr("VIS_LOSSES")+" "+str(losses),Rect2(820,345,500,285),page,32)
 	_label(tr("VIS_LESSONS")+" %d / 9" % tutorial_done,Rect2(820,650,500,62),page,29,AMBER)
 	if save_failed: _label(tr("VIS_SAVE_ERROR"),Rect2(820,714,500,80),page,27,RED)
@@ -302,11 +314,11 @@ func _menu() -> void:
 	_button(tr("COLLECTION_MENU"),Rect2(1075,810,245,60),page,func(): _show("gallery"),21)
 func _profiles() -> void:
 	_label(tr("VIS_DIFFICULTY"),Rect2(124,190,1170,70),page,42)
-	if board != null and not board.finished():
+	if _has_run():
 		_label(tr("VIS_REPLACE_RUN"),Rect2(124,265,1170,80),page,29,AMBER)
 	for i in range(4):
 		var label: String = tr("VIS_PROFILE_"+Profiles.IDS[i].to_upper())+"  //  %d×%d  ·  %d  ·  HP %d" % [Profiles.SIZES[i],Profiles.SIZES[i],Profiles.MINES[i],Profiles.HP[i]]
-		var choice:=_button(label,Rect2(124,350+i*100,1170,74),page,_start_profile.bind(i,campaign_selected,finite_selected),32)
+		var choice:=_button(label,Rect2(124,350+i*100,1170,74),page,_request_profile.bind(i,campaign_selected,finite_selected),32)
 		choice.tooltip_text="%d CR | %s %d | %s %d" % [Economy.START_CREDITS[i],tr("VIS_STOCK"),Economy.START_STOCK[i],tr("VIS_HINT"),Tools.HINT_LIMITS[i]]
 	_button(tr("VIS_BACK"),Rect2(124,803,350,57),page,func(): _show("menu"))
 func _start_profile(next_profile: int, story: bool = false, finite: bool = false) -> void:
@@ -402,6 +414,7 @@ func _load_session() -> void:
 	high_contrast=bool(cfg.get_value("settings","contrast",false))
 	large_symbols=bool(cfg.get_value("settings","large_symbols",false))
 	clear_display=bool(cfg.get_value("settings","clear_display",false))
+	text_scale=clampf(float(cfg.get_value("settings","text_scale",1.0)),0.75,1.5)
 	lamp_animation=bool(cfg.get_value("settings","lamp_animation",true))
 	warning_acknowledged=bool(cfg.get_value("settings","warning_acknowledged",false))
 	amount = clampf(float(cfg.get_value("settings","crt",0.45)),0.0,1.0)
@@ -484,6 +497,7 @@ func _save_session() -> void:
 	cfg.set_value("settings","contrast",high_contrast)
 	cfg.set_value("settings","large_symbols",large_symbols)
 	cfg.set_value("settings","clear_display",clear_display)
+	cfg.set_value("settings","text_scale",text_scale)
 	cfg.set_value("settings","lamp_animation",lamp_animation)
 	cfg.set_value("settings","warning_acknowledged",warning_acknowledged)
 	cfg.set_value("settings","crt",amount)
@@ -898,6 +912,8 @@ func _refresh() -> void:
 	if board!=null and board.has_portal() and not protocol_active and not board.finished() and inspect_result.is_empty():
 		status.text += " // PORTAL %s [%d-%d]" % [_on_off(board.portal_enabled),board.portal_pair.x+1,board.portal_pair.y+1]
 	if pending_sector and last_reward>0: status.text += "  +%d CR" % last_reward
+	status.add_theme_font_size_override("font_size",Access.fit_font(theme.default_font,status.text,31,text_scale,Vector2(1250,46),false))
+	status.tooltip_text=status.text
 	status.add_theme_color_override("font_color",Access.readable(RED if message_key == "CORE_LOSS" else (AMBER if message_key in ["CORE_HIT","CORE_FAIL","CORE_SEED_BAD"] else GREEN),high_contrast))
 	for i in range(buttons.size()):
 		var b: Button = buttons[i]
@@ -1767,13 +1783,14 @@ func _accessibility() -> void:
 		_save_session()
 		_show("accessibility"))
 	lamp.name="LampSetting"
-	_label(tr("ACC_KEYS"),Rect2(124,674,1170,132),page,24)
+	_button(tr("POLISH_TEXT_SCALE")+" %d%%" % roundi(text_scale*100),Rect2(124,672,1170,60),page,func(): _show("text_scale"))
+	_label(tr("ACC_KEYS"),Rect2(124,742,1170,72),page,20)
 	_button(tr("VIS_BACK"),Rect2(124,820,350,58),page,func(): _show("settings"))
 
 func back_shortcut() -> bool:
 	if protocol_active or warning_pending or screen=="menu": return false
 	var parent_screen: String={
-		"audio":"settings","accessibility":"settings","performance":"help",
+		"audio":"settings","accessibility":"settings","text_scale":"accessibility","confirm_run":"profiles","confirm_exit":"menu","performance":"help",
 		"classic":"modes","profiles":"modes","challenge":"challenges",
 		"archive_preview":"archives","gallery_preview":"gallery","archives":"gallery",
 		"campaign_archive":"campaign_route","rewrite_trial":"ending_choice","replace":"shop"
@@ -1806,3 +1823,40 @@ func _accept_warning(safe: bool) -> void:
 		audio.set_levels(audio.sfx_level,audio.hum_level,warning_sound)
 	_apply()
 	_show("menu")
+
+func _has_run() -> bool:
+	return sector_ready or pending_sector or (campaign.active and campaign_failed) or (board!=null and not board.finished())
+func _request_profile(next_profile: int,story: bool,finite: bool) -> void:
+	if not _has_run():
+		_start_profile(next_profile,story,finite)
+		return
+	requested_profile=next_profile
+	requested_campaign=story
+	requested_finite=finite
+	_show("confirm_run")
+func _confirm_run() -> void:
+	_label(tr("POLISH_REPLACE_TITLE"),Rect2(124,240,1170,100),page,42,AMBER)
+	_label(tr("POLISH_REPLACE_BODY"),Rect2(124,365,1170,200),page,32)
+	var cancel:=_button(tr("POLISH_CANCEL"),Rect2(124,630,1170,72),page,func(): _show("profiles"))
+	cancel.name="ConfirmCancel"
+	var confirm:=_button(tr("POLISH_REPLACE_CONFIRM"),Rect2(124,730,1170,72),page,func(): _start_profile(requested_profile,requested_campaign,requested_finite))
+	confirm.name="ConfirmAction"
+func _confirm_exit() -> void:
+	_label(tr("POLISH_EXIT_TITLE"),Rect2(124,240,1170,100),page,42,AMBER)
+	_label(tr("POLISH_EXIT_BODY"),Rect2(124,365,1170,200),page,32)
+	var cancel:=_button(tr("POLISH_CANCEL"),Rect2(124,630,1170,72),page,func(): _show("menu"))
+	cancel.name="ConfirmCancel"
+	var confirm:=_button(tr("VIS_EXIT"),Rect2(124,730,1170,72),page,func(): _save_session(); shutdown_requested.emit())
+	confirm.name="ConfirmAction"
+func _text_scale_page() -> void:
+	_label(tr("POLISH_TEXT_SCALE"),Rect2(124,205,1170,72),page,42)
+	_label(tr("POLISH_SCALE_DESC"),Rect2(124,300,1170,145),page,30)
+	for i in range(4):
+		var value: float=[0.75,1.0,1.25,1.5][i]
+		var b:=_button("%d%% %s" % [roundi(value*100),"●" if is_equal_approx(value,text_scale) else ""],Rect2(124+float(i%2)*590,490+float(i/2)*110,570,88),page,func():
+			text_scale=value
+			theme=_terminal_theme()
+			_save_session()
+			_show("text_scale"),32)
+		b.name="TextScale"+str(roundi(value*100))
+	_button(tr("VIS_BACK"),Rect2(124,820,350,58),page,func(): _show("accessibility"))

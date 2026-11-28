@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 45
     env:
       GODOT_VERSION: '4.7.2-stable'
-      GAME_VERSION: '0.9.0-rc.1'
+      GAME_VERSION: '0.9.0-rc.2'
     steps:
       - name: Windows prerequisites
         shell: pwsh
@@ -171,6 +171,8 @@ jobs:
           if (-not (Select-String -Path build/logs/final-integration-tests.txt -Pattern 'FINAL_INTEGRATION_QA.*failures=0' -Quiet)) { throw 'Missing final integration marker' }
           Invoke-Godot 'rc-tests.txt' @('--headless','--path','.','--script','res://tests/release_candidate_test.gd')
           if (-not (Select-String -Path build/logs/rc-tests.txt -Pattern 'RC_QA.*failures=0' -Quiet)) { throw 'Missing RC QA marker' }
+          Invoke-Godot 'final-polish-tests.txt' @('--headless','--path','.','--script','res://tests/final_polish_test.gd')
+          if (-not (Select-String -Path build/logs/final-polish-tests.txt -Pattern 'FINAL_POLISH_QA.*failures=0.*seeds=4000' -Quiet)) { throw 'Missing Final Polish QA marker' }
           Invoke-Godot 'export.txt' @('--headless','--path','.','--export-release','Windows Desktop','build/windows/SAPERROR.exe')
       - name: Native render and audio QA
         shell: pwsh

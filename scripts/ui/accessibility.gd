@@ -37,3 +37,15 @@ static func grid_key(event: InputEvent, tiles: Array[Button], index: int, column
 		target+=step
 	tiles[index].accept_event()
 	return true
+
+# Fit requested text inside existing fixed CRT bounds. Larger text is capped
+# where it would overflow; never move the approved room or board geometry.
+static func fit_font(font: Font,value: String,base: int,scale: float,extent: Vector2,wrapped: bool) -> int:
+	var requested: int=maxi(12,roundi(base*scale))
+	if font==null or value.is_empty(): return requested
+	var width: float=maxf(1.0,extent.x)
+	var height: float=maxf(1.0,extent.y)
+	for point in range(requested,11,-1):
+		var measured: Vector2=font.get_multiline_string_size(value,HORIZONTAL_ALIGNMENT_LEFT,width,point) if wrapped else font.get_string_size(value,HORIZONTAL_ALIGNMENT_LEFT,-1,point)
+		if measured.x<=width+1.0 and measured.y<=height+1.0: return point
+	return 12

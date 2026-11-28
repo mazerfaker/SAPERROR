@@ -1,4 +1,7 @@
 # Changelog
+## 0.9.0-rc.2 — Final Polish candidate
+Cancel-first exit and replacement confirmation, persisted preferred text size with fixed CRT fit, locale parity and 4000 certified profile seed QA. Manual graphics/audio/hardware acceptance still required.
+
 ## 0.9.0-rc.1 — Release Candidate
 Feature freeze baseline 6826dcd. First-run bilingual warning, persisted reduced-effects/mute choice, separate room lamp toggle, official matching Godot license files and corrected third-party audio inventory, new RC regression gate. Manual acceptance and audio rights pending; no installer/analytics yet.
 
