@@ -73,6 +73,8 @@ var boot_overlay: Control
 var boot_log: Label
 var boot_meter: ColorRect
 var boot_percent: Label
+var boot_track: ColorRect
+var boot_skip: Label
 var outcome_banner: Control
 var audio: TerminalAudio
 var board: Board
@@ -615,32 +617,40 @@ func _save_session() -> void:
 	if not save_failed: save_recovered=false
 func begin_boot() -> void:
 	end_boot()
-	# Hide the real menu until BIOS has finished; it must never leak through the line.
 	if is_instance_valid(page): page.hide()
-	boot_overlay = ColorRect.new()
-	(boot_overlay as ColorRect).color = Color("081710")
-	boot_overlay.size = size
+	boot_overlay=ColorRect.new()
+	(boot_overlay as ColorRect).color=Color("081710")
+	boot_overlay.size=size
 	add_child(boot_overlay)
-	_label("SAPERROR // BIOS",Rect2(110,110,1206,100),boot_overlay,64)
-	boot_log = _label("",Rect2(110,270,1206,350),boot_overlay,36)
-	var track := ColorRect.new()
-	track.color = Color("193b24")
-	_place(track,Rect2(110,680,1206,18),boot_overlay)
-	boot_meter = ColorRect.new()
-	boot_meter.color = GREEN
-	_place(boot_meter,Rect2(0,0,0,18),track)
-	boot_percent = _label("00%",Rect2(110,715,1206,64),boot_overlay,38)
-	_label(tr("VIS_SKIP_BOOT"),Rect2(110,805,1206,60),boot_overlay,28,DIM)
-	update_boot(0.0)
-func update_boot(progress: float) -> void:
+	# One continuous terminal transcript: no static heading during power-on.
+	boot_log=_label("",Rect2(110,110,1206,480),boot_overlay,36)
+	boot_log.name="BIOSConsole"
+	boot_track=ColorRect.new()
+	boot_track.color=Color("193b24")
+	_place(boot_track,Rect2(110,680,1206,18),boot_overlay)
+	boot_meter=ColorRect.new()
+	boot_meter.color=GREEN
+	_place(boot_meter,Rect2(0,0,0,18),boot_track)
+	boot_percent=_label("00%",Rect2(110,715,1206,64),boot_overlay,38)
+	boot_skip=_label(tr("VIS_SKIP_BOOT"),Rect2(110,805,1206,60),boot_overlay,28,DIM)
+	update_boot(0.0,false)
+func update_boot(progress: float, aperture_open: bool=true) -> void:
 	if not is_instance_valid(boot_overlay): return
-	var lines: String = "> "+tr("VIS_BOOT_CRT")
-	if progress >= 0.25: lines += "\n> "+tr("VIS_BOOT_CORE")
-	if progress >= 0.55: lines += "\n> "+tr("VIS_BOOT_AUDIO")
-	if progress >= 0.80: lines += "\n> "+tr("VIS_BOOT_READY")
-	boot_log.text = lines
-	boot_meter.size.x = 1206.0*progress
-	boot_percent.text = "%02d%%" % roundi(progress*100.0)
+	# No glyphs, bar, percent or cursor until the entire aperture is open.
+	boot_log.visible=aperture_open
+	boot_track.visible=aperture_open and progress>=0.32
+	boot_percent.visible=boot_track.visible
+	boot_skip.visible=boot_track.visible
+	if not aperture_open:
+		boot_log.text=""
+		return
+	var transcript: String="SAPERROR // BIOS\n\n> "+tr("VIS_BOOT_CRT")+"\n> "+tr("VIS_BOOT_CORE")+"\n> "+tr("VIS_BOOT_AUDIO")+"\n> "+tr("VIS_BOOT_READY")
+	var typed: int=floori(transcript.length()*clampf((progress-0.055)/0.84,0.0,1.0))
+	# Show the input caret first; then append characters in order, including line breaks.
+	boot_log.text=transcript.substr(0,typed)+"|"
+	var load_progress: float=clampf((progress-0.32)/0.68,0.0,1.0)
+	boot_meter.size.x=1206.0*load_progress
+	boot_percent.text="%02d%%" % floori(load_progress*100.0+0.0001)
 func end_boot() -> void:
 	if is_instance_valid(boot_overlay):
 		remove_child(boot_overlay)

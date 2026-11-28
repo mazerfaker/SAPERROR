@@ -2,7 +2,7 @@ extends RefCounted
 enum Phase { BOOT, READY, SHUTDOWN, OFF }
 const BOOT_LINE_TIME: float=0.16
 const BOOT_OPEN_TIME: float=0.90
-const BIOS_TIME: float=1.85
+const BIOS_TIME: float=2.80
 const BIOS_HOLD: float=0.30
 const BOOT_TIME: float=BOOT_OPEN_TIME+BIOS_TIME+BIOS_HOLD
 const SHUTDOWN_CLOSE_TIME: float=0.85
@@ -37,6 +37,8 @@ func progress() -> float:
 	if phase == Phase.BOOT: return clampf(elapsed/BOOT_TIME,0.0,1.0)
 	if phase == Phase.SHUTDOWN: return clampf(elapsed/SHUTDOWN_TIME,0.0,1.0)
 	return 1.0
+func bios_started() -> bool:
+	return phase==Phase.BOOT and elapsed>=BOOT_OPEN_TIME
 func bios_progress() -> float:
 	if phase==Phase.BOOT: return clampf((elapsed-BOOT_OPEN_TIME)/BIOS_TIME,0.0,1.0)
 	return 1.0

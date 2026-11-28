@@ -1,4 +1,7 @@
 # Changelog
+### RC.6 BIOS terminal typing
+Keep the aperture animation free of all text and progress elements. On full opening, show only the input caret, then type the localized BIOS transcript character by character. Meter appears later, complete transcript and 100% hold before menu. BIOS duration 2.8 seconds. Shutdown unchanged.
+
 ### RC.6 synchronized CRT aperture and BIOS
 Replace full-screen fade with vertically compressed raster expanding from the central phosphor line and collapsing back on shutdown. BIOS exclusively visible from first illumination, starts at 0%, runs after opening and holds at 100% before menu. Reduced motion and clear display retain geometry with dimmer line. Native framebuffer checks cover spatial aperture, BIOS ordering and shutdown line.
 

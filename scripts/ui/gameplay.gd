@@ -238,7 +238,7 @@ func _process(delta: float) -> void:
 	else:
 		lifecycle.advance(delta)
 	if lifecycle.phase == Lifecycle.Phase.BOOT:
-		ui.update_boot(lifecycle.bios_progress())
+		ui.update_boot(lifecycle.bios_progress(),lifecycle.bios_started())
 	elif previous == Lifecycle.Phase.BOOT:
 		ui.end_boot()
 	if lifecycle.phase == Lifecycle.Phase.SHUTDOWN:
