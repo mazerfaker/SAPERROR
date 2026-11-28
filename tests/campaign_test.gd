@@ -59,7 +59,9 @@ func run() -> void:
 	ui.pending_sector=true
 	ui._advance_sector()
 	check(ui.screen=="campaign_boss" and ui.sector_number==3,"mandatory boss")
+	check(not ui._reward_claimed_on_resume(),"unfinished compact boss reward not claimed on resume")
 	ui.campaign.complete_boss(3,"WATCHER")
+	check(ui._reward_claimed_on_resume(),"cleared compact boss reward claimed on resume")
 	ui._advance_sector()
 	check(ui.screen=="campaign_intro" and ui.sector_number==4,"next act")
 	var saved_credits: int=ui.economy.credits
@@ -131,7 +133,8 @@ func full_campaign(route: int, difficulty: int=1, compact: bool=true) -> void:
 				check(ui.board.won(),"sector %d solved on route %d" % [ui.sector_number,route])
 				if not ui.board.won(): break
 				completed+=1
-			ui._advance_sector()
+			check(ui.next_button.visible,"continue is visible after ordinary sector victory")
+			ui.next_button.pressed.emit()
 		elif ui.screen=="campaign_route":
 			if route==0:
 				ui.campaign.choose_route(ui.sector_number,false)

@@ -452,6 +452,9 @@ func _tutorial() -> void:
 		_save_session())
 	tutorial.back.connect(func(): _show("menu"))
 	page.add_child(tutorial)
+func _reward_claimed_on_resume() -> bool:
+	# Compact boss sectors use pending_sector for an unfinished encounter.
+	return pending_sector and not (campaign.active and campaign.compact and not campaign.boss_pending(sector_number).is_empty())
 func _load_session() -> void:
 	if DisplayServer.get_name() != "headless" or session_path!=Store.PATH:
 		var report: Dictionary=Store.load_report(session_path)
@@ -503,10 +506,11 @@ func _load_session() -> void:
 	sector_start_hp = run_hp
 	protected_hits = 0
 	var econ: Variant = cfg.get_value("run","economy",{})
-	if econ is Dictionary and not econ.is_empty(): economy.restore(econ,sector_number,pending_sector)
+	var reward_claimed: bool=_reward_claimed_on_resume()
+	if econ is Dictionary and not econ.is_empty(): economy.restore(econ,sector_number,reward_claimed)
 	else:
 		economy.begin_sector(sector_number)
-		economy.rewarded_sector = sector_number if pending_sector else sector_number-1
+		economy.rewarded_sector = sector_number if reward_claimed else sector_number-1
 	_apply_hp_cap()
 	_reset_tools()
 	var raw: Variant = cfg.get_value("run","data",{})
@@ -1271,8 +1275,8 @@ func _refresh_simple_hud() -> void:
 	flag_count.visible=false
 	integrity.text=tr("SIMPLE_HEALTH")+"\n%d / %d" % [run_hp if board==null else board.hp,_max_hp()]
 	recovered.text=tr("SIMPLE_PROGRESS")+"\n%d / %d" % [0 if board==null else board.opened,Profiles.SIZES[profile]*Profiles.SIZES[profile]-Profiles.MINES[profile] if board==null else board.cells.size()-board.mine_total]
+	next_button.visible=pending_sector or campaign_failed or (not campaign.compact and board==null) or _shop_available()
 	if pending_sector: next_button.text=tr("GUIDE_NEXT")
-	else: next_button.visible=board==null or board.finished()
 func _refresh_field_guide() -> void:
 	if not _guided_early() or not is_instance_valid(guide_label): return
 	var advanced_rule: bool=board!=null and board.rule!=Rules.Rule.CLASSIC

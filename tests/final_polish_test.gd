@@ -87,9 +87,11 @@ func run() -> void:
 		check(ui.board.rule==0,"first sector classic only")
 	var saved_campaign: Dictionary=ui.campaign.snapshot()
 	var restored_campaign:=Campaign.new()
-	check(restored_campaign.restore(saved_campaign,1) and restored_campaign.streamlined,"campaign option persists")
+	check(restored_campaign.restore(saved_campaign,1) and restored_campaign.streamlined and restored_campaign.compact,"compact campaign options persist")
+	saved_campaign.erase("compact")
+	check(restored_campaign.restore(saved_campaign,1) and restored_campaign.streamlined and not restored_campaign.compact,"RC5 campaign without compact remains compatible")
 	saved_campaign.erase("streamlined")
-	check(restored_campaign.restore(saved_campaign,1) and not restored_campaign.streamlined,"old campaigns remain compatible")
+	check(restored_campaign.restore(saved_campaign,1) and not restored_campaign.streamlined and not restored_campaign.compact,"old campaigns remain compatible")
 	ui._start_profile(1)
 	check(not ui.economy.streamlined and ui.economy.slot_limit()==4,"free run legacy economy")
 	# Header feedback regression: caret keeps its layout and boss art cannot cover body text.
