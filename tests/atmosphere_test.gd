@@ -64,15 +64,10 @@ func run() -> void:
 	if is_instance_valid(slider):
 		slider.value=0.4
 		check(is_equal_approx(ui.audio.music_level,0.4),"slider updates music")
-	var preview:=ui.page.find_child("MusicPreview",true,false) as Button
-	check(is_instance_valid(preview),"preview control")
-	if is_instance_valid(preview):
-		preview.pressed.emit()
-		check(ui.audio.music.requested=="act_boot","preview plays")
-		preview.pressed.emit()
-		check(ui.audio.music.requested=="","preview stops")
+	check(ui.page.find_child("MusicPreview",true,false)==null,"removed preview control stays absent")
+	check(ui.audio.music.requested=="","audio settings do not start preview music")
 	ui._show("menu")
-	check(ui.audio.music.requested=="","leaving audio resets preview")
+	check(ui.audio.music.requested=="","menu remains silent")
 	ui.queue_free()
 	print("ATMOSPHERE_QA checks=",checks," failures=",failures)
 	quit(0 if failures==0 else 1)
