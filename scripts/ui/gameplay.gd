@@ -7,6 +7,9 @@ const Lifecycle = preload("res://scripts/ui/crt_lifecycle.gd")
 const Immersion = preload("res://scripts/ui/immersion.gd")
 const PowerMask = preload("res://assets/shaders/crt_power.gdshader")
 const ART_PATH := "res://assets/art/terminal_original.png"
+const MOUSE_CURSOR = preload("res://assets/ui/mouse_cursor.svg")
+const MOUSE_HOTSPOT := Vector2(5,2)
+const CUSTOM_CURSOR_SHAPES := [Input.CURSOR_ARROW,Input.CURSOR_POINTING_HAND,Input.CURSOR_IBEAM,Input.CURSOR_CROSS,Input.CURSOR_HELP,Input.CURSOR_FORBIDDEN]
 const LiveEnvironment = preload("res://scripts/environment/live_environment.gd")
 var live: LiveEnvironment
 var skip_first_launch_warning: bool=false
@@ -40,6 +43,7 @@ var outcome_sign: float = 0.0
 var immersion_pulse: float=0.0
 var immersion_id: String=""
 func _ready() -> void:
+	_install_mouse_cursor()
 	# Missing original is a hard error, not permission to substitute artwork.
 	if not ResourceLoader.exists(ART_PATH):
 		push_error("SAPERROR: approved terminal_original.png is missing")
@@ -133,6 +137,11 @@ func _ready() -> void:
 	_apply_lifecycle()
 func _power_animation_allowed() -> bool:
 	return DisplayServer.get_name()!="headless"
+func _install_mouse_cursor() -> void:
+	if DisplayServer.get_name()=="headless": return
+	# Hardware cursor: no frame latency, no extra draw node, and no change to CRT hit mapping.
+	for shape in CUSTOM_CURSOR_SHAPES:
+		Input.set_custom_mouse_cursor(MOUSE_CURSOR,shape,MOUSE_HOTSPOT)
 func _start_power_on() -> void:
 	# Keep the first-launch safety notice ahead of the animation.
 	if ui.warning_pending or not _power_animation_allowed():

@@ -42,6 +42,14 @@ func run() -> void:
 	if scene != null:
 		var game = scene.instantiate()
 		root.add_child(game)
+		var cursor: Texture2D=game.MOUSE_CURSOR
+		var pointer: Image=cursor.get_image()
+		check(cursor.get_size()==Vector2(32,32),"custom mouse pointer native dimensions")
+		check(game.MOUSE_HOTSPOT==Vector2(5,2) and pointer.get_pixel(5,2).a>0.5,"mouse hotspot on arrow tip")
+		check(pointer.get_pixel(0,0).a<0.05 and pointer.get_pixel(31,0).a<0.05,"cursor transparent background")
+		var interior: Color=pointer.get_pixel(9,15)
+		check(interior.g<0.25,"dark cursor interior")
+		check(game.CUSTOM_CURSOR_SHAPES.has(Input.CURSOR_ARROW) and game.CUSTOM_CURSOR_SHAPES.has(Input.CURSOR_POINTING_HAND) and game.CUSTOM_CURSOR_SHAPES.has(Input.CURSOR_IBEAM),"shared themed cursor for normal interface shapes")
 		game.ui._show("settings")
 		var original_position: Vector2 = game.display.position
 		var original_size: Vector2 = game.display.size

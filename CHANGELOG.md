@@ -1,4 +1,7 @@
 # Changelog
+### RC.6 custom mouse pointer
+Original in-game 32px CRT-green outlined arrow with dark fill and transparent background, using native custom mouse cursors for the client UI. Exact tip hotspot; no software pointer delay or change to CRT input coordinates. Asset and hotspot regression checks; physical Windows appearance still requires manual review.
+
 ### RC.6 boss header alignment
 Center all mounted boss emblems on the CRT raster midpoint (x=713), raise the slot 10 raster pixels, preserve the existing 110×88 area and aspect ratio. Reserve title space and verify actual emblem geometry across text scales. Native QA captures the boss header.
 
