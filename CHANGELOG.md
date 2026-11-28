@@ -1,4 +1,7 @@
 # Changelog
+### RC.7 voluntary analytics foundation
+Add opt-in session summaries, v2 consent (old v1 ignored), no disk queue or permanent user ID, HTTPS-only client disabled until endpoint is configured, private Cloudflare Worker dashboard and D1 migration with 30-day expiry. Separate server and client QA; no production deployment yet.
+
 ### RC.7 local background retouch
 Remove the red paper biohazard emblem using a 112×68 transparent retouch at native coordinates (1724,940). Original art, live layers, configuration, timing and audio remain byte-identical. The patch is drawn once per composition before the existing animated layers; native render QA checks all 14 lamp/device combinations and bounds.
 

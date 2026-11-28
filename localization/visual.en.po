@@ -1234,13 +1234,13 @@ msgid "PRIVACY_TITLE"
 msgstr "Privacy"
 
 msgid "PRIVACY_BODY"
-msgstr "Optional gameplay analytics preference. Planned statistics: session duration, game modes and outcomes. This build does not collect or transmit analytics."
+msgstr "Optional analytics for improving SAPERROR: active play time, mode, difficulty, highest sector, wins/losses, version and a random session ID. Sent over HTTPS to Cloudflare Workers/D1 when configured; records retained 30 days. No names, device IDs or save files. Cloudflare processes IP for request limits."
 
 msgid "PRIVACY_ANALYTICS"
 msgstr "Allow analytics"
 
 msgid "PRIVACY_NOTE"
-msgstr "Your choice is stored on this device. You can turn it off at any time; gameplay is unchanged."
+msgstr "Turn off at any time to stop future transmission. Already received records expire after 30 days of inactivity. Gameplay is unchanged."
 
 msgid "PRIVACY_SAVE_ERROR"
 msgstr "Could not save your choice. Please try again."
@@ -1322,3 +1322,6 @@ msgstr "Stabilizer blocked the anomaly."
 
 msgid "RC7_ADMIN_INTRO"
 msgstr "ADMIN: One final field. Twelve by twelve. I will change the signal as you progress. The mines will stay where they are.\n\nECHO: Clear the field. Then choose for yourself."
+
+msgid "PRIVACY_OFFLINE"
+msgstr "Server not configured: no data is sent."

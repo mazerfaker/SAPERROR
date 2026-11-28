@@ -1,0 +1,39 @@
+extends SceneTree
+const Client=preload("res://scripts/analytics/client.gd")
+const Consent=preload("res://scripts/save/analytics_consent.gd")
+var failures: int=0
+func check(value: bool,msg: String) -> void:
+	if not value:
+		failures+=1
+		printerr("ANALYTICS FAIL: ",msg)
+func _initialize() -> void:
+	call_deferred("run")
+func run() -> void:
+	var node:=Client.new()
+	root.add_child(node)
+	node.configure("https://saperror.example.test")
+	node.observe("campaign",1,2,1.0)
+	check(node.snapshot().is_empty(),"default off")
+	node.set_permission(true)
+	node.configure("")
+	node.observe("campaign",1,2,1.0)
+	check(node.snapshot().is_empty(),"missing endpoint off")
+	check(not Client.valid_endpoint("http://example.test") and not Client.valid_endpoint("https://example.test@evil.test"),"HTTPS host only")
+	node.configure("https://saperror.example.test")
+	node.observe("campaign",1,2,1.0)
+	var initial: String=node.session_id
+	check(initial.length()==32 and node.snapshot().size()==9,"ephemeral strict payload")
+	node.outcome(42,true)
+	node.outcome(42,true)
+	node.outcome(43,false)
+	check(node.wins==1 and node.losses==1,"dedupe results")
+	node.observe("",4,0,1.0)
+	node.observe("campaign",1,3,1.0,false)
+	check(node.active_seconds==1.0,"paused time excluded")
+	node.observe("classic",0,0,1.0)
+	check(node.session_id!=initial and node.wins==0,"new mode fresh session")
+	node.set_permission(false)
+	check(node.snapshot().is_empty() and node.session_id.is_empty() and node.network_attempts==0,"revocation and no headless traffic")
+	node.queue_free()
+	print("ANALYTICS_QA failures=",failures)
+	quit(0 if failures==0 else 1)

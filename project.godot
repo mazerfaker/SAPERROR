@@ -20,3 +20,6 @@ renderer/rendering_method.mobile="gl_compatibility"
 [internationalization]
 locale/fallback="en"
 locale/translations=PackedStringArray("res://localization/core.en.po", "res://localization/core.uk.po", "res://localization/visual.en.po", "res://localization/visual.uk.po")
+
+[saperror]
+analytics/endpoint=""

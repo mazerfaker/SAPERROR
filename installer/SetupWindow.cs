@@ -12,9 +12,9 @@ internal static class Program {
         if (args.Length == 2 && args[0] == "--consent-test") {
             try {
                 SetupWindow.SaveConsent(args[1], true);
-                if (File.ReadAllText(args[1]) != "v1:allow") Environment.Exit(2);
+                if (File.ReadAllText(args[1]) != "v2:allow") Environment.Exit(2);
                 SetupWindow.SaveConsent(args[1], false);
-                Environment.Exit(File.ReadAllText(args[1]) == "v1:deny" ? 0 : 3);
+                Environment.Exit(File.ReadAllText(args[1]) == "v2:deny" ? 0 : 3);
             } catch { Environment.Exit(4); }
         }
         using (var form = new SetupWindow(false)) {
@@ -153,7 +153,7 @@ internal sealed class SetupWindow : Form {
         browse.Text=T("Browse...","Огляд..."); shortcut.Text=T("Create desktop shortcut","Створити ярлик на робочому столі");
         launch.Text=T("Launch SAPERROR when finished","Запустити SAPERROR після встановлення");
         consent.Text=T("Allow optional gameplay analytics","Дозволити добровільну ігрову аналітику");
-        privacyNote.Text=T("Planned: session duration, modes and outcomes. This build sends nothing. Optional; change your choice in Settings > Privacy.","Заплановано: тривалість сесій, режими та результати. Ця збірка нічого не надсилає. Вибір можна змінити в налаштуваннях приватності.");
+        privacyNote.Text=T("Optional: active play time, mode, difficulty, sector, wins/losses, version and random session ID. Cloudflare, 30 days. When configured. Disable in game Privacy.","Добровільно: час гри, режим, складність, сектор, перемоги/поразки, версія та випадковий ID сесії. Cloudflare, 30 днів. Якщо сервер підключено. Вимкнення у грі.");
         statusLabel.Text=T("Ready to install. Game files and uninstaller will be added to the selected folder.","Готово до встановлення. Файли гри та засіб видалення буде додано до вибраної папки.");
         install.Text=T("Install","Встановити"); cancel.Text=T("Cancel","Скасувати");
     }
@@ -165,7 +165,7 @@ internal sealed class SetupWindow : Form {
         Directory.CreateDirectory(Path.GetDirectoryName(file));
         string tmp=file+"."+Guid.NewGuid().ToString("N")+".tmp";
         try {
-            File.WriteAllText(tmp,allowed?"v1:allow":"v1:deny",new System.Text.UTF8Encoding(false));
+            File.WriteAllText(tmp,allowed?"v2:allow":"v2:deny",new System.Text.UTF8Encoding(false));
             if(File.Exists(file)) File.Replace(tmp,file,null);
             else File.Move(tmp,file);
         } finally { if(File.Exists(tmp)) File.Delete(tmp); }

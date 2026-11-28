@@ -59,6 +59,8 @@ const Immersion=preload("res://scripts/ui/immersion.gd")
 var immersion_cooldown: float=0.0
 const Access=preload("res://scripts/ui/accessibility.gd")
 const AnalyticsConsent=preload("res://scripts/save/analytics_consent.gd")
+const AnalyticsClient=preload("res://scripts/analytics/client.gd")
+var telemetry: AnalyticsClient
 var analytics_consent_path: String=AnalyticsConsent.PATH
 var analytics_allowed: bool=false
 var analytics_save_error: bool=false
@@ -177,6 +179,10 @@ func _ready() -> void:
 	_load_session()
 	if DisplayServer.get_name()!="headless" or analytics_consent_path!=AnalyticsConsent.PATH:
 		analytics_allowed=AnalyticsConsent.allowed(analytics_consent_path)
+	telemetry=AnalyticsClient.new()
+	telemetry.configure(str(ProjectSettings.get_setting("saperror/analytics/endpoint","")))
+	telemetry.set_permission(analytics_allowed)
+	add_child(telemetry)
 	warning_pending=require_content_warning and not warning_acknowledged
 	warning_sound=bool(cfg.get_value("settings","sound",true))
 	TranslationServer.set_locale("uk" if is_uk else "en")
@@ -728,17 +734,23 @@ func _settings() -> void:
 	_button(tr("PRIVACY_TITLE"),Rect2(904,803,260,57),page,func(): _show("privacy"),23)
 func _privacy_settings() -> void:
 	_label(tr("PRIVACY_TITLE"),Rect2(124,212,1150,60),page,41)
-	_label(tr("PRIVACY_BODY"),Rect2(124,300,1040,230),page,30)
+	_label(tr("PRIVACY_BODY"),Rect2(124,290,1040,245),page,27)
 	var toggle:=_button(tr("PRIVACY_ANALYTICS")+": "+_on_off(analytics_allowed),Rect2(124,560,1040,76),page,func():
 		_set_analytics_consent(not analytics_allowed),28)
 	toggle.name="AnalyticsConsent"
-	_label(tr("PRIVACY_SAVE_ERROR" if analytics_save_error else "PRIVACY_NOTE"),Rect2(124,665,1040,105),page,24,AMBER if analytics_save_error else DIM)
+	var note: String=tr("PRIVACY_SAVE_ERROR" if analytics_save_error else "PRIVACY_NOTE")
+	if not analytics_save_error and (telemetry==null or telemetry.endpoint.is_empty()): note+="\n"+tr("PRIVACY_OFFLINE")
+	_label(note,Rect2(124,650,1040,138),page,24,AMBER if analytics_save_error else DIM)
 	_button(tr("VIS_BACK"),Rect2(124,810,350,57),page,func(): _show("settings"))
 func _set_analytics_consent(value: bool) -> void:
 	# Headless test runs must not change the real player's preference.
 	if DisplayServer.get_name()=="headless" and analytics_consent_path==AnalyticsConsent.PATH: return
+	# Revoke in-memory before attempting any disk write, including failed writes.
+	if not value and telemetry!=null: telemetry.set_permission(false)
 	analytics_save_error=not AnalyticsConsent.write_choice(value,analytics_consent_path)
-	analytics_allowed=AnalyticsConsent.allowed(analytics_consent_path)
+	if not value and analytics_save_error: DirAccess.remove_absolute(ProjectSettings.globalize_path(analytics_consent_path))
+	analytics_allowed=value and not analytics_save_error and AnalyticsConsent.allowed(analytics_consent_path)
+	if telemetry!=null: telemetry.set_permission(analytics_allowed)
 	_show("privacy")
 static func resolution_name(value: Vector2i) -> String:
 	return "%d × %d" % [value.x,value.y]
@@ -1057,6 +1069,7 @@ func _after_action(sound: String = "") -> void:
 		else:
 			losses += 1
 			if campaign.active: campaign_failed=true
+		if telemetry!=null and not protocol_active: telemetry.outcome(board.get_instance_id(),board.won())
 		outcome_triggered.emit(board.won())
 		if not protocol_active: _show_outcome(board.won())
 		_refresh()
@@ -1208,7 +1221,32 @@ func _protocol_lines(count: int) -> void:
 	for i in range(clampi(count,0,5)):
 		lines.append("> "+tr("K30_"+str(i)))
 	protocol_log.text = "\n\n".join(lines)
+func _analytics_tick(delta: float) -> void:
+	if telemetry==null or not telemetry.enabled() or DisplayServer.get_name()=="headless": return
+	# Menus and minimized/unfocused windows are not active gameplay.
+	var mode: String=""
+	var difficulty: int=4
+	var stage: int=0
+	var observed: Board=null
+	if screen in ["game","campaign_boss"] and not protocol_active:
+		mode="campaign" if campaign.active else ("free" if finite_run else "endless")
+		difficulty=profile
+		stage=sector_number
+		if screen=="game": observed=board
+		elif is_instance_valid(active_trial) and active_trial.model.valid: observed=active_trial.model.board()
+	elif screen=="classic":
+		mode="classic"
+		difficulty=classic.profile
+		observed=classic.board
+	elif screen=="challenge":
+		mode="lab"
+		if is_instance_valid(active_trial) and active_trial.model.valid: observed=active_trial.model.board()
+	var focused: bool=DisplayServer.window_is_focused() and DisplayServer.window_get_mode()!=DisplayServer.WINDOW_MODE_MINIMIZED
+	var finished_id: int=observed.get_instance_id() if observed!=null and observed.finished() else 0
+	telemetry.observe(mode,difficulty,stage,delta,focused and finished_id==0,finished_id)
+	if finished_id!=0: telemetry.outcome(finished_id,observed.won())
 func _process(delta: float) -> void:
+	_analytics_tick(delta)
 	immersion_cooldown=maxf(0.0,immersion_cooldown-delta)
 	_update_header_caret(delta)
 	if not protocol_active: return

@@ -110,6 +110,7 @@ jobs:
           Invoke-Godot 'import.txt' @('--headless','--path','.','--editor','--import')
           Invoke-Godot 'tests.txt' @('--headless','--path','.','--script','res://tests/core_test.gd')
           if (-not (Select-String -Path build/logs/tests.txt -Pattern 'CORE_QA.*failures=0.*seeds=1000' -Quiet)) { throw 'Missing QA success marker' }
+          Invoke-Godot 'analytics-tests.txt' @('--headless','--path','.','--script','res://tests/analytics_test.gd')
           Invoke-Godot 'visual-tests.txt' @('--headless','--path','.','--script','res://tests/visual_test.gd')
           if (-not (Select-String -Path build/logs/visual-tests.txt -Pattern 'VISUAL_QA.*failures=0' -Quiet)) { throw 'Missing visual QA marker' }
           Invoke-Godot 'audio-tests.txt' @('--headless','--path','.','--script','res://tests/audio_test.gd')
