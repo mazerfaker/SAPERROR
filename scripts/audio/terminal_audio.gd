@@ -22,9 +22,24 @@ const EXTRA := {
 	"rule":[0.13,310.0,460.0,0.15,0.04,2],
 	"archive":[0.46,260.0,780.0,0.19,0.02,3],
 	"phase":[0.42,120.0,360.0,0.20,0.07,3],
-	"anomaly":[0.32,165.0,95.0,0.18,0.08,3]
+	"anomaly":[0.32,165.0,95.0,0.18,0.08,3],
+	"imm_watcher":[0.45,440,165,0.12,0.055,2],
+	"imm_liar":[0.32,780,315,0.13,0.06,5],
+	"imm_loop":[0.48,650,100,0.15,0.05,4],
+	"imm_admin":[0.52,95,280,0.15,0.08,2],
+	"imm_double":[0.38,260,520,0.12,0.03,2],
+	"imm_phantom":[0.33,520,130,0.1,0.055,3],
+	"imm_parasite":[0.38,110,220,0.14,0.065,5],
+	"imm_portal":[0.29,280,840,0.12,0.025,2],
+	"imm_mimic":[0.26,410,385,0.1,0.06,4],
+	"imm_null":[0.31,190,70,0.11,0.045,1],
+	"imm_instability":[0.34,355,695,0.12,0.06,6],
+	"imm_magnet":[0.37,85,490,0.13,0.05,2],
+	"imm_rewrite":[0.49,215,640,0.13,0.025,3],
+	"imm_echo":[0.23,570,420,0.075,0.018,2],
+	"imm_voice_admin":[0.18,225,250,0.075,0.018,2]
 }
-const EVENTS := ["key","reveal","flood","flag","unflag","fault","win","loss","invalid","boot","shutdown","k30","hum","purchase","module","repair","shield","reroll","scanner","rewind","cleanse","portal","rule","archive","phase","anomaly"]
+const EVENTS := ["key","reveal","flood","flag","unflag","fault","win","loss","invalid","boot","shutdown","k30","hum","purchase","module","repair","shield","reroll","scanner","rewind","cleanse","portal","rule","archive","phase","anomaly","imm_watcher","imm_liar","imm_loop","imm_admin","imm_double","imm_phantom","imm_parasite","imm_portal","imm_mimic","imm_null","imm_instability","imm_magnet","imm_rewrite","imm_echo","imm_voice_admin"]
 const VOICE_COUNT: int=6
 var sounds: Dictionary = {}
 var ambience: AudioStreamPlayer
@@ -149,6 +164,8 @@ static func synth_extra(kind: String) -> AudioStreamWAV:
 	return stream
 
 static func priority(kind: String) -> int:
+	if kind in ["imm_echo","imm_voice_admin"]: return 1
+	if kind.begins_with("imm_"): return 2
 	if kind in ["admin_intro","shutdown","win","loss","k30","archive","phase"]: return 3
 	if kind in ["fault","anomaly","shield","cleanse","rewind","boot"]: return 2
 	if kind in ["menu_click","key","flag","unflag","invalid"]: return 0

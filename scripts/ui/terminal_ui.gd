@@ -48,6 +48,9 @@ signal fault_triggered
 signal fullscreen_requested
 signal shutdown_requested
 signal outcome_triggered(won: bool)
+signal immersion_triggered(id: String)
+const Immersion=preload("res://scripts/ui/immersion.gd")
+var immersion_cooldown: float=0.0
 const Access=preload("res://scripts/ui/accessibility.gd")
 var high_contrast: bool=false
 var large_symbols: bool=false
@@ -273,7 +276,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_build_terminal_header()
-	var version := _label("0.9.0-rc5.2",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("0.9.0-rc6",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -942,7 +945,8 @@ func _after_action(sound: String = "") -> void:
 		message_key = "CORE_LOSS"
 		sound = "loss"
 	if not sound.is_empty(): audio.play_event(sound)
-	if not board.finished() and (anomaly_event=="hidden" or infection_event in ["warning","blocked"]): audio.play_event("anomaly")
+	if not board.finished() and infection_event in ["warning","blocked"]: _play_immersion("PARASITE",true)
+	elif not board.finished() and anomaly_event=="hidden": _play_immersion("PHANTOM",true)
 	_refresh()
 	if board.finished() and not pending_sector:
 		sector_ready = false
@@ -1103,6 +1107,7 @@ func _protocol_lines(count: int) -> void:
 		lines.append("> "+tr("K30_"+str(i)))
 	protocol_log.text = "\n\n".join(lines)
 func _process(delta: float) -> void:
+	immersion_cooldown=maxf(0.0,immersion_cooldown-delta)
 	_update_header_caret(delta)
 	if not protocol_active: return
 	if protocol_finished:
@@ -1245,16 +1250,27 @@ func _animate_transmission(target: Label) -> Tween:
 	var animation:=target.create_tween()
 	animation.tween_property(target,"visible_ratio",1.0,clampf(float(target.text.length())/52.0,0.25,2.4))
 	return animation
+func _play_immersion(id: String, force: bool=false) -> void:
+	if warning_pending or not Immersion.IDS.has(id): return
+	if immersion_cooldown>0.0 and not force: return
+	immersion_cooldown=0.30
+	audio.play_event(Immersion.sound(id))
+	immersion_triggered.emit(id)
+func _wire_trial_immersion(trial: ChallengeUI) -> void:
+	trial.immersion_event.connect(func(id: String):
+		if active_trial==trial: _play_immersion(id))
 func _refresh_transmission() -> void:
 	if not campaign.active or not is_instance_valid(narrative_label): return
 	var value: String=tr(_transmission_key())
 	if narrative_label.text==value: return
+	var first_line: bool=narrative_label.text.is_empty()
 	if narrative_tween!=null and narrative_tween.is_valid(): narrative_tween.kill()
 	narrative_label.text=value
 	narrative_label.tooltip_text=value
 	narrative_label.add_theme_font_size_override("font_size",Access.fit_font(theme.default_font,value,21,text_scale,Vector2(252,136),true))
 	narrative_label.add_theme_color_override("font_color",Access.readable(AMBER if value.begins_with("ECHO:") else GREEN,high_contrast))
 	narrative_tween=_animate_transmission(narrative_label)
+	if first_line and board==null and not pending_sector: _play_immersion("ECHO" if value.begins_with("ECHO:") else "VOICE_ADMIN")
 func _simple_campaign() -> bool:
 	return campaign.active and campaign.streamlined
 func _guided_early() -> bool:
@@ -1607,6 +1623,7 @@ func _toggle_portal() -> void:
 	hint_sources.clear()
 	message_key = "VIS_PORTAL_CHANGED"
 	audio.play_event("portal")
+	immersion_triggered.emit("PORTAL")
 	_refresh()
 	_save_session()
 
@@ -1638,7 +1655,9 @@ func _challenge() -> void:
 	challenge.trial_completed.connect(func(id: String):
 		if screen=="challenge" and challenge.model.won() and collection.finish_trial(id): _save_session())
 	active_trial=challenge
+	_wire_trial_immersion(challenge)
 	page.add_child(challenge)
+	_play_immersion(Immersion.identity(challenge_kind),true)
 
 func _modes() -> void:
 	_label(tr("CAM_MODE"),Rect2(124,205,1170,65),page,42)
@@ -1713,7 +1732,9 @@ func _campaign_boss() -> void:
 		_advance_sector()
 		if screen=="game" and _shop_available(): _show("shop"))
 	active_trial=trial
+	_wire_trial_immersion(trial)
 	page.add_child(trial)
+	if trial.kind!="ADMIN_LINK": _play_immersion(Immersion.identity(trial.kind),true)
 
 func _campaign_boundary() -> void:
 	_label("ACT IV // ADMIN",Rect2(124,215,1170,80),page,42,AMBER)
@@ -1817,7 +1838,9 @@ func _campaign_archive() -> void:
 		_advance_sector()
 		if screen=="game" and _shop_available(): _show("shop"))
 	active_trial=trial
+	_wire_trial_immersion(trial)
 	page.add_child(trial)
+	if trial.kind!="ADMIN_LINK": _play_immersion(Immersion.identity(trial.kind),true)
 
 func _admin_intro() -> void:
 	if not campaign.active or not pending_sector or campaign.boss_pending(sector_number)!="ADMIN": return
@@ -1872,7 +1895,9 @@ func _rewrite_trial() -> void:
 		_save_session()
 		_show("ending_choice"))
 	active_trial=trial
+	_wire_trial_immersion(trial)
 	page.add_child(trial)
+	if trial.kind!="ADMIN_LINK": _play_immersion(Immersion.identity(trial.kind),true)
 func _choose_ending(id: String) -> void:
 	if not campaign.choose_ending(id): return
 	if not ending_gallery.has(id): ending_gallery.append(id)

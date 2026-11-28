@@ -4,6 +4,7 @@ const TerminalUI = preload("res://scripts/ui/terminal_ui.gd")
 const CRT = preload("res://assets/shaders/crt.gdshader")
 const Grade = preload("res://assets/shaders/scene_grade.gdshader")
 const Lifecycle = preload("res://scripts/ui/crt_lifecycle.gd")
+const Immersion = preload("res://scripts/ui/immersion.gd")
 const ART_PATH := "res://assets/art/terminal_original.png"
 const LiveEnvironment = preload("res://scripts/environment/live_environment.gd")
 var live: LiveEnvironment
@@ -31,6 +32,8 @@ var fault: float = 0.0
 var lifecycle := Lifecycle.new()
 var outcome: float = 0.0
 var outcome_sign: float = 0.0
+var immersion_pulse: float=0.0
+var immersion_id: String=""
 func _ready() -> void:
 	# Missing original is a hard error, not permission to substitute artwork.
 	if not ResourceLoader.exists(ART_PATH):
@@ -101,6 +104,7 @@ func _ready() -> void:
 	ui.connect("shutdown_requested", _shutdown)
 	ui.connect("outcome_triggered", _on_outcome)
 	ui.connect("protocol_triggered", _on_protocol)
+	ui.connect("immersion_triggered", _on_immersion)
 	visual_rng.randomize()
 	var quiet: bool=ui.clear_display or ui.warning_pending
 	_set_effects(0.0 if quiet else ui.amount, ui.glass and not ui.warning_pending, ui.reduced or ui.warning_pending, ui.flicker and not quiet, 0.0 if quiet else ui.global_amount, ui.glitches and not quiet)
@@ -117,6 +121,9 @@ func _set_effects(amount: float, glass: bool, reduced: bool, flicker: bool, glob
 	reduced_motion = reduced
 	flicker_enabled = flicker
 	glitches_enabled = glitches
+	if reduced_motion or not glitches_enabled or effects<=0.0:
+		immersion_pulse=0.0
+		_set_crt("immersion_pulse",0.0)
 	crt_material.set_shader_parameter("bulge",Geometry.FIXED_BULGE)
 	scene_effects = global_amount
 	# At zero strength, grade returns the original screen unchanged.
@@ -128,6 +135,14 @@ func _set_effects(amount: float, glass: bool, reduced: bool, flicker: bool, glob
 	crt_material.set_shader_parameter("flicker",1.0 if flicker_enabled and not reduced_motion else 0.0)
 	grade_material.set_shader_parameter("strength",scene_effects)
 	grade_material.set_shader_parameter("motion",0.0 if reduced_motion else 1.0)
+func _on_immersion(id: String) -> void:
+	if not lifecycle.accepts_input() or reduced_motion or not glitches_enabled or effects<=0.0 or ui.warning_pending or ui.high_contrast: return
+	if not Immersion.IDS.has(id): return
+	immersion_id=id
+	immersion_pulse=0.72
+	crt_material.set_shader_parameter("immersion_tint",Immersion.tint(id))
+	_set_crt("immersion_mode",Immersion.mode(id))
+	_set_crt("immersion_pulse",immersion_pulse)
 func _on_protocol() -> void:
 	if glitches_enabled and not reduced_motion and effects > 0.0: signal_fault = 1.0
 func _on_fault() -> void:
@@ -176,6 +191,8 @@ func _process(delta: float) -> void:
 	else: signal_fault = 0.0
 	signal_fault = move_toward(signal_fault,0.0,delta*5.0)
 	_set_crt("signal_fault",signal_fault)
+	immersion_pulse=move_toward(immersion_pulse,0.0,delta*1.4) if lifecycle.accepts_input() and not reduced_motion and glitches_enabled and effects>0.0 and not ui.high_contrast else 0.0
+	_set_crt("immersion_pulse",immersion_pulse)
 	_set_crt("scan_wave",ui.protocol_scan if not reduced_motion else -1.0)
 	outcome = move_toward(outcome,0.0,delta*0.85)
 	_set_crt("fault",fault if not reduced_motion else 0.0)

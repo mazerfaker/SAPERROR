@@ -12,6 +12,9 @@ uniform float flicker = 0.0;
 uniform float power = 1.0;
 uniform float beam = 1.0;
 uniform float outcome = 0.0;
+uniform float immersion_pulse = 0.0;
+uniform float immersion_mode = 0.0;
+uniform vec3 immersion_tint = vec3(0.0);
 float hash(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
 float edge_mask(vec2 p) {
 	float distance_to_edge = 1.0;
@@ -107,6 +110,21 @@ void fragment() {
 			float field = step(0.272,q.x)*step(q.x,0.728)*step(0.187,q.y)*step(q.y,0.82);
 			float line = exp(-abs(q.y-(0.187+0.633*scan_wave))*85.0);
 			graded += vec3(0.06,0.25,0.10)*line*field;
+		}
+		// Single smooth, low-amplitude pulse; no UV displacement, flashing or board occlusion.
+		if (immersion_pulse > 0.0 && motion > 0.0) {
+			float edge = smoothstep(0.42,1.6,r2);
+			float pattern = edge;
+			if (immersion_mode == 1.0) {
+				pattern = edge*0.65 + 0.35*exp(-abs(p.x)*5.0);
+			} else if (immersion_mode == 2.0) {
+				pattern = edge*0.55 + 0.45*exp(-abs(p.y-(1.0-2.0*immersion_pulse))*8.0);
+			} else if (immersion_mode == 3.0) {
+				pattern = edge*0.65 + 0.35*(0.5+0.5*cos(p.y*19.0));
+			} else if (immersion_mode == 4.0) {
+				pattern = edge*0.8 + 0.2*exp(-abs(p.y)*4.0);
+			}
+			graded += immersion_tint*pattern*immersion_pulse*0.7;
 		}
 		rgb = mix(base,graded,strength);
 	}

@@ -1,6 +1,7 @@
 extends SceneTree
 const Audio=preload("res://scripts/audio/terminal_audio.gd")
 const UI=preload("res://scripts/ui/terminal_ui.gd")
+const Immersion=preload("res://scripts/ui/immersion.gd")
 var checks: int=0
 var failures: int=0
 func check(ok: bool,msg: String) -> void:
@@ -25,6 +26,9 @@ func run() -> void:
 		check(not signatures.has(signature),"distinct SFX "+id)
 		signatures.append(signature)
 		check(Audio.synth(id).data==data,"deterministic SFX "+id)
+	for id in Immersion.IDS:
+		check(Audio.EVENTS.has(Immersion.sound(id)) and Immersion.tint(id).length()>0.0,"immersion cue registered "+id)
+	check(Immersion.identity("LOOP_B")=="LOOP" and Immersion.identity("ADMIN_LINK")=="ADMIN","phase identity")
 	var busy: Array[bool]=[true,true,true,true,true,true]
 	var priorities: Array[int]=[3,2,3,1,0,2]
 	check(Audio.pick_voice(busy,priorities,0,0)==-1,"click cannot steal active sound")

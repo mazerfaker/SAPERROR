@@ -14,6 +14,8 @@ signal back
 signal clicked
 signal encounter_won
 signal trial_completed(id: String)
+signal immersion_event(id: String)
+const Immersion=preload("res://scripts/ui/immersion.gd")
 var completion_reported: bool=false
 var campaign_encounter: bool = false
 var guided_encounter: bool=false
@@ -143,7 +145,14 @@ func _tile_input(event: InputEvent, i: int) -> void:
 			tiles[i].accept_event()
 			_move(i,false,true)
 func _move(i: int, flag: bool, chord: bool) -> void:
-	if model.act(i,flag,chord): clicked.emit()
+	var old_notice: String=model.notice
+	var old_hits: int=model.board().hits if model.valid else 0
+	if model.act(i,flag,chord):
+		clicked.emit()
+		if model.notice!=old_notice and model.notice in ["CH_INST_SWITCH","CH_LOOP_RESET","CH_WATCHER_CLOSED"]:
+			immersion_event.emit(Immersion.identity(kind))
+		elif model.board().hits>old_hits:
+			immersion_event.emit(Immersion.identity(kind))
 	refresh()
 func can_protocol_complete() -> bool:
 	return model.valid and not model.lost() and (not model.won() or campaign_encounter)
@@ -156,16 +165,25 @@ func complete_with_protocol() -> bool:
 func _proceed() -> void:
 	if campaign_encounter and model.won(): encounter_won.emit()
 func _select_sensor(index: int) -> void:
+	var old_notice: String=model.notice
 	model.submit_sensor(index)
+	if model.notice!=old_notice: immersion_event.emit("LIAR")
 	refresh()
 func _scan() -> void:
+	var old_notice: String=model.notice
 	model.optional_scan()
+	if model.notice!=old_notice and model.notice=="CH_NULL_BLOCKED": immersion_event.emit("NULL")
 	refresh()
 func _journal() -> void:
 	model.toggle_journal()
 	refresh()
 func _switch_layer() -> void:
+	var layer: int=model.active_layer
+	var portal: bool=model.board().portal_enabled if model.valid else false
+	var rule: int=model.board().rule if model.valid else 0
+	var committed: bool=model.magnet_committed
 	model.switch_layer()
+	if model.valid and (layer!=model.active_layer or portal!=model.board().portal_enabled or rule!=model.board().rule or committed!=model.magnet_committed): immersion_event.emit(Immersion.identity(kind))
 	refresh()
 func refresh() -> void:
 	var b: Board = model.board()

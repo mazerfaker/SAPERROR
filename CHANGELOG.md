@@ -1,4 +1,7 @@
 # Changelog
+## 0.9.0-rc.6 — Immersion candidate
+15 procedural audio cues, event-driven anomaly pulses, distinct CRT patterns and brief ADMIN/ECHO signal tones. Preserve approved MP3s, original art, CRT geometry, boot/shutdown and campaign mechanics. Respect reduced motion, high contrast, glitch and effects settings. Automated QA added; manual sound/visual review pending.
+
 ## 0.9.0-rc.5.2 — Balance & Playtest candidate
 Compact campaign tuning: guaranteed coverage of all six modules across four shops, lower Story/Standard repair prices, reserve charge on genuine sector transitions, two Standard free hints, fixed boss-sector reward. Legacy economy untouched. Added automated balance checks; human playtest pending.
 
