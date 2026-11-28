@@ -1661,6 +1661,7 @@ func _challenge() -> void:
 	challenge.theme=theme
 	challenge.high_contrast=high_contrast
 	challenge.large_symbols=large_symbols
+	challenge.text_scale=text_scale
 	challenge.back.connect(func(): _show("challenges"))
 	challenge.clicked.connect(func(): audio.play_event("key"))
 	challenge.ui_clicked.connect(func(): audio.play_event("menu_click"))
@@ -1731,6 +1732,7 @@ func _campaign_boss() -> void:
 	trial.theme=theme
 	trial.high_contrast=high_contrast
 	trial.large_symbols=large_symbols
+	trial.text_scale=text_scale
 	trial.back.connect(func(): _show("menu"))
 	trial.clicked.connect(func(): audio.play_event("key"))
 	trial.ui_clicked.connect(func(): audio.play_event("menu_click"))
@@ -1840,6 +1842,7 @@ func _campaign_archive() -> void:
 	trial.theme=theme
 	trial.high_contrast=high_contrast
 	trial.large_symbols=large_symbols
+	trial.text_scale=text_scale
 	trial.back.connect(func(): _show("campaign_route"))
 	trial.clicked.connect(func(): audio.play_event("key"))
 	trial.ui_clicked.connect(func(): audio.play_event("menu_click"))
@@ -1901,6 +1904,7 @@ func _rewrite_trial() -> void:
 	trial.theme=theme
 	trial.high_contrast=high_contrast
 	trial.large_symbols=large_symbols
+	trial.text_scale=text_scale
 	trial.back.connect(func(): _show("ending_choice"))
 	trial.clicked.connect(func(): audio.play_event("key"))
 	trial.ui_clicked.connect(func(): audio.play_event("menu_click"))

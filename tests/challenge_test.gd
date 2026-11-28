@@ -32,7 +32,7 @@ func run() -> void:
 		var before: PackedInt32Array=a.cells.duplicate()
 		model.switch_layer()
 		check(model.active_layer==1 and model.board()!=a,"layer switch")
-		check(model.marker(13)=="PARALLEL" and model.details().contains("A#12"),"explicit links")
+		check(model.marker(13)=="PARALLEL" and model.badge(13)=="A" and model.details().contains(TranslationServer.translate("CH_FIELD_NUMBER") % 2),"explicit links")
 		model.act(0,true)
 		check(a.cells==before,"other layer unchanged")
 		model.switch_layer()
@@ -45,7 +45,7 @@ func run() -> void:
 		for i in range(5): model.act(0,true)
 		check(model.watcher_closed and model.hidden(target),"groups close after five moves")
 		model.toggle_journal()
-		check(model.journal_open and model.watcher_log[target]==recorded and model.details().contains("#%d=%d" % [target+1,recorded]),"truth preserved in journal")
+		check(model.journal_open and model.watcher_log[target]==recorded and model.details().contains("%s: %d" % [model.badge(target),recorded]),"truth preserved in journal")
 		check(model.board().clue(target,0)==recorded,"no false ordinary clue")
 	check(model.start("LIAR"),"LIAR certificate")
 	if model.valid:
@@ -115,6 +115,14 @@ func run() -> void:
 		root.add_child(view)
 		check(view.model.valid and view.tiles.size()==25,"real UI builds "+kind)
 		if view.model.valid:
+			for i in range(view.tiles.size()):
+				var badge:=view.tiles[i].get_node("MechanicBadge") as Label
+				check(badge.text==view.model.badge(i),"visible marker "+kind)
+			if kind=="ADMIN_LINK":
+				check(view.model.badge(0)=="P" and view.model.badge(24)=="P","portal endpoints")
+				check(view.layer_button.text==TranslationServer.translate("PORTAL_DISABLE"),"portal action label")
+				view._switch_layer()
+				check(view.layer_button.text==TranslationServer.translate("PORTAL_ENABLE"),"portal reverse action")
 			if kind=="DOUBLE":
 				view._switch_layer()
 				check(view.model.active_layer==1,"real layer switch")

@@ -2,6 +2,7 @@ extends Control
 const Access=preload("res://scripts/ui/accessibility.gd")
 var high_contrast: bool=false
 var large_symbols: bool=false
+var text_scale: float=1.0
 const Challenge = preload("res://scripts/board/anomaly_challenge.gd")
 const Board = preload("res://scripts/board/state.gd")
 const BossEmblem = preload("res://scripts/ui/boss_emblem.gd")
@@ -44,7 +45,7 @@ func label(value: String, pos: Vector2, extent: Vector2, font: int = 26) -> Labe
 	l.position=pos
 	l.size=extent
 	l.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-	l.add_theme_font_size_override("font_size",font)
+	l.add_theme_font_size_override("font_size",Access.fit_font(get_theme_default_font(),value,font,text_scale,extent,true))
 	body.add_child(l)
 	return l
 func button(value: String, pos: Vector2, extent: Vector2, cb: Callable) -> Button:
@@ -52,7 +53,7 @@ func button(value: String, pos: Vector2, extent: Vector2, cb: Callable) -> Butto
 	b.text=value
 	b.position=pos
 	b.size=extent
-	b.add_theme_font_size_override("font_size",24)
+	b.add_theme_font_size_override("font_size",Access.fit_font(get_theme_default_font(),value,24,text_scale,extent-Vector2(12,8),false))
 	b.pressed.connect(func(): ui_clicked.emit(); cb.call())
 	body.add_child(b)
 	return b
@@ -104,6 +105,12 @@ func restart() -> void:
 			tile.gui_input.connect(_tile_input.bind(i))
 			grid.add_child(tile)
 			tiles.append(tile)
+			var tag:=Label.new()
+			tag.name="MechanicBadge"
+			tag.position=Vector2(4,1)
+			tag.add_theme_font_size_override("font_size",16)
+			tag.mouse_filter=Control.MOUSE_FILTER_IGNORE
+			tile.add_child(tag)
 		info=label("",Vector2(515,166),Vector2(720,70 if guided_encounter else 116),26 if guided_encounter else 29)
 		coach=null
 		if guided_encounter:
@@ -116,7 +123,7 @@ func restart() -> void:
 		sensor_buttons.clear()
 		if kind=="LIAR":
 			for index in range(3):
-				sensor_buttons.append(button("S%d" % (index+1),Vector2(515+index*240,530),Vector2(225,56),_select_sensor.bind(index)))
+				sensor_buttons.append(button(tr("CH_SENSOR_NAME") % "ABC".substr(index,1),Vector2(515+index*240,530),Vector2(225,56),_select_sensor.bind(index)))
 		if kind in ["DOUBLE","ADMIN_LINK","INSTABILITY","MAGNET"]: layer_button=button("PARALLEL: A",Vector2(515,530),Vector2(720,56),_switch_layer)
 		if kind=="WATCHER": journal_button=button(tr("VIS_JOURNAL"),Vector2(515,530),Vector2(720,56),_journal)
 		if kind=="NULL": scan_button=button(tr("VIS_HINT"),Vector2(515,530),Vector2(720,56),_scan)
@@ -199,19 +206,23 @@ func refresh() -> void:
 		elif kind=="DOUBLE" and b.won(): key="BOSS_COACH_DOUBLE_SWITCH"
 		coach.text=tr(key)
 		coach.tooltip_text=coach.text
+		coach.add_theme_font_size_override("font_size",Access.fit_font(get_theme_default_font(),coach.text,23,text_scale,Vector2(720,66),true))
 	if is_instance_valid(layer_button):
-		layer_button.text=("PORTAL: "+("ON" if b.portal_enabled else "OFF")) if kind=="ADMIN_LINK" else "PARALLEL: "+("A → B" if model.active_layer==0 else "B → A")
+		layer_button.text=tr("PORTAL_DISABLE" if b.portal_enabled else "PORTAL_ENABLE") if kind=="ADMIN_LINK" else tr("CH_SWITCH_FIELD") % (2-model.active_layer)
 		layer_button.disabled=model.done()
 		if kind=="MAGNET":
 			layer_button.text=tr("CH_MAGNET_COMMITTED" if model.magnet_committed else "CH_MAGNET_APPLY")
 			layer_button.disabled=model.magnet_committed or model.done()
 		elif kind=="INSTABILITY":
-			layer_button.text=tr("CH_INST_RULE")+" / "+("CLASSIC" if b.rule==0 else "CROSS")
+			layer_button.text=tr("CH_SWITCH_CROSS" if b.rule==0 else "CH_SWITCH_CLASSIC")
 			layer_button.disabled=not model.instability_triggered or model.done()
 	if is_instance_valid(scan_button): scan_button.disabled=model.scan_used or model.done()
-	if is_instance_valid(journal_button): journal_button.text=tr("VIS_JOURNAL")+": "+tr("CH_JOURNAL_OPEN" if model.journal_open else "CH_JOURNAL_CLOSED")
+	if is_instance_valid(journal_button): journal_button.text=tr("CH_CLOSE_JOURNAL" if model.journal_open else "CH_OPEN_JOURNAL")
 	if not model.notice.is_empty(): readout.text += "\n"+tr(model.notice)
 	if model.done(): readout.text += "\n"+tr("CH_VICTORY" if model.won() else "CH_DEFEAT")
+	readout.add_theme_font_size_override("font_size",Access.fit_font(get_theme_default_font(),readout.text,22 if guided_encounter else 26,text_scale,Vector2(720,204 if guided_encounter else 222),true))
+	readout.tooltip_text=readout.text
+	if is_instance_valid(layer_button): layer_button.add_theme_font_size_override("font_size",Access.fit_font(get_theme_default_font(),layer_button.text,24,text_scale,Vector2(708,48),false))
 	if is_instance_valid(proceed_button): proceed_button.disabled=not model.won()
 	for sensor in sensor_buttons: sensor.disabled=model.liar_solved or model.lost()
 	for i in range(tiles.size()):
@@ -223,11 +234,21 @@ func refresh() -> void:
 		tile.disabled=model.done() or b.finished() or (kind=="MAGNET" and not model.magnet_committed)
 		var fill: Color=Color("081a11") if state==Board.Cell.OPEN else Color("183b27")
 		if state==Board.Cell.NEUTRALIZED: fill=Color("491e19")
-		var marked: bool=not model.marker(i).is_empty()
-		var style: StyleBoxFlat=style_bank.get_style(fill.darkened(0.32) if high_contrast else fill,Access.readable(Color("edc27b") if marked else Color("53775d"),high_contrast),3 if marked else 2,false)
+		var marker: String=model.badge(i)
+		var marked: bool=not marker.is_empty()
+		var tag:=tile.get_node_or_null("MechanicBadge") as Label
+		var edge: Color=Color("edc27b") if marked else Color("53775d")
+		if kind=="ADMIN_LINK" and marked: edge=Color("7ac5d0") if b.portal_enabled else Color("53775d")
+		if kind=="DOUBLE" and marked: edge=Color("7ac5d0") if marker=="A" else Color("edc27b")
+		if is_instance_valid(tag):
+			tag.text=marker
+			tag.visible=marked
+			tag.add_theme_color_override("font_color",Access.readable(edge,high_contrast))
+		var style: StyleBoxFlat=style_bank.get_style(fill.darkened(0.32) if high_contrast else fill,Access.readable(edge,high_contrast),3 if marked else 2,false)
 		if tile.get_theme_stylebox("normal")!=style: tile.add_theme_stylebox_override("normal",style)
 		if tile.get_theme_stylebox("disabled")!=style: tile.add_theme_stylebox_override("disabled",style)
-		tile.tooltip_text="#%d %s" % [i+1,model.marker(i)]
+		var desc: String=model.cell_description(i)
+		tile.tooltip_text=desc if not desc.is_empty() else tr("CORE_CELL")+" "+str(i+1)
 	if model.won() and not completion_reported and not campaign_encounter:
 		completion_reported=true
 		trial_completed.emit(kind)

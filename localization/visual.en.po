@@ -475,10 +475,10 @@ msgid "CH_LOOP_COUNT"
 msgstr "Moves to local reset:"
 
 msgid "CH_LOOP_DONE"
-msgstr "Checkpoint spent. No more automatic reset."
+msgstr "The marked area has reset. It will not reset again."
 
 msgid "CH_LOOP_RESET"
-msgstr "Marked zone restored to checkpoint."
+msgstr "The marked area returned to its starting state."
 
 msgid "CH_ACTIONS"
 msgstr "Moves"
@@ -493,31 +493,31 @@ msgid "CH_DEFEAT"
 msgstr "SIGNAL LOST - RETRY"
 
 msgid "CH_DOUBLE_INTRO"
-msgstr "DOUBLE: There are two fields. Use PARALLEL to switch between A and B. Marked links give clues on both sides. Clear both fields to win."
+msgstr "Clear both fields. Switch with the button. Matching letters identify paired clues from both fields."
 
 msgid "CH_DOUBLE_LINKS"
-msgstr "Paired clue readings:"
+msgstr "Numbers at matching letters:"
 
 msgid "CH_DOUBLE_PROGRESS"
 msgstr "Recovered:"
 
 msgid "CH_WATCHER_INTRO"
-msgstr "WATCHER: After five moves, six numbers disappear. Open the Journal to see their original values. Clear all safe cells."
+msgstr "After five moves, numbers marked A–F disappear. Open the journal to read them. Clear the field."
 
 msgid "CH_WATCHER_CLOSED"
-msgstr "WATCHER has obscured the groups. Read the journal."
+msgstr "Numbers are hidden. Open the journal."
 
 msgid "CH_WATCHER_COUNT"
 msgstr "Moves until obscuration:"
 
 msgid "CH_LIAR_INTRO"
-msgstr "LIAR: Ordinary clues are true. S1, S2 and S3 count mines in rows 1, 3 and 5. Exactly one sensor lies. Compare the readings with the true pair sums, select the liar, then clear the field."
+msgstr "One sensor lies about mines in its marked row. Add the readings of two sensors and compare with the true total below. Choose the lying sensor."
 
 msgid "CH_LIAR_SELECT"
-msgstr "Select the false sensor using the checksums."
+msgstr "Choose the sensor shared by the two mismatching totals."
 
 msgid "CH_LIAR_WRONG"
-msgstr "That sensor agrees with the checksums. Recheck the sums."
+msgstr "That sensor is correct. Compare the two wrong totals again."
 
 msgid "CH_LIAR_CORRECT"
 msgstr "Sensor corrected. Ordinary clues unchanged."
@@ -595,13 +595,13 @@ msgid "CH_LOOP_B_INTRO"
 msgstr "Second temporal state: the marked lower region resets after three moves. Recover the second field."
 
 msgid "CH_ADMIN_LINK_INTRO"
-msgstr "ADMIN: The two marked corners count as neighbors. Use the PORTAL button to turn that link off or on. Then clear the safe cells."
+msgstr "Cells P count as neighbors even far apart. Turn off the link to play normally. Open all safe cells."
 
 msgid "CH_ADMIN_LINK_STATUS"
 msgstr "LINK TOPOLOGY"
 
 msgid "CH_REWRITE_INTRO"
-msgstr "REWRITE: recover a separate authorized memory field to unlock the final protocol."
+msgstr "Open all safe cells in this final memory field."
 
 msgid "CAM_ADMIN_INTRO"
 msgstr "ADMIN: You have reached the end of your assignment. Three tests remain: linked corners, two fields and a lying sensor. Complete them to gain control.\n\nECHO: Then choose for yourself."
@@ -652,13 +652,13 @@ msgid "CH_MIMIC_INTRO"
 msgstr "MIMIC distorts marked closed cells. The tilde is cosmetic, not evidence of a mine. Ordinary clues and flags remain unchanged."
 
 msgid "CH_MIMIC_STATUS"
-msgstr "MIMIC // Cosmetic corruption only."
+msgstr "The ~ symbol is visual only, not a mine clue."
 
 msgid "CH_NULL_INTRO"
 msgstr "NULL blocks the optional scanner in the marked zone. Manual deduction, reveal and flag remain available."
 
 msgid "CH_NULL_STATUS"
-msgstr "NULL // Scanner restriction; ordinary evidence is intact."
+msgstr "Hints are blocked in the N zone. You can still open and flag cells."
 
 msgid "CH_NULL_BLOCKED"
 msgstr "Scanner blocked by NULL. No charge consumed."
@@ -679,7 +679,7 @@ msgid "CH_INSTABILITY_INTRO"
 msgstr "After three actions, the rule changes to CROSS. After the change you may freely switch back to CLASSIC."
 
 msgid "CH_INST_SWITCH"
-msgstr "Rule changed. Free CLASSIC/CROSS switch."
+msgstr "The rule changed. You can return to CLASSIC."
 
 msgid "CH_INST_COUNT"
 msgstr "Moves to CROSS:"
@@ -688,13 +688,13 @@ msgid "CH_INST_RULE"
 msgstr "RULE"
 
 msgid "CH_MAGNET_INTRO"
-msgstr "MAGNET: before any move, acknowledge the marked exchange of closed cells #2 and #3. The mine total stays the same, clues are recalculated."
+msgstr "The two closed M cells swap contents once. Confirm the swap before playing; the mine total stays the same."
 
 msgid "CH_MAGNET_WARNING"
-msgstr "Exchange pending. Inspect the clues, then apply the visible cycle."
+msgstr "The M cells will swap. Confirm to begin."
 
 msgid "CH_MAGNET_COMMITTED"
-msgstr "Exchange complete. Topology fixed."
+msgstr "Swap complete. Play normally."
 
 msgid "CH_MAGNET_APPLY"
 msgstr "APPLY EXCHANGE"
@@ -1087,7 +1087,7 @@ msgid "BOSS_COACH_WATCHER_OPEN"
 msgstr "Use the stored numbers as clues and clear the safe cells."
 
 msgid "BOSS_COACH_LIAR"
-msgstr "Compare S1+S2, S1+S3 and S2+S3 with the true sums. The two wrong pairs share the liar."
+msgstr "Compare reported sums with true totals. The same letter in both mismatches is the liar."
 
 msgid "BOSS_COACH_LIAR_DONE"
 msgstr "Sensor identified. Now clear the safe cells as usual."
@@ -1099,7 +1099,7 @@ msgid "BOSS_COACH_LOOP_B"
 msgstr "The second zone will reset once. Finish the field after it resets."
 
 msgid "BOSS_COACH_ADMIN_LINK"
-msgstr "You can turn off the corner link with PORTAL and solve normally."
+msgstr "Disable the link to play normally."
 
 msgid "BOSS_COACH_DOUBLE"
 msgstr "Solve the current field, then switch to the other one."
@@ -1130,3 +1130,75 @@ msgstr "Menu"
 
 msgid "TUT_TRY_MARKED"
 msgstr "Try the highlighted cell or the indicated action."
+
+msgid "PORTAL_EXPLAIN_ON"
+msgstr "Both P cells count as neighbors even far apart. You can disable the link."
+
+msgid "PORTAL_EXPLAIN_OFF"
+msgstr "The P cells are no longer linked. Normal neighbor rules apply."
+
+msgid "PORTAL_DISABLE"
+msgstr "Disable link"
+
+msgid "PORTAL_ENABLE"
+msgstr "Enable link"
+
+msgid "CH_WATCHER_SAVED"
+msgstr "Cell %s: saved number %d"
+
+msgid "CH_WATCHER_MARK"
+msgstr "Cell %s: its number is stored in the journal."
+
+msgid "CH_WATCHER_MARKS"
+msgstr "Letters A–F identify the six numbers."
+
+msgid "CH_WATCHER_VALUES"
+msgstr "Saved numbers: match each letter to the board."
+
+msgid "CH_PAIR_MARK"
+msgstr "Pair %s: same letter on the other field."
+
+msgid "CH_FIELD_NUMBER"
+msgstr "Current field: %d of 2"
+
+msgid "CH_PAIR_VALUES"
+msgstr "Pair %s: field 1 = %d, field 2 = %d"
+
+msgid "CH_FIELDS_PROGRESS"
+msgstr "Opened: field 1 %d/%d; field 2 %d/%d"
+
+msgid "CH_SWITCH_FIELD"
+msgstr "Go to field %d"
+
+msgid "CH_SENSOR_NAME"
+msgstr "Sensor %s"
+
+msgid "CH_SENSOR_READINGS"
+msgstr "Sensors report: A — %d, B — %d, C — %d."
+
+msgid "CH_SENSOR_SUMS"
+msgstr "True totals for two rows:\\nA and B: %d; B and C: %d; A and C: %d."
+
+msgid "CH_RULE_CLASSIC"
+msgstr "CLASSIC: all eight neighbors."
+
+msgid "CH_RULE_CROSS"
+msgstr "CROSS: only side neighbors."
+
+msgid "CH_SWITCH_CROSS"
+msgstr "Switch to CROSS"
+
+msgid "CH_SWITCH_CLASSIC"
+msgstr "Return to CLASSIC"
+
+msgid "CH_OPEN_JOURNAL"
+msgstr "Open journal"
+
+msgid "CH_CLOSE_JOURNAL"
+msgstr "Close journal"
+
+msgid "CH_SCAN_HIGHLIGHT"
+msgstr "The cell marked ✓ is safe."
+
+msgid "CH_REWRITE_GOAL"
+msgstr "Open all safe cells to unlock the final choice."

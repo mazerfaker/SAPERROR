@@ -1,4 +1,7 @@
 # Changelog
+### RC.6 authored challenge readability hotfix
+Replace raw cell addresses and engineering shorthand with localized explanations, matching board labels and action-based controls in all authored encounters. LIAR uses A/B/C row sensors and explicit true totals. Existing puzzle state, proof routes and K-30 unchanged.
+
 ### RC.6 interface cleanup and shared click hotfix
 Use the approved menu MP3 on non-cell buttons, including embedded tutorial/classic/encounter controls, with a dedicated restartable playback voice. Keep gameplay event sounds and audio settings. Remove player-facing briefing and diagnostics entry points while retaining internal QA. Separate header cursor visibility from title text; honor reduced-motion/clear-display settings.
 

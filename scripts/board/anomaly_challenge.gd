@@ -239,31 +239,68 @@ func marker(index: int) -> String:
 	return "LOOP" if kind in ["LOOP","LOOP_B"] and not loop_done and index in loop_zone else ""
 func hidden(index: int) -> bool:
 	return kind=="WATCHER" and watcher_closed and watcher_log.has(index)
+# Visible labels refer to public evidence, not hidden mine data.
+func badge(index: int) -> String:
+	if kind=="ADMIN_LINK" and index in [0,24]: return "P"
+	if kind=="MAGNET" and index in [MAGNET_SWAP.x,MAGNET_SWAP.y]: return "M"
+	if kind=="WATCHER":
+		for g in range(watcher_groups.size()):
+			for j in range(watcher_groups[g].size()):
+				if watcher_groups[g][j]==index: return "ABCDEF".substr(g*2+j,1)
+	if kind=="DOUBLE":
+		for j in range(DOUBLE_LINKS.size()):
+			var link: Vector2i=DOUBLE_LINKS[j]
+			if index==(link.x if active_layer==0 else link.y): return "AB".substr(j,1)
+	if kind=="LIAR":
+		var row: int=index/SIZE
+		if LIAR_ROWS.has(row): return "ABC".substr(LIAR_ROWS.find(row),1)
+	if index==scan_cell: return "✓"
+	if not marker(index).is_empty():
+		if kind=="NULL": return "N"
+		if kind=="MIMIC": return "~"
+		if kind in ["LOOP","LOOP_B"]: return "L"
+	return ""
+func cell_description(index: int) -> String:
+	var tag: String=badge(index)
+	if kind=="ADMIN_LINK" and tag=="P": return tr("PORTAL_EXPLAIN_ON" if board().portal_enabled else "PORTAL_EXPLAIN_OFF")
+	if kind=="MAGNET" and tag=="M": return tr("CH_MAGNET_COMMITTED" if magnet_committed else "CH_MAGNET_WARNING")
+	if kind=="WATCHER" and not tag.is_empty():
+		return tr("CH_WATCHER_SAVED") % [tag,watcher_log[index]] if journal_open else tr("CH_WATCHER_MARK") % tag
+	if kind=="DOUBLE" and not tag.is_empty(): return tr("CH_PAIR_MARK") % tag
+	if kind=="LIAR" and not tag.is_empty(): return tr("CH_SENSOR_NAME") % tag
+	if index==scan_cell: return tr("CH_SCAN_FOUND")
+	if not tag.is_empty():
+		if kind=="NULL": return tr("CH_NULL_STATUS")
+		if kind=="MIMIC": return tr("CH_MIMIC_STATUS")
+		if kind in ["LOOP","LOOP_B"]: return tr("CH_LOOP_COUNT")+" "+str(maxi(0,3-actions))
+	return ""
 func details() -> String:
 	if kind=="MIMIC": return tr("CH_MIMIC_STATUS")
-	if kind=="NULL": return tr("CH_NULL_STATUS")+"\n"+(tr("CH_SCAN_FOUND")+" #%d" % (scan_cell+1) if scan_cell>=0 else tr("CH_SCAN_SPENT" if scan_used else "CH_SCAN_READY"))
-	if kind=="INSTABILITY": return ("CLASSIC" if board().rule==Rules.Rule.CLASSIC else "CROSS")+"\n"+(tr("CH_INST_SWITCH") if instability_triggered else tr("CH_INST_COUNT")+" %d" % maxi(0,3-actions))
-	if kind=="MAGNET": return "#%d <-> #%d\n" % [MAGNET_SWAP.x+1,MAGNET_SWAP.y+1]+tr("CH_MAGNET_COMMITTED" if magnet_committed else "CH_MAGNET_WARNING")
+	if kind=="NULL": return tr("CH_NULL_STATUS")+"\n"+(tr("CH_SCAN_HIGHLIGHT") if scan_cell>=0 else tr("CH_SCAN_SPENT" if scan_used else "CH_SCAN_READY"))
+	if kind=="INSTABILITY": return tr("CH_RULE_CLASSIC" if board().rule==Rules.Rule.CLASSIC else "CH_RULE_CROSS")+"\n"+(tr("CH_INST_SWITCH") if instability_triggered else tr("CH_INST_COUNT")+" "+str(maxi(0,3-actions)))
+	if kind=="MAGNET": return tr("CH_MAGNET_COMMITTED" if magnet_committed else "CH_MAGNET_WARNING")
 	if kind=="LIAR":
 		var readings: Array[int] = decoded_sensors() if liar_solved else sensor_values
-		return "S1 = %d | S2 = %d | S3 = %d\nS1+S2 = %d | S2+S3 = %d | S1+S3 = %d\n%s" % [readings[0],readings[1],readings[2],checksum_values[0],checksum_values[1],checksum_values[2],tr("CH_LIAR_CORRECT" if liar_solved else "CH_LIAR_SELECT")]
+		return tr("CH_SENSOR_READINGS") % [readings[0],readings[1],readings[2]]+"\n"+tr("CH_SENSOR_SUMS") % [checksum_values[0],checksum_values[1],checksum_values[2]]+"\n"+tr("CH_LIAR_CORRECT" if liar_solved else "CH_LIAR_SELECT")
 	if kind=="WATCHER":
 		var status: String = tr("CH_WATCHER_CLOSED") if watcher_closed else tr("CH_WATCHER_COUNT")+" "+str(maxi(0,5-actions))
-		var lines := PackedStringArray([status])
+		if not journal_open: return status+"\n"+tr("CH_WATCHER_MARKS")
+		var lines := PackedStringArray([status,tr("CH_WATCHER_VALUES")])
 		for g in range(watcher_groups.size()):
 			var pair := PackedStringArray()
 			for index in watcher_groups[g]:
-				pair.append("#%d%s" % [int(index)+1,("="+str(watcher_log[index])) if journal_open else ""])
-			lines.append("G%d: %s" % [g+1," / ".join(pair)])
+				pair.append("%s: %d" % [badge(index),watcher_log[index]])
+			lines.append("   ".join(pair))
 		return "\n".join(lines)
 	if kind=="DOUBLE":
-		var lines := PackedStringArray()
-		for link in DOUBLE_LINKS:
-			var a: Board = boards[0]
-			var b: Board = boards[1]
-			lines.append("A#%d: %d | B#%d: %d" % [link.x+1,a.clue(link.x,0),link.y+1,b.clue(link.y,0)])
-		return "PARALLEL // "+("A" if active_layer==0 else "B")+"\n"+tr("CH_DOUBLE_LINKS")+"\n"+"\n".join(lines)+"\n"+tr("CH_DOUBLE_PROGRESS")+" A %d/21 | B %d/21" % [boards[0].opened,boards[1].opened]
-	if kind=="ADMIN_LINK": return tr("CH_ADMIN_LINK_STATUS")+" / "+("ON" if board().portal_enabled else "OFF")+"\n#1 <-> #25"
+		var lines := PackedStringArray([tr("CH_FIELD_NUMBER") % (active_layer+1),tr("CH_DOUBLE_LINKS")])
+		for j in range(DOUBLE_LINKS.size()):
+			var link: Vector2i=DOUBLE_LINKS[j]
+			lines.append(tr("CH_PAIR_VALUES") % ["AB".substr(j,1),boards[0].clue(link.x,0),boards[1].clue(link.y,0)])
+		lines.append(tr("CH_FIELDS_PROGRESS") % [boards[0].opened,boards[0].cells.size()-boards[0].mine_total,boards[1].opened,boards[1].cells.size()-boards[1].mine_total])
+		return "\n".join(lines)
+	if kind=="ADMIN_LINK": return tr("PORTAL_EXPLAIN_ON" if board().portal_enabled else "PORTAL_EXPLAIN_OFF")
 	if kind in ["LOOP","LOOP_B"]:
 		return tr("CH_LOOP_DONE") if loop_done else tr("CH_LOOP_COUNT")+" "+str(maxi(0,3-actions))
+	if kind=="REWRITE": return tr("CH_REWRITE_GOAL")
 	return ""
