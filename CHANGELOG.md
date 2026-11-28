@@ -1,4 +1,7 @@
 # Changelog
+### RC.6 permanent loadout and economy tuning
+All shops limited to three permanent modules, no replacements. Purchases disabled and grey once full; repair remains available. Legacy four-module saves retain owned items but cannot buy more. Sector reward 12 + opened/8 + 6 for clean, bosses 24, archives 8 (+5 Archivist). Prices and starting credits unchanged. Regression checks updated.
+
 ### RC.6 visible CRT power and tutorial correction
 Dedicated final CRT power mask independent of all grading and filter settings; visible 2.4s boot, 1.10s shutdown with black-frame hold. Reduced motion uses gentle fade, no beam. Native screenshot/pixel acceptance gate. Tutorial action label names the next rule and final DIAGONAL state.
 

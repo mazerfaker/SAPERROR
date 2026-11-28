@@ -568,7 +568,7 @@ msgid "MOD_ARCHIVIST"
 msgstr "Archivist"
 
 msgid "DESC_ARCHIVIST"
-msgstr "+10 CR for the first optional archive in a sector."
+msgstr "5 extra CR for the first optional archive in a sector."
 
 msgid "CAM_ROUTE"
 msgstr "ROUTE SELECTION"
@@ -1066,10 +1066,10 @@ msgid "SIMPLE_DESC_STABILIZER"
 msgstr "Suppress the first PHANTOM effect, delay PARASITE and get one free cleanse per sector."
 
 msgid "SIMPLE_DESC_ARCHIVIST"
-msgstr "Earn 10 extra credits for recovering an optional archive."
+msgstr "Earn 5 extra credits for an optional archive."
 
 msgid "COMPACT_ROUTE_DESC"
-msgstr "Read an optional memory record. Keep it to unlock more endings and earn 15 CR, or continue without it. No extra puzzle."
+msgstr "Read an optional memory record. Keep it to unlock more endings and earn 8 CR, or continue without it. No extra puzzle."
 
 msgid "COMPACT_READ"
 msgstr "READ RECORD"
@@ -1208,3 +1208,6 @@ msgstr "Switch to %s"
 
 msgid "TUT_RULE_DONE"
 msgstr "DIAGONAL counts diagonal neighbors only. Continue to the next lesson."
+
+msgid "SHOP_FULL"
+msgstr "3 modules installed. Purchases closed; repairs remain available."

@@ -2,7 +2,9 @@ extends RefCounted
 # Deterministic, bounded run economy. No random state, no access to hidden board data.
 const MODULES := ["XRAY","CHAIN","CAPACITOR","ASSISTANT","CHRONOMANCER","SECOND_LIFE","FUSE","AUDITOR","RESONANCE","PROFIT","THIRD_EYE","SHIELDING","HOTFIX","STABILIZER","ARCHIVIST"]
 const PRICES := [32,36,28,30,34,40,35,34,32,45,30,28,26,30,30]
-const MAX_MODULES := 4
+const MAX_MODULES := 3
+const LEGACY_MAX_MODULES := 4
+const BOSS_REWARD := 24
 const SIMPLE_MODULES := ["ASSISTANT","CHRONOMANCER","SECOND_LIFE","THIRD_EYE","STABILIZER","ARCHIVIST"]
 var streamlined: bool=false
 var compact: bool=false
@@ -35,7 +37,9 @@ var third_used: bool = false
 var earned: int = 0
 var spent: int = 0
 func slot_limit() -> int:
-	return 3 if streamlined else MAX_MODULES
+	return MAX_MODULES
+func shop_locked() -> bool:
+	return owned.size()>=slot_limit()
 func capacity() -> int:
 	return 4+(2 if owned.has("CAPACITOR") else 0)
 func reset(profile: int) -> void:
@@ -71,7 +75,7 @@ func add_stock(n: int) -> void:
 	stock = mini(capacity(),stock+maxi(0,n))
 func reward(sector: int, opened: int, hits: int) -> int:
 	if sector<=rewarded_sector or sector!=offer_sector: return 0
-	var amount: int = 25+maxi(0,opened)/5+(10 if hits==0 else 0)
+	var amount: int = 12+maxi(0,opened)/8+(6 if hits==0 else 0)
 	if owned.has("PROFIT"):
 		# At one HP the nominal -1 HP penalty cannot apply. Reduce the bonus.
 		amount=amount*5/4 if difficulty==3 else amount*3/2
@@ -81,9 +85,9 @@ func reward(sector: int, opened: int, hits: int) -> int:
 func boss_reward(sector: int) -> int:
 	# Fixed reward for the complete encounter; phases have independent HP.
 	if not compact or sector<=rewarded_sector or sector!=offer_sector: return 0
-	_gain(40)
+	_gain(BOSS_REWARD)
 	rewarded_sector=sector
-	return 40
+	return BOSS_REWARD
 func observe(opened: int, clean: bool, clue: int = 0) -> void:
 	if not clean:
 		clean_streak = 0
@@ -137,20 +141,20 @@ func price(id: String) -> int:
 	var i: int = MODULES.find(id)
 	return PRICES[i] if i>=0 else MAX_CREDITS+1
 func buy(id: String) -> bool:
-	if owned.size()>=slot_limit() or not offers().has(id) or credits<price(id): return false
+	if shop_locked() or not offers().has(id) or credits<price(id): return false
 	_spend(price(id))
 	owned.append(id)
 	if id=="CAPACITOR": add_stock(1)
 	return true
 func buy_charge() -> bool:
-	if streamlined or stock>=capacity() or credits<12: return false
+	if shop_locked() or streamlined or stock>=capacity() or credits<12: return false
 	_spend(12)
 	add_stock(1)
 	return true
 func reroll_price() -> int:
 	return 8+4*rerolls
 func reroll() -> bool:
-	if streamlined or rerolls>=100 or credits<reroll_price(): return false
+	if shop_locked() or streamlined or rerolls>=100 or credits<reroll_price(): return false
 	_spend(reroll_price())
 	rerolls += 1
 	return true
@@ -183,7 +187,7 @@ func restore(data: Dictionary, sector: int, pending: bool) -> void:
 	var items: Variant = data.get("owned",[])
 	if items is Array:
 		for id in items:
-			if id is String and MODULES.has(id) and not owned.has(id) and owned.size()<MAX_MODULES: owned.append(id)
+			if id is String and MODULES.has(id) and not owned.has(id) and owned.size()<LEGACY_MAX_MODULES: owned.append(id)
 	begin_sector(sector)
 	rewarded_sector = clampi(int(data.get("rewarded",sector if pending else sector-1)),0,sector)
 	if pending: rewarded_sector = sector
@@ -197,7 +201,7 @@ func repair(hp: int, maximum: int) -> int:
 	_spend(repair_price())
 	return hp+1
 func buy_shield() -> bool:
-	if streamlined or credits<18 or shield_stock>=1 or shield_armed: return false
+	if shop_locked() or streamlined or credits<18 or shield_stock>=1 or shield_armed: return false
 	_spend(18)
 	shield_stock = 1
 	return true
@@ -219,15 +223,6 @@ func consume_protection() -> String:
 		fuse_used = true
 		return "FUSE"
 	return ""
-func replace_module(old_id: String, new_id: String) -> bool:
-	if owned.size()<slot_limit() or not owned.has(old_id) or not offers().has(new_id) or credits<price(new_id): return false
-	var index: int = owned.find(old_id)
-	_spend(price(new_id))
-	owned[index] = new_id
-	stock = mini(stock,capacity())
-	if new_id=="CAPACITOR": add_stock(1)
-	return true
-
 func _gain(amount: int) -> void:
 	var old: int = credits
 	credits = mini(MAX_CREDITS,credits+maxi(0,amount))
@@ -248,7 +243,7 @@ func use_analyzer() -> bool:
 
 # Caller grants once per recorded optional archive; no repeatable reward.
 func archive_reward() -> int:
-	var value: int=15+(10 if owned.has("ARCHIVIST") else 0)
+	var value: int=8+(5 if owned.has("ARCHIVIST") else 0)
 	_gain(value)
 	return value
 

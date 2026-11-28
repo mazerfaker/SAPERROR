@@ -21,7 +21,7 @@ func run() -> void:
 		check(economy.credits==Economy.START_CREDITS[difficulty] and economy.stock==Economy.START_STOCK[difficulty],"start resources")
 		var width: int=Profiles.SIZES[difficulty]
 		var safe_count: int=width*width-Profiles.MINES[difficulty]
-		var expected: int=25+safe_count/5+10
+		var expected: int=12+safe_count/8+6
 		var prior: int=economy.credits
 		check(economy.reward(1,safe_count,0)==expected and economy.credits==prior+expected,"clean reward")
 		check(economy.reward(1,safe_count,0)==0,"no duplicate sector payment")
@@ -80,7 +80,7 @@ func run() -> void:
 		check(available.size()==6,"all compact modules offered across the four shops")
 		compact.begin_sector(3)
 		var prior_credits: int=compact.credits
-		check(compact.boss_reward(3)==40 and compact.credits==prior_credits+40,"fixed boss reward")
+		check(compact.boss_reward(3)==24 and compact.credits==prior_credits+24,"fixed boss reward")
 		check(compact.boss_reward(3)==0,"no duplicate boss reward")
 		var snapshot: Dictionary=compact.snapshot()
 		var resumed:=Economy.new()

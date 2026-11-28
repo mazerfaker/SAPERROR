@@ -87,7 +87,6 @@ var third_button: Button
 var inspect_mode: String = ""
 var inspect_result: String = ""
 var inspect_marks: Array[int] = []
-var replace_id: String = ""
 var credit_label: Label
 var shop_notice: String = ""
 var last_reward: int = 0
@@ -313,7 +312,6 @@ func _show(next: String) -> void:
 	elif screen == "gallery_preview": _ending_scene(gallery_preview)
 	elif screen == "tutorial": _tutorial()
 	elif screen == "shop": _shop()
-	elif screen == "replace": _replacement()
 	elif screen == "challenges": _challenges()
 	elif screen == "challenge": _challenge()
 	else: _menu()
@@ -1391,6 +1389,13 @@ func _rewind_limit() -> int:
 	return Tools.REWIND_LIMITS[profile]+(1 if economy.owned.has("CHRONOMANCER") else 0)
 func _shop_available() -> bool:
 	return sector_number>1 and sector_ready and board==null and not protocol_active and (not campaign.active or not campaign.compact or sector_number in [2,4,7,8])
+func _lock_shop_offer(button: Button, unaffordable: bool) -> void:
+	button.disabled=unaffordable or economy.shop_locked()
+	if economy.shop_locked():
+		var grey: Color=Access.readable(Color("737973"),high_contrast)
+		button.add_theme_color_override("font_disabled_color",grey)
+		button.add_theme_stylebox_override("disabled",_style(Color("171b18"),grey.darkened(0.45)))
+		button.tooltip_text=tr("SHOP_FULL")
 func _shop() -> void:
 	if not _shop_available():
 		_show("game")
@@ -1399,25 +1404,27 @@ func _shop() -> void:
 		_simple_shop()
 		return
 	_label((tr("GUIDE_SHOP") if campaign.active and profile==0 else tr("VIS_SHOP"))+" // %02d" % sector_number,Rect2(124,185,1160,65),page,40)
-	_label("CR %d  |  HP %d/%d  |  %s %d/%d  |  %s %d/4" % [economy.credits,run_hp,_max_hp(),tr("VIS_STOCK"),economy.stock,economy.capacity(),tr("VIS_MODULES"),economy.owned.size()],Rect2(124,256,1170,60),page,27,AMBER)
+	_label("CR %d  |  HP %d/%d  |  %s %d/%d  |  %s %d/%d" % [economy.credits,run_hp,_max_hp(),tr("VIS_STOCK"),economy.stock,economy.capacity(),tr("VIS_MODULES"),economy.owned.size(),economy.slot_limit()],Rect2(124,256,1170,60),page,27,AMBER)
 	var offers: Array[String] = economy.offers()
 	for i in range(offers.size()):
 		var id: String = offers[i]
 		var y: int = 340+i*110
 		var buy := _button(tr("MOD_"+id)+"  /  "+str(economy.price(id))+" CR",Rect2(124,y,510,86),page,_buy_module.bind(id),26)
-		buy.disabled = economy.credits<economy.price(id)
-		_label(tr("DESC_PROFIT_HARD" if id=="PROFIT" and profile==3 else "DESC_"+id),Rect2(654,y,630,100),page,25)
+		buy.name="ModuleOffer_"+id
+		_lock_shop_offer(buy,economy.credits<economy.price(id))
+		_label(tr("DESC_PROFIT_HARD" if id=="PROFIT" and profile==3 else "DESC_"+id),Rect2(654,y,630,100),page,25,DIM if economy.shop_locked() else GREEN)
 	var charge := _button(tr("VIS_BUY_CHARGE")+" / 12",Rect2(124,684,275,60),page,_buy_charge,21)
-	charge.disabled = economy.stock>=economy.capacity() or economy.credits<12
+	_lock_shop_offer(charge,economy.stock>=economy.capacity() or economy.credits<12)
 	var repair := _button(tr("VIS_REPAIR")+" / %d" % economy.repair_price(),Rect2(419,684,275,60),page,_repair,21)
 	repair.disabled = run_hp>=_max_hp() or economy.credits<economy.repair_price()
 	var shield := _button(tr("VIS_SHIELD")+" / 18",Rect2(714,684,275,60),page,_buy_shield,21)
-	shield.disabled = economy.shield_stock>=1 or economy.credits<18
+	_lock_shop_offer(shield,economy.shield_stock>=1 or economy.credits<18)
 	var reroll := _button(tr("VIS_REROLL")+" / %d" % economy.reroll_price(),Rect2(1009,684,275,60),page,_reroll_shop,21)
-	reroll.disabled = economy.credits<economy.reroll_price() or economy.rerolls>=100
+	_lock_shop_offer(reroll,economy.credits<economy.reroll_price() or economy.rerolls>=100)
 	var installed := PackedStringArray()
 	for id in economy.owned: installed.append(tr("MOD_"+id))
 	_label(tr("VIS_MODULES")+": "+(", ".join(installed) if not installed.is_empty() else "—"),Rect2(124,754,1160,68),page,24,DIM)
+	if economy.shop_locked(): _label(tr("SHOP_FULL"),Rect2(124,316,1160,24),page,18,DIM)
 	_button(tr("GUIDE_SHOP_NEXT" if campaign.active and profile==0 else "VIS_NEXT_SECTOR"),Rect2(124,836,570,64),page,func(): _show("game"),28)
 	_button(tr("VIS_BACK"),Rect2(714,836,570,64),page,func(): _show("menu"),28)
 func _simple_shop() -> void:
@@ -1435,19 +1442,17 @@ func _simple_shop() -> void:
 		var y: int=450+i*110
 		var buy:=_button(tr("MOD_"+id)+" / %d CR" % economy.price(id),Rect2(124,y,510,86),page,_buy_module.bind(id),26)
 		buy.name="SimpleOffer_"+id
-		buy.disabled=economy.credits<economy.price(id)
-		_label(tr("SIMPLE_DESC_"+id),Rect2(654,y,630,100),page,25)
+		_lock_shop_offer(buy,economy.credits<economy.price(id))
+		_label(tr("SIMPLE_DESC_"+id),Rect2(654,y,630,100),page,25,DIM if economy.shop_locked() else GREEN)
 	var installed:=PackedStringArray()
 	for id in economy.owned: installed.append(tr("MOD_"+id))
-	_label(tr("VIS_MODULES")+": "+(", ".join(installed) if not installed.is_empty() else "—"),Rect2(124,690,1160,116),page,24,DIM)
+	_label(tr("VIS_MODULES")+": "+(", ".join(installed) if not installed.is_empty() else "—"),Rect2(124,690,1160,74),page,24,DIM)
+	if economy.shop_locked(): _label(tr("SHOP_FULL"),Rect2(124,766,1160,54),page,23,DIM)
 	_button(tr("GUIDE_SHOP_NEXT"),Rect2(124,836,570,64),page,func(): _show("game"),28)
 	_button(tr("VIS_BACK"),Rect2(714,836,570,64),page,func(): _show("menu"),28)
 func _buy_module(id: String) -> void:
 	if not _shop_available() or screen!="shop": return
-	if economy.owned.size()>=economy.slot_limit() and economy.offers().has(id) and economy.credits>=economy.price(id):
-		replace_id = id
-		_show("replace")
-		return
+	if economy.shop_locked(): return
 	if economy.buy(id):
 		audio.play_event("module")
 		_apply_hp_cap()
@@ -1520,27 +1525,6 @@ func _buy_shield() -> void:
 		audio.play_event("purchase")
 		_save_session()
 		_show("shop")
-func _replacement() -> void:
-	if not _shop_available() or not economy.offers().has(replace_id):
-		_show("shop")
-		return
-	_label(tr("VIS_REPLACE_MODULE"),Rect2(124,194,1170,65),page,38,AMBER)
-	_label(tr("VIS_REPLACE_WARN")+"\n"+tr("MOD_"+replace_id)+" / %d CR" % economy.price(replace_id),Rect2(124,270,1170,110),page,28)
-	for i in range(economy.owned.size()):
-		var id: String = economy.owned[i]
-		_button(tr("MOD_"+id)+"  →  "+tr("MOD_"+replace_id),Rect2(124,400+i*90,1170,70),page,_confirm_replace.bind(id),27)
-	_button(tr("VIS_BACK"),Rect2(124,820,570,65),page,func(): _show("shop"),28)
-func _confirm_replace(id: String) -> void:
-	if not _shop_available() or screen!="replace": return
-	if economy.replace_module(id,replace_id):
-		audio.play_event("module")
-		_apply_hp_cap()
-		hints_left = _hint_limit()
-		rewinds_left = _rewind_limit()
-		replace_id = ""
-		_save_session()
-		_show("shop")
-
 func _max_hp() -> int:
 	return economy.max_hp(Profiles.HP[profile])
 func _apply_hp_cap() -> void:
@@ -2059,7 +2043,7 @@ func back_shortcut() -> bool:
 		"audio":"settings","accessibility":"settings","text_scale":"accessibility","confirm_run":"profiles","performance":"menu",
 		"classic":"modes","profiles":"modes","challenge":"challenges",
 		"archive_preview":"archives","gallery_preview":"gallery","archives":"gallery",
-		"campaign_archive":"campaign_route","rewrite_trial":"ending_choice","replace":"shop"
+		"campaign_archive":"campaign_route","rewrite_trial":"ending_choice"
 	}.get(screen,"menu")
 	_save_session()
 	_show(parent_screen)

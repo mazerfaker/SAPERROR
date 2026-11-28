@@ -242,7 +242,7 @@ func _lesson_tool() -> void:
 		phase += 1
 		if phase>=2: solved = board.clue(5,Rules.Rule.DIAGONAL)==1
 	elif step==7:
-		solved = practice.buy("ASSISTANT") and practice.owned.has("ASSISTANT") and practice.credits==45
+		solved = practice.buy("ASSISTANT") and practice.owned.has("ASSISTANT") and practice.credits==24
 	elif step==8:
 		if phase==0 and phantom.active() and phantom.value==board.clue(1,board.rule): phase=1
 		elif phase==1: solved = phantom.clear_zone() and not phantom.active()

@@ -34,7 +34,10 @@ func run() -> void:
 	e.begin_sector(2)
 	e.credits=500
 	var offer: String = e.offers()[0]
-	check(e.replace_module("CAPACITOR",offer) and e.owned.size()==4 and not e.owned.has("CAPACITOR") and e.owned.has(offer),"confirmed replacement")
+	var legacy: Dictionary=e.snapshot()
+	var old_save:=Economy.new()
+	old_save.restore(legacy,2,false)
+	check(old_save.owned.size()==4 and old_save.shop_locked() and not old_save.buy(offer),"grandfather four legacy modules without replacement")
 	var scene: PackedScene = load("res://scenes/game/gameplay.tscn") as PackedScene
 	var game = scene.instantiate()
 	root.add_child(game)
