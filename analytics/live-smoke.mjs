@@ -28,7 +28,7 @@ r = await request("/", {headers:{Authorization:auth}});
 status(r, 200, "authorized dashboard");
 const html=await r.text();
 assert.ok(html.includes("SAPERROR"), "dashboard content");
-if(pilot)assert.match(html,/id="pilot-token">[a-f0-9]{64}<\/code>/,"pilot token available only in private dashboard");
+if(pilot)assert.ok(/id="pilot-token">[a-f0-9]{64}<\/code>/.test(html),"pilot token available only in private dashboard");
 r = await request("/v2/session", {method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
 status(r,pilot?403:503,pilot?"pilot rejects unauthenticated writes":"ingestion disabled");
 console.log("Live smoke passed; no sessions written.");
