@@ -64,6 +64,7 @@ var telemetry: AnalyticsClient
 var analytics_consent_path: String=AnalyticsConsent.PATH
 var analytics_allowed: bool=false
 var analytics_save_error: bool=false
+var analytics_status_label: Label
 var high_contrast: bool=false
 var large_symbols: bool=false
 var clear_display: bool=false
@@ -740,8 +741,16 @@ func _privacy_settings() -> void:
 	toggle.name="AnalyticsConsent"
 	var note: String=tr("PRIVACY_SAVE_ERROR" if analytics_save_error else "PRIVACY_NOTE")
 	if not analytics_save_error and (telemetry==null or telemetry.endpoint.is_empty()): note+="\n"+tr("PRIVACY_OFFLINE")
-	_label(note,Rect2(124,650,1040,138),page,24,AMBER if analytics_save_error else DIM)
+	_label(note,Rect2(124,650,1040,112),page,22,AMBER if analytics_save_error else DIM)
+	analytics_status_label=_label(_analytics_status(),Rect2(124,765,1040,40),page,21,DIM)
 	_button(tr("VIS_BACK"),Rect2(124,810,350,57),page,func(): _show("settings"))
+func _analytics_status() -> String:
+	if telemetry==null or not telemetry.enabled(): return tr("PRIVACY_STATUS_OFF")
+	var state: String=tr("PRIVACY_STATUS_WAIT")
+	if telemetry.in_flight: state=tr("PRIVACY_STATUS_SENDING")
+	elif telemetry.last_http_code==204 and telemetry.last_transport_result==HTTPRequest.RESULT_SUCCESS: state=tr("PRIVACY_STATUS_OK")
+	elif telemetry.last_transport_result!=-1: state=tr("PRIVACY_STATUS_ERROR") % [telemetry.last_http_code,telemetry.last_transport_result]
+	return tr("PRIVACY_STATUS_TIME") % [floori(telemetry.active_seconds),telemetry.accepted_seconds,state]
 func _set_analytics_consent(value: bool) -> void:
 	# Headless test runs must not change the real player's preference.
 	if DisplayServer.get_name()=="headless" and analytics_consent_path==AnalyticsConsent.PATH: return
@@ -1247,6 +1256,7 @@ func _analytics_tick(delta: float) -> void:
 	if finished_id!=0: telemetry.outcome(finished_id,observed.won())
 func _process(delta: float) -> void:
 	_analytics_tick(delta)
+	if screen=="privacy" and is_instance_valid(analytics_status_label): analytics_status_label.text=_analytics_status()
 	immersion_cooldown=maxf(0.0,immersion_cooldown-delta)
 	_update_header_caret(delta)
 	if not protocol_active: return

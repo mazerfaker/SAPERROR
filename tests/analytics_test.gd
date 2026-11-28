@@ -92,6 +92,12 @@ func privacy_regression() -> void:
 	ui.telemetry.observe("classic",0,0,1.0)
 	var previous: String=ui.telemetry.session_id
 	privacy_check(previous.length()==32,"ephemeral session allocated")
+	for _i in range(299): ui.telemetry.observe("classic",0,0,1.0)
+	privacy_check(int(ui.telemetry.snapshot()["seconds"])==300,"five minutes active time captured")
+	ui.telemetry.in_flight_session_id=previous
+	ui.telemetry.in_flight_seconds=300
+	ui.telemetry._completed(HTTPRequest.RESULT_SUCCESS,204,PackedStringArray(),PackedByteArray())
+	privacy_check(ui.telemetry.accepted_seconds==300 and ui.telemetry.last_http_code==204,"acknowledged active seconds exposed")
 	ui.telemetry._completed(HTTPRequest.RESULT_CANT_CONNECT,0,PackedStringArray(),PackedByteArray())
 	privacy_check(ui.telemetry.dirty and not ui.telemetry.in_flight,"simulated offline completion does not block client")
 	ui._show("classic")

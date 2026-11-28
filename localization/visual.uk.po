@@ -1326,3 +1326,21 @@ msgstr "ADMIN: Одне останнє поле. Дванадцять на дв�
 msgid "PRIVACY_OFFLINE"
 msgstr "Сервер не підключено: дані не надсилаються."
 
+
+msgid "PRIVACY_STATUS_OFF"
+msgstr "Передавання вимкнено."
+
+msgid "PRIVACY_STATUS_WAIT"
+msgstr "Очікування"
+
+msgid "PRIVACY_STATUS_SENDING"
+msgstr "Надсилання"
+
+msgid "PRIVACY_STATUS_OK"
+msgstr "Сервер прийняв"
+
+msgid "PRIVACY_STATUS_ERROR"
+msgstr "Помилка HTTP %d / код %d"
+
+msgid "PRIVACY_STATUS_TIME"
+msgstr "Сесія: %d с | Прийнято: %d с | %s"

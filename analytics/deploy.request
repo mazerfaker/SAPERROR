@@ -1,1 +1,3 @@
 Deploy opt-in analytics, upgraded dashboard and retired pilot. Owner explicitly approved after real pilot. v4 consent required. Validate before distribution.
+
+RC8 dashboard hotfix: responsive dates and verified five-minute aggregate. No production test writes.

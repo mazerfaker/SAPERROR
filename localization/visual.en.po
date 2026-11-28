@@ -1326,3 +1326,21 @@ msgstr "ADMIN: One final field. Twelve by twelve. I will change the signal as yo
 msgid "PRIVACY_OFFLINE"
 msgstr "Server not configured: no data is sent."
 
+
+msgid "PRIVACY_STATUS_OFF"
+msgstr "Sending disabled."
+
+msgid "PRIVACY_STATUS_WAIT"
+msgstr "Waiting"
+
+msgid "PRIVACY_STATUS_SENDING"
+msgstr "Sending"
+
+msgid "PRIVACY_STATUS_OK"
+msgstr "Server accepted"
+
+msgid "PRIVACY_STATUS_ERROR"
+msgstr "Error HTTP %d / code %d"
+
+msgid "PRIVACY_STATUS_TIME"
+msgstr "Session: %d s | Accepted: %d s | %s"

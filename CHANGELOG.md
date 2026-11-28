@@ -1,4 +1,7 @@
 # Changelog
+### RC.8 analytics dashboard hotfix
+Responsive horizontal chart ticks without scrollbar, explicit empty state, initial submission after five seconds and subsequent 15-second updates, threaded transport, retry on immediate errors and local privacy diagnostics for measured/acknowledged time. Isolated five-minute aggregation and UI/client assertions; no production test sessions.
+
 ### RC.8 final release validation
 Synchronize game, Windows packaging and documentation versions. Expand isolated Godot privacy regression: missing and retired consent, actual settings toggle and restart persistence, denial, revocation, simulated transport failure, fresh session ID after opt-in, and offline Classic UI access. Require the RC8 privacy marker in CI. No gameplay or approved asset changes; no synthetic production sessions or automatic public release. Manual real-client and license acceptance remain open.
 
