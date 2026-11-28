@@ -8,6 +8,8 @@ const BossEmblem = preload("res://scripts/ui/boss_emblem.gd")
 var boss_identity: String = ""
 var reduced_motion: bool = false
 var emblem: BossEmblem
+# Embedded terminal views provide a dedicated slot outside the challenge body.
+var emblem_host: Control
 signal back
 signal clicked
 signal encounter_won
@@ -50,6 +52,9 @@ func button(value: String, pos: Vector2, extent: Vector2, cb: Callable) -> Butto
 	body.add_child(b)
 	return b
 func restart() -> void:
+	if is_instance_valid(emblem) and is_instance_valid(emblem_host) and emblem.get_parent()==emblem_host:
+		emblem_host.remove_child(emblem)
+		emblem.queue_free()
 	if is_instance_valid(body):
 		remove_child(body)
 		body.queue_free()
@@ -61,7 +66,7 @@ func restart() -> void:
 	model.start(kind,encounter_hp if campaign_encounter else 3)
 	var identity: String=boss_identity if not boss_identity.is_empty() else BossEmblem.resolve(kind)
 	emblem=null
-	var text_width: float=1060.0 if not identity.is_empty() else 1266.0
+	var text_width: float=1060.0 if not identity.is_empty() and not is_instance_valid(emblem_host) else 1266.0
 	var title_label:=label((encounter_title if not encounter_title.is_empty() else kind)+" // "+tr("CH_AUTHORED"),Vector2(0,0),Vector2(text_width,56),36)
 	label(tr("CH_"+kind+"_INTRO"),Vector2(0,62),Vector2(text_width,92),24 if not identity.is_empty() else 26)
 	if BossEmblem.ART.has(identity):
@@ -69,9 +74,14 @@ func restart() -> void:
 		emblem=BossEmblem.new()
 		emblem.boss_id=identity
 		emblem.reduced_motion=reduced_motion
-		emblem.position=Vector2(1070,0)
-		emblem.size=Vector2(196,154)
-		body.add_child(emblem)
+		if is_instance_valid(emblem_host):
+			emblem.position=Vector2.ZERO
+			emblem.size=emblem_host.size
+			emblem_host.add_child(emblem)
+		else:
+			emblem.position=Vector2(1070,0)
+			emblem.size=Vector2(196,154)
+			body.add_child(emblem)
 	if model.valid:
 		var grid := GridContainer.new()
 		grid.columns=Challenge.SIZE

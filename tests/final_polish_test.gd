@@ -1,5 +1,6 @@
 extends SceneTree
 const UI=preload("res://scripts/ui/terminal_ui.gd")
+const ChallengeUI=preload("res://scripts/ui/anomaly_challenge_ui.gd")
 const Access=preload("res://scripts/ui/accessibility.gd")
 const Profiles=preload("res://scripts/board/profiles.gd")
 const Rules=preload("res://scripts/board/rules.gd")
@@ -42,6 +43,35 @@ func run() -> void:
 			for screen in ["menu","settings","accessibility","text_scale","profiles","confirm_exit"]:
 				ui._show(screen)
 				check(ui.page.size==Vector2(1426,962),"fixed CRT page "+screen)
+	# Header feedback regression: caret keeps its layout and boss art cannot cover body text.
+	ui.reduced=false
+	ui.header_caret_elapsed=0.0
+	ui._update_header_caret(0.0)
+	check(ui.header_title.visible_characters==-1,"caret shown")
+	ui._update_header_caret(0.5)
+	check(ui.header_title.visible_characters==ui.header_title.text.length()-1,"only caret hidden")
+	ui._update_header_caret(0.5)
+	check(ui.header_title.visible_characters==-1,"caret returns")
+	ui.reduced=true
+	ui._update_header_caret(0.5)
+	check(ui.header_title.visible_characters==-1,"reduced motion static caret")
+	for scale in [0.75,1.0,1.25,1.5]:
+		ui.text_scale=scale
+		ui.theme=ui._terminal_theme()
+		ui._start_challenge("LIAR")
+		var slot: Control=ui.header_emblem_slot
+		check(slot.position.x+slot.size.x<=850.0 and slot.position.y+slot.size.y<153.0,"emblem fits before version and divider")
+		check(slot.get_child_count()==1,"single header emblem")
+		if slot.get_child_count()==1:
+			check(slot.get_child(0).size==Vector2(110,88),"native aspect header emblem")
+		var view:=ui.page.get_child(ui.page.get_child_count()-1) as ChallengeUI
+		check(is_instance_valid(view),"challenge view exists")
+		if is_instance_valid(view):
+			check(view.emblem.get_parent()==slot and view.tiles.size()==25,"emblem outside gameplay")
+			view.restart()
+			check(slot.get_child_count()==1 and view.emblem.get_parent()==slot,"retry keeps one header emblem")
+	ui._show("menu")
+	check(ui.header_emblem_slot.get_child_count()==0,"no stale emblem after navigation")
 	ui.queue_free()
 	await process_frame
 	var rules: Array[int]=[Rules.Rule.CLASSIC]

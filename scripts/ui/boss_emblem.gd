@@ -24,8 +24,9 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	if not ART.has(boss_id): return
 	var tex: Texture2D=ART[boss_id]
-	var scale_factor: float=minf(size.x/320.0,size.y/256.0)
-	var extent:=Vector2(320,256)*scale_factor
+	var native_size: Vector2=tex.get_size()
+	var scale_factor: float=minf(size.x/native_size.x,size.y/native_size.y)
+	var extent: Vector2=native_size*scale_factor
 	var rect:=Rect2((size-extent)*0.5,extent)
 	draw_texture_rect(tex,rect,false)
 	if not reduced_motion:

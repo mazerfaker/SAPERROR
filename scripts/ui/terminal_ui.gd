@@ -139,6 +139,10 @@ var style_bank := StyleBank.new()
 var last_visual_styles: Array=[]
 var refresh_style_writes: int=0
 var page: Control
+var header_title: Label
+var header_emblem_slot: Control
+var header_caret_elapsed: float=0.0
+const HEADER_CARET_INTERVAL: float=0.5
 var grid: GridContainer
 var message_key: String = "CORE_READY"
 var last_hits: int = 0
@@ -249,7 +253,7 @@ func _show(next: String) -> void:
 	inspect_result = ""
 	inspect_marks.clear()
 	hover_cell = -1
-	_label("SAPERROR ▌",Rect2(88,52,800,92),page,72)
+	_build_terminal_header()
 	var version := _label("MINE // 0.9.0-rc2",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
@@ -296,6 +300,24 @@ func _show(next: String) -> void:
 	if screen in ["confirm_run","confirm_exit"]:
 		var cancel:=page.find_child("ConfirmCancel",true,false) as Button
 		if is_instance_valid(cancel): cancel.grab_focus()
+func _build_terminal_header() -> void:
+	header_title=_label("SAPERROR ▌",Rect2(88,52,620,92),page,72)
+	header_title.name="TerminalHeaderTitle"
+	header_title.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	var font_size: int=header_title.get_theme_font_size("font_size")
+	var title_width: float=theme.default_font.get_string_size(header_title.text,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x
+	header_emblem_slot=Control.new()
+	header_emblem_slot.name="HeaderEmblemSlot"
+	header_emblem_slot.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	var slot_x: float=88.0+title_width+20.0
+	_place(header_emblem_slot,Rect2(slot_x,54,110,88),page)
+	_update_header_caret(0.0)
+func _update_header_caret(delta: float) -> void:
+	header_caret_elapsed=fposmod(header_caret_elapsed+delta,HEADER_CARET_INTERVAL*2.0)
+	if not is_instance_valid(header_title): return
+	var shown: bool=reduced or header_caret_elapsed<HEADER_CARET_INTERVAL
+	var count: int=-1 if shown else header_title.text.length()-1
+	if header_title.visible_characters!=count: header_title.visible_characters=count
 func _menu() -> void:
 	_label(tr("VIS_BOOT"),Rect2(124,190,1170,80),page,36)
 	_label(tr("VIS_TAGLINE"),Rect2(124,266,1170,62),page,28,DIM)
@@ -1022,6 +1044,7 @@ func _protocol_lines(count: int) -> void:
 		lines.append("> "+tr("K30_"+str(i)))
 	protocol_log.text = "\n\n".join(lines)
 func _process(delta: float) -> void:
+	_update_header_caret(delta)
 	if not protocol_active: return
 	if protocol_finished:
 		protocol_finish_elapsed += delta
@@ -1437,6 +1460,7 @@ func _start_challenge(id: String) -> void:
 	_show("challenge")
 func _challenge() -> void:
 	var challenge := ChallengeUI.new()
+	challenge.emblem_host=header_emblem_slot
 	challenge.reduced_motion=reduced
 	challenge.kind=challenge_kind
 	challenge.position=Vector2(80,180)
@@ -1495,6 +1519,7 @@ func _campaign_boss() -> void:
 		_show("ending_choice" if sector_number==10 else "menu")
 		return
 	var trial := ChallengeUI.new()
+	trial.emblem_host=header_emblem_slot
 	trial.reduced_motion=reduced
 	trial.kind=kind
 	trial.boss_identity=id
@@ -1578,6 +1603,7 @@ func _campaign_route() -> void:
 func _campaign_archive() -> void:
 	if not pending_sector or not campaign.archive_pending(sector_number): return
 	var trial := ChallengeUI.new()
+	trial.emblem_host=header_emblem_slot
 	trial.reduced_motion=reduced
 	trial.kind=Campaign.ARCHIVES[sector_number]
 	trial.campaign_encounter=true
@@ -1602,11 +1628,11 @@ func _campaign_archive() -> void:
 func _admin_intro() -> void:
 	if not campaign.active or not pending_sector or campaign.boss_pending(sector_number)!="ADMIN": return
 	_label("ADMIN // ROOT ACCESS",Rect2(124,215,1170,90),page,48,RED)
-	_label(tr("CAM_ADMIN_INTRO"),Rect2(124,330,790,350),page,32)
+	_label(tr("CAM_ADMIN_INTRO"),Rect2(124,330,1170,350),page,32)
 	var emblem:=BossEmblem.new()
 	emblem.boss_id="ADMIN"
 	emblem.reduced_motion=reduced
-	_place(emblem,Rect2(930,310,390,312),page)
+	_place(emblem,Rect2(Vector2.ZERO,header_emblem_slot.size),header_emblem_slot)
 	_button(tr("CAM_ENTER"),Rect2(124,810,570,60),page,func(): _show("campaign_boss"))
 	_button(tr("VIS_BACK"),Rect2(714,810,570,60),page,func(): _show("menu"))
 	if not campaign.admin_intro_seen:
@@ -1633,6 +1659,7 @@ func _ending_choice() -> void:
 func _rewrite_trial() -> void:
 	if not campaign.cleared.has(10) or campaign.records.size()!=3 or campaign.rewrite_done or not campaign.ending.is_empty(): return
 	var trial := ChallengeUI.new()
+	trial.emblem_host=header_emblem_slot
 	trial.reduced_motion=reduced
 	trial.kind="REWRITE"
 	trial.campaign_encounter=true
