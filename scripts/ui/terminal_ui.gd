@@ -267,7 +267,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_build_terminal_header()
-	var version := _label("0.9.0-rc4",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("0.9.0-rc5",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -365,6 +365,7 @@ func _start_profile(next_profile: int, story: bool = false, finite: bool = false
 	if protocol_active: return
 	campaign=Campaign.new()
 	campaign.active=story
+	campaign.streamlined=story
 	finite_run=finite and not story
 	finite_selected=false
 	campaign_selected=false
@@ -375,6 +376,7 @@ func _start_profile(next_profile: int, story: bool = false, finite: bool = false
 	sector_ready = true
 	profile = next_profile
 	economy.reset(profile)
+	economy.streamlined=campaign.active and campaign.streamlined
 	run_hp = Profiles.HP[profile]
 	sector_start_hp = run_hp
 	protected_hits = 0
@@ -490,6 +492,7 @@ func _load_session() -> void:
 	active_seed = int(cfg.get_value("run","seed",1701))
 	seed_value = str(active_seed)
 	economy.reset(profile)
+	economy.streamlined=campaign.active and campaign.streamlined
 	run_hp = clampi(int(cfg.get_value("run","hp",Profiles.HP[profile])),1,Profiles.HP[profile])
 	sector_start_hp = run_hp
 	protected_hits = 0
@@ -700,7 +703,7 @@ func _apply() -> void:
 func _game() -> void:
 	var left := _panel(Rect2(80,180,284,608))
 	var right := _panel(Rect2(1062,180,284,608))
-	_label(tr("VIS_SECTOR")+" %02d" % sector_number,Rect2(16,17,252,50),left,32)
+	_label(tr("VIS_SECTOR")+(" %02d/10" if _simple_campaign() else " %02d") % sector_number,Rect2(16,17,252,50),left,32)
 	if campaign.active: _label("ACT %d // %s" % [campaign.act_index(sector_number)+1,Campaign.ACT_IDS[campaign.act_index(sector_number)]],Rect2(16,65,252,22),left,17,AMBER)
 	if campaign.active:
 		_label(tr("VIS_PROFILE_"+Profiles.IDS[profile].to_upper()),Rect2(16,92,252,32),left,21,DIM)
@@ -776,12 +779,12 @@ func _game() -> void:
 		last_visual_styles.append([])
 	status = _label("",Rect2(86,794,1250,46),page,31)
 	var seed_caption:=_label(tr("CORE_SEED"),Rect2(86,850,100,54),page,28)
-	seed_caption.visible=not _guided_early()
+	seed_caption.visible=not (_guided_early() or _simple_campaign())
 	seed_input = LineEdit.new()
 	seed_input.text = str(active_seed) if board != null else seed_value
 	seed_input.editable = board == null
 	_place(seed_input,Rect2(184,844,230,60),page)
-	seed_input.visible=not _guided_early()
+	seed_input.visible=not (_guided_early() or _simple_campaign())
 	next_button = _button(tr("CORE_NEW"),Rect2(430,844,470,60),page,func():
 		if pending_sector:
 			_advance_sector()
@@ -831,7 +834,7 @@ func _reveal(i: int) -> void:
 		sector_start_hp = clampi(run_hp,1,_max_hp())
 		protected_hits = 0
 		board = Board.new(Profiles.SIZES[profile],Profiles.SIZES[profile],generated["mask"],sector_start_hp)
-		anomaly_plan=Synergy.plan(profile,sector_number)
+		anomaly_plan=Synergy.campaign_plan(profile,sector_number) if _simple_campaign() else Synergy.plan(profile,sector_number)
 		sessions += 1
 		sector_ready = false
 	if board.finished() or board.cells[i] != Board.Cell.CLOSED: return
@@ -899,7 +902,7 @@ func _after_action(sound: String = "") -> void:
 		else:
 			parasite_sector=(anomaly_plan&Synergy.PARASITE)!=0
 			phantom_sector=(anomaly_plan&Synergy.PHANTOM)!=0
-		anomaly_event=phantom.advance(board,phantom_sector,economy.owned.has("SHIELDING"))
+		anomaly_event=phantom.advance(board,phantom_sector,economy.owned.has("SHIELDING") or (_simple_campaign() and economy.owned.has("STABILIZER")))
 		infection_event=parasite.advance(board,parasite_sector,economy.owned.has("STABILIZER"))
 	_clear_inspection()
 	hint_cell = -1
@@ -1038,6 +1041,7 @@ func _refresh() -> void:
 	flag_count.text = tr("VIS_FLAGS")+"\n%d / %d" % [flags,Profiles.MINES[profile] if board == null else board.mine_total]
 	_refresh_tools()
 	_refresh_field_guide()
+	_refresh_simple_hud()
 	_refresh_transmission()
 
 # Hidden input is intercepted before forwarding normal UI key events.
@@ -1198,7 +1202,8 @@ func _request_hint() -> void:
 func _cycle_rule() -> void:
 	if protocol_active or board==null or board.finished(): return
 	_clear_inspection()
-	board.rule = (board.rule+1)%Tools.NAMES.size()
+	if _simple_campaign() and sector_number<4 and board.rule==Rules.Rule.CLASSIC: return
+	board.rule = (board.rule+1)%(2 if _simple_campaign() else Tools.NAMES.size())
 	hint_cell = -1
 	hint_sources.clear()
 	message_key = "VIS_RULE_CHANGED"
@@ -1237,8 +1242,30 @@ func _refresh_transmission() -> void:
 	narrative_label.add_theme_font_size_override("font_size",Access.fit_font(theme.default_font,value,21,text_scale,Vector2(252,136),true))
 	narrative_label.add_theme_color_override("font_color",Access.readable(AMBER if value.begins_with("ECHO:") else GREEN,high_contrast))
 	narrative_tween=_animate_transmission(narrative_label)
+func _simple_campaign() -> bool:
+	return campaign.active and campaign.streamlined
 func _guided_early() -> bool:
 	return campaign.active and profile==0 and sector_number<=3
+func _refresh_simple_hud() -> void:
+	if not _simple_campaign(): return
+	if not _guided_early():
+		var rules_available: bool=sector_number>=4 or (board!=null and board.rule!=Rules.Rule.CLASSIC)
+		guide_rule_title.visible=rules_available
+		guide_rule_help.visible=rules_available
+		rule_button.visible=rules_available
+	hint_button.visible=true
+	hint_button.text=tr("SIMPLE_HINT")+" [%d]" % (hints_left+economy.stock)
+	rewind_button.visible=rewinds_left>0 and (not _guided_early() or sector_number>=2 or (board!=null and board.hits>0))
+	rewind_button.text=tr("SIMPLE_UNDO")+" [%d]" % rewinds_left
+	analyzer_button.visible=false
+	shield_button.visible=economy.shield_stock>0 or economy.shield_armed
+	third_button.visible=economy.owned.has("THIRD_EYE")
+	journal_button.visible=phantom.active() or not _journal_entries().is_empty()
+	cleanse_button.visible=phantom.active() or parasite.active()
+	flag_count.visible=false
+	integrity.text=tr("SIMPLE_HEALTH")+"\n%d / %d" % [run_hp if board==null else board.hp,_max_hp()]
+	recovered.text=tr("SIMPLE_PROGRESS")+"\n%d / %d" % [0 if board==null else board.opened,Profiles.SIZES[profile]*Profiles.SIZES[profile]-Profiles.MINES[profile] if board==null else board.cells.size()-board.mine_total]
+	if pending_sector: next_button.text=tr("GUIDE_NEXT")
 func _refresh_field_guide() -> void:
 	if not _guided_early() or not is_instance_valid(guide_label): return
 	var advanced_rule: bool=board!=null and board.rule!=Rules.Rule.CLASSIC
@@ -1325,6 +1352,9 @@ func _shop() -> void:
 	if not _shop_available():
 		_show("game")
 		return
+	if _simple_campaign():
+		_simple_shop()
+		return
 	_label((tr("GUIDE_SHOP") if campaign.active and profile==0 else tr("VIS_SHOP"))+" // %02d" % sector_number,Rect2(124,185,1160,65),page,40)
 	_label("CR %d  |  HP %d/%d  |  %s %d/%d  |  %s %d/4" % [economy.credits,run_hp,_max_hp(),tr("VIS_STOCK"),economy.stock,economy.capacity(),tr("VIS_MODULES"),economy.owned.size()],Rect2(124,256,1170,60),page,27,AMBER)
 	var offers: Array[String] = economy.offers()
@@ -1347,9 +1377,29 @@ func _shop() -> void:
 	_label(tr("VIS_MODULES")+": "+(", ".join(installed) if not installed.is_empty() else "—"),Rect2(124,754,1160,68),page,24,DIM)
 	_button(tr("GUIDE_SHOP_NEXT" if campaign.active and profile==0 else "VIS_NEXT_SECTOR"),Rect2(124,836,570,64),page,func(): _show("game"),28)
 	_button(tr("VIS_BACK"),Rect2(714,836,570,64),page,func(): _show("menu"),28)
+func _simple_shop() -> void:
+	_label(tr("GUIDE_SHOP")+" // %02d" % sector_number,Rect2(124,185,1160,65),page,40)
+	_label("%d CR  |  %s %d/%d  |  %s %d/%d" % [economy.credits,tr("SIMPLE_HEALTH"),run_hp,_max_hp(),tr("VIS_MODULES"),economy.owned.size(),economy.slot_limit()],Rect2(124,256,1170,60),page,27,AMBER)
+	var repair:=_button(tr("SIMPLE_REPAIR")+" / %d CR" % economy.repair_price(),Rect2(124,340,510,86),page,_repair,26)
+	repair.name="SimpleRepair"
+	repair.disabled=run_hp>=_max_hp() or economy.credits<economy.repair_price()
+	_label(tr("SIMPLE_REPAIR_DESC"),Rect2(654,340,630,86),page,25)
+	var offers: Array[String]=economy.offers()
+	for i in range(offers.size()):
+		var id: String=offers[i]
+		var y: int=450+i*110
+		var buy:=_button(tr("MOD_"+id)+" / %d CR" % economy.price(id),Rect2(124,y,510,86),page,_buy_module.bind(id),26)
+		buy.name="SimpleOffer_"+id
+		buy.disabled=economy.credits<economy.price(id)
+		_label(tr("SIMPLE_DESC_"+id),Rect2(654,y,630,100),page,25)
+	var installed:=PackedStringArray()
+	for id in economy.owned: installed.append(tr("MOD_"+id))
+	_label(tr("VIS_MODULES")+": "+(", ".join(installed) if not installed.is_empty() else "—"),Rect2(124,690,1160,116),page,24,DIM)
+	_button(tr("GUIDE_SHOP_NEXT"),Rect2(124,836,570,64),page,func(): _show("game"),28)
+	_button(tr("VIS_BACK"),Rect2(714,836,570,64),page,func(): _show("menu"),28)
 func _buy_module(id: String) -> void:
 	if not _shop_available() or screen!="shop": return
-	if economy.owned.size()>=Economy.MAX_MODULES and economy.offers().has(id) and economy.credits>=economy.price(id):
+	if economy.owned.size()>=economy.slot_limit() and economy.offers().has(id) and economy.credits>=economy.price(id):
 		replace_id = id
 		_show("replace")
 		return
@@ -1485,7 +1535,7 @@ func _inspect_target(i: int) -> void:
 	_save_session()
 
 func _free_cleanse() -> bool:
-	return economy.owned.has("HOTFIX") and not phantom.hotfix_used and not parasite.hotfix_used
+	return (economy.owned.has("HOTFIX") or (_simple_campaign() and economy.owned.has("STABILIZER"))) and not phantom.hotfix_used and not parasite.hotfix_used
 func _journal_entries() -> Array[String]:
 	var entries: Array[String]=[]
 	if board==null: return entries
@@ -1670,6 +1720,7 @@ func _retry_checkpoint() -> void:
 	active_seed=int(act_checkpoint.get("seed",1701))
 	seed_value=str(active_seed)
 	economy.reset(profile)
+	economy.streamlined=campaign.active and campaign.streamlined
 	economy.restore(data,target,false)
 	run_hp=clampi(int(act_checkpoint.get("hp",1)),1,_max_hp())
 	sector_start_hp=run_hp

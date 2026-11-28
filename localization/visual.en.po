@@ -1031,3 +1031,39 @@ msgstr "ECHO: ADMIN sealed this log after Incident 17. We can recover it."
 
 msgid "NARR_ARCHIVE_08"
 msgstr "ECHO: This is our last chance to learn what the station remembers."
+
+msgid "SIMPLE_HINT"
+msgstr "Hint"
+
+msgid "SIMPLE_UNDO"
+msgstr "Undo move"
+
+msgid "SIMPLE_HEALTH"
+msgstr "Health"
+
+msgid "SIMPLE_PROGRESS"
+msgstr "Progress"
+
+msgid "SIMPLE_REPAIR"
+msgstr "Restore health"
+
+msgid "SIMPLE_REPAIR_DESC"
+msgstr "Restore one health point."
+
+msgid "SIMPLE_DESC_ASSISTANT"
+msgstr "One extra free hint per sector."
+
+msgid "SIMPLE_DESC_CHRONOMANCER"
+msgstr "Undo one additional move per sector."
+
+msgid "SIMPLE_DESC_SECOND_LIFE"
+msgstr "The first mine hit in a sector does not cost health."
+
+msgid "SIMPLE_DESC_THIRD_EYE"
+msgstr "Check how many mines are in a 3×3 group once per sector."
+
+msgid "SIMPLE_DESC_STABILIZER"
+msgstr "Suppress the first PHANTOM effect, delay PARASITE and get one free cleanse per sector."
+
+msgid "SIMPLE_DESC_ARCHIVIST"
+msgstr "Earn 10 extra credits for recovering an optional archive."

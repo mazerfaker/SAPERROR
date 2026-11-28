@@ -1,6 +1,7 @@
 extends SceneTree
 const UI=preload("res://scripts/ui/terminal_ui.gd")
 const ChallengeUI=preload("res://scripts/ui/anomaly_challenge_ui.gd")
+const Campaign=preload("res://scripts/run/campaign.gd")
 const Access=preload("res://scripts/ui/accessibility.gd")
 const Profiles=preload("res://scripts/board/profiles.gd")
 const Rules=preload("res://scripts/board/rules.gd")
@@ -75,6 +76,22 @@ func run() -> void:
 		TranslationServer.set_locale(lang)
 		for id in ["NARR_SECTOR_01","NARR_SECTOR_02","NARR_SECTOR_03","NARR_SECTOR_04","NARR_SECTOR_05","NARR_SECTOR_06","NARR_SECTOR_07","NARR_SECTOR_08","NARR_SECTOR_09","NARR_SECTOR_10","NARR_CLEAR_01","NARR_CLEAR_02","NARR_CLEAR_03","NARR_CLEAR_04","NARR_CLEAR_05","NARR_CLEAR_06","NARR_CLEAR_07","NARR_CLEAR_08","NARR_CLEAR_09","NARR_CLEAR_10","NARR_HIT_FIRST","NARR_HIT_REPEAT","NARR_LOSS","NARR_PHANTOM","NARR_PARASITE","NARR_ARCHIVE_02","NARR_ARCHIVE_05","NARR_ARCHIVE_08"]:
 			check(TranslationServer.translate(id)!=id,"narrative translation "+lang+" "+id)
+	ui._start_profile(0,true)
+	check(ui.campaign.streamlined and ui.economy.streamlined,"new campaign simplified")
+	ui.campaign.acknowledge(1)
+	ui._show("game")
+	check(not ui.analyzer_button.visible and not ui.flag_count.visible and not ui.seed_input.visible,"simple HUD")
+	ui._reveal(0)
+	if ui.board!=null and not ui.board.finished():
+		ui._cycle_rule()
+		check(ui.board.rule==0,"first sector classic only")
+	var saved_campaign: Dictionary=ui.campaign.snapshot()
+	var restored_campaign:=Campaign.new()
+	check(restored_campaign.restore(saved_campaign,1) and restored_campaign.streamlined,"campaign option persists")
+	saved_campaign.erase("streamlined")
+	check(restored_campaign.restore(saved_campaign,1) and not restored_campaign.streamlined,"old campaigns remain compatible")
+	ui._start_profile(1)
+	check(not ui.economy.streamlined and ui.economy.slot_limit()==4,"free run legacy economy")
 	# Header feedback regression: caret keeps its layout and boss art cannot cover body text.
 	ui.reduced=false
 	ui.header_caret_elapsed=0.0

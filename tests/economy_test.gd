@@ -51,6 +51,19 @@ func run() -> void:
 	check(e.buy_charge() and e.stock==1 and e.credits==before-12,"charge purchase")
 	before = e.credits
 	check(e.reroll() and e.credits==before-8 and e.reroll_price()==12,"reroll")
+	var simple:=Economy.new()
+	simple.reset(0)
+	simple.streamlined=true
+	simple.credits=500
+	simple.begin_sector(2)
+	check(simple.slot_limit()==3 and simple.offers().size()==2,"simple shop slots and offers")
+	for sector in range(2,11):
+		simple.begin_sector(sector)
+		for id in simple.offers(): check(Economy.SIMPLE_MODULES.has(id),"simple offer pool")
+	check(not simple.buy_charge() and not simple.buy_shield() and not simple.reroll(),"no optional resource management")
+	simple.owned.assign(["ASSISTANT","CHRONOMANCER","SECOND_LIFE"])
+	var replacement: String=simple.offers()[0]
+	check(not simple.buy(replacement) and simple.replace_module("ASSISTANT",replacement),"simple slot replacement")
 	var scene: PackedScene = load("res://scenes/game/gameplay.tscn") as PackedScene
 	var game = scene.instantiate()
 	root.add_child(game)

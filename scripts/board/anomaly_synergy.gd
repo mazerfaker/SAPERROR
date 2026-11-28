@@ -12,6 +12,14 @@ static func plan(profile: int,sector: int) -> int:
 	if profile==1: return PHANTOM|PORTAL if portal else PHANTOM|PARASITE
 	if profile==2: return PARASITE|PORTAL if portal else PHANTOM|PARASITE
 	return PHANTOM|PARASITE|PORTAL
+static func campaign_plan(profile: int,sector: int) -> int:
+	if profile>=2: return plan(profile,sector)
+	match sector:
+		4: return PHANTOM
+		5: return PARASITE
+		7: return PORTAL
+		8: return PHANTOM
+	return 0
 static func valid(mask: int,profile: int) -> bool:
 	if mask==LEGACY: return true
 	if mask<0 or mask>7 or profile<0 or profile>3: return false
