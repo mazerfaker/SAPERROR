@@ -1,4 +1,7 @@
 # Changelog
+### RC.6 fixed-raster CRT mask and LIAR cleanup
+Power transitions reveal and cover the stationary CRT raster through a separate foreground mask; never scale the main menu. Shorten the complete startup and shutdown timelines by one third, retaining blank opening, caret, full DOS transcript and final black frames. Remove the dark horizontal stripe from the central LIAR exclamation mark. Add a native pixel-position regression test. Resolve installer compiler inputs to absolute Windows paths after CS1504.
+
 ### RC.6 installer-specific icon
 Both Setup frontends and shared backend use the approved red glitch gear ICO, independent of the installed game icon. Build gate verifies exact ICO hash and embedded frontend icons.
 

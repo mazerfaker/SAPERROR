@@ -193,13 +193,12 @@ func _on_outcome(won: bool) -> void:
 	outcome = 1.0
 	outcome_sign = 1.0 if won else -1.0
 func _apply_lifecycle() -> void:
-	# Compress the actual raster vertically and mask everything outside its aperture.
-	# The mask sits above all other filters. Both use the same lifecycle clock.
+	# The fixed-size raster is never transformed by power transitions.
+	# Only the separate foreground mask reveals or covers the image from its center.
 	_set_crt("power",1.0)
 	_set_crt("beam",1.0)
 	var active: bool=lifecycle.phase!=Lifecycle.Phase.READY
 	var aperture: float=lifecycle.beam() if active else 1.0
-	_set_crt("vertical_aperture",maxf(0.004,aperture))
 	if not is_instance_valid(power_layer): return
 	power_layer.visible=active
 	if not active: return

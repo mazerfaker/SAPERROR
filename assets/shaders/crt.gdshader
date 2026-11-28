@@ -11,7 +11,6 @@ uniform float motion = 1.0;
 uniform float flicker = 0.0;
 uniform float power = 1.0;
 uniform float beam = 1.0;
-uniform float vertical_aperture = 1.0;
 uniform float outcome = 0.0;
 uniform float immersion_pulse = 0.0;
 uniform float immersion_mode = 0.0;
@@ -48,8 +47,6 @@ float periodic_mask(float coord, float period) {
 
 void fragment() {
 	vec2 p = UV*2.0-1.0;
-	// The visible image itself stretches from the central line, rather than fading in.
-	p.y = clamp(p.y/max(vertical_aperture,0.004),-1.0,1.0);
 	float r2 = dot(p,p);
 	// Match Geometry.warp() exactly. Bulge never depends on strength.
 	vec2 q = (p*(1.0+bulge*r2)/(1.0+2.0*bulge)+1.0)*0.5;

@@ -12,6 +12,8 @@ func check(ok: bool,message: String) -> void:
 func _initialize() -> void:
 	call_deferred("run")
 func run() -> void:
+	var liar_source: String=FileAccess.get_file_as_string("res://assets/narrative/bosses/liar.svg")
+	check(not liar_source.contains("M142 130h36") and liar_source.contains("M160 85v59"),"LIAR central exclamation unobstructed")
 	for id in BossEmblem.ART:
 		var art: Texture2D=BossEmblem.ART[id]
 		check(art!=null and art.get_size()==Vector2(320,256),"real imported SVG "+id)

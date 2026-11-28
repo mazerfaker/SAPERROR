@@ -23,7 +23,7 @@ $csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if (!(Test-Path $csc)) { throw '.NET Framework C# compiler missing' }
 foreach ($theme in @('CRT','Retro98')) {
   $out = "build/installer/SAPERROR_Setup_$theme.exe"
-  $args = @('/nologo','/target:winexe','/platform:x64','/optimize+','/codepage:65001','/reference:System.Windows.Forms.dll','/reference:System.Drawing.dll',"/out:$out",'/win32icon:installer/setup_icon.ico','/resource:build/installer/SAPERROR_Backend.exe,setup.payload','/resource:installer/setup_art.png,setup.art','installer/SetupWindow.cs')
+  $args = @('/nologo','/target:winexe','/platform:x64','/optimize+','/codepage:65001','/reference:System.Windows.Forms.dll','/reference:System.Drawing.dll',"/out:$out",('/win32icon:'+(Resolve-Path 'installer/setup_icon.ico').Path),('/resource:'+(Resolve-Path 'build/installer/SAPERROR_Backend.exe').Path+',setup.payload'),('/resource:'+(Resolve-Path 'installer/setup_art.png').Path+',setup.art'),(Resolve-Path 'installer/SetupWindow.cs').Path)
   if ($theme -eq 'CRT') { $args += '/define:CRT' }
   & $csc @args
   if ($LASTEXITCODE -ne 0 -or !(Test-Path $out)) { throw "Failed to compile $theme Setup" }

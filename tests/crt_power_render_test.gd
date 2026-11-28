@@ -25,6 +25,18 @@ func mean(img: Image, area: Rect2i) -> float:
 			total+=(c.r+c.g+c.b)/3.0
 			n+=1
 	return total/float(maxi(n,1))
+# Compare a visible patch at identical screen coordinates before and during shutdown.
+# A stretched raster changes the pixels even where the aperture is fully open.
+func mean_difference(a: Image,b: Image,area: Rect2i) -> float:
+	var total: float=0.0
+	var count: int=0
+	for y in range(area.position.y,area.end.y,2):
+		for x in range(area.position.x,area.end.x,2):
+			var c: Color=a.get_pixel(x,y)
+			var d: Color=b.get_pixel(x,y)
+			total+=(absf(c.r-d.r)+absf(c.g-d.g)+absf(c.b-d.b))/3.0
+			count+=1
+	return total/float(maxi(count,1))
 # Read the real native viewport while the ordinary process callback advances the cursor.
 # No direct visibility toggling or fake rendered frames.
 func check_cursor(game, mode: String) -> void:
@@ -91,12 +103,12 @@ func run() -> void:
 	var screen:=Rect2i(590,180,710,465)
 	check(mean(dark,screen)<0.012 and mean(ready,screen)>mean(dark,screen)+0.012,"dark boot differs from visible menu")
 	# First line and blank partial-height screen, with top/bottom still black.
-	for i in range(5): game._process(0.05)
+	while game.lifecycle.elapsed<Life.BOOT_LINE_TIME*0.9: game._process(0.025)
 	var line: Image=await capture(vp,"boot_line")
 	var center:=Rect2i(640,410,620,6)
 	check(mean(line,center)>mean(dark,center)+0.015,"visible central phosphor line")
 	check(is_instance_valid(game.ui.boot_overlay) and not game.ui.page.visible and game.ui.boot_log.text.is_empty() and not game.ui.boot_log.visible and game.ui.boot_overlay.get_child_count()==1,"no DOS text on first line")
-	for i in range(8): game._process(0.05)
+	while game.lifecycle.elapsed<Life.BOOT_OPEN_TIME*0.55: game._process(0.025)
 	var warm: Image=await capture(vp,"boot_warm")
 	var top:=Rect2i(640,180,620,55)
 	var bottom:=Rect2i(640,590,620,55)
@@ -121,10 +133,14 @@ func run() -> void:
 	check(is_instance_valid(power),"real power button")
 	if is_instance_valid(power): power.pressed.emit()
 	check(game.lifecycle.phase==Life.Phase.SHUTDOWN,"actual button starts shutdown")
-	for i in range(12): game._process(0.05)
+	var shutdown_start: Image=await capture(vp,"shutdown_start")
+	while game.lifecycle.elapsed<Life.SHUTDOWN_CLOSE_TIME*0.5: game._process(0.025)
 	var fading: Image=await capture(vp,"shutdown")
 	check(mean(fading,top)<0.012 and mean(fading,bottom)<0.012,"shutdown collapses from both edges")
 	check(mean(fading,middle)>0.012 and game.lifecycle.power()==1.0,"middle remains illuminated without full-screen fade")
+	var visible_patch:=Rect2i(640,350,620,45)
+	check(mean(shutdown_start,visible_patch)>0.012,"comparison patch contains visible menu")
+	check(mean_difference(shutdown_start,fading,visible_patch)<0.008,"visible menu pixels remain fixed during mask closure")
 	while game.lifecycle.elapsed<Life.SHUTDOWN_CLOSE_TIME+0.03: game._process(0.05)
 	var close_line: Image=await capture(vp,"shutdown_line")
 	check(mean(close_line,center)>0.015 and mean(close_line,top)<0.012,"central line before power off")

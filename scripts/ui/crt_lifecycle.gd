@@ -1,13 +1,14 @@
 extends RefCounted
 enum Phase { BOOT, READY, SHUTDOWN, OFF }
-const BOOT_LINE_TIME: float=0.16
-const BOOT_OPEN_TIME: float=0.90
-const BIOS_TIME: float=5.00
-const BIOS_HOLD: float=0.50
+const POWER_TIME_SCALE: float=2.0/3.0
+const BOOT_LINE_TIME: float=0.16*POWER_TIME_SCALE
+const BOOT_OPEN_TIME: float=0.90*POWER_TIME_SCALE
+const BIOS_TIME: float=5.00*POWER_TIME_SCALE
+const BIOS_HOLD: float=0.50*POWER_TIME_SCALE
 const BOOT_TIME: float=BOOT_OPEN_TIME+BIOS_TIME+BIOS_HOLD
-const SHUTDOWN_CLOSE_TIME: float=0.85
-const SHUTDOWN_LINE_HOLD: float=0.16
-const SHUTDOWN_TIME: float=1.20
+const SHUTDOWN_CLOSE_TIME: float=0.85*POWER_TIME_SCALE
+const SHUTDOWN_LINE_HOLD: float=0.16*POWER_TIME_SCALE
+const SHUTDOWN_TIME: float=1.20*POWER_TIME_SCALE
 var phase: int = Phase.BOOT
 var elapsed: float = 0.0
 # CRT filters and power lifecycle are independent; explicit accessibility choices win.
