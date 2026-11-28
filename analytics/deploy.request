@@ -1,1 +1,1 @@
-Retry initial deployment: normalize credential whitespace, validate without printing, Node.js 24 actions. Ingestion remains disabled.
+Deploy tested Worker runtime entrypoint fix (95c9f8f). Production ingestion remains disabled; mandatory live smoke verifies auth, D1 and disabled ingestion. No game endpoint yet.

@@ -27,6 +27,10 @@ jobs:
           package-manager-cache: false
       - name: Test API and database
         run: node --test test/worker.test.mjs
+      - name: Verify production remains disabled
+        run: |
+          grep -Fx 'INGEST_ENABLED = "false"' wrangler.toml
+          grep -Fx 'analytics/endpoint=""' ../project.godot
       - name: Install Wrangler
         run: npm install --no-save --package-lock=false wrangler@4.169.0
       - name: Validate deployment credentials
@@ -55,3 +59,7 @@ jobs:
         run: |
           source ./deploy-env.sh
           printf '%s' "$DASHBOARD_PASSWORD" | npx --no-install wrangler secret put DASHBOARD_PASSWORD
+      - name: Verify deployed service and dashboard
+        env:
+          DASHBOARD_PASSWORD: ${{ secrets.SAPERROR_DASHBOARD_PASSWORD }}
+        run: node live-smoke.mjs
