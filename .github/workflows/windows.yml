@@ -255,6 +255,7 @@ jobs:
           }
           Copy-Item README.md build/windows/README.md
           Copy-Item LICENSES.md build/windows/LICENSES.md
+          Copy-Item PRIVACY.md build/windows/PRIVACY.md
           Copy-Item docs/FINAL_BETA_QA.md build/windows/FINAL_BETA_QA.md
           Copy-Item docs/RELEASE_CANDIDATE.md build/windows/RELEASE_CANDIDATE.md
           Copy-Item -Recurse licenses build/windows/licenses
@@ -270,7 +271,7 @@ jobs:
           # Inspect actual ZIP contents, not only the existence of output paths.
           Add-Type -AssemblyName System.IO.Compression.FileSystem
           $expected = @{
-            "SAPERROR_v${env:GAME_VERSION}_Windows_x64.zip" = @('SAPERROR.exe','SAPERROR.pck','README.md','LICENSES.md','FINAL_BETA_QA.md','SAPERROR.ico','licenses/godot/LICENSE.txt','licenses/godot/COPYRIGHT.txt','RELEASE_CANDIDATE.md')
+            "SAPERROR_v${env:GAME_VERSION}_Windows_x64.zip" = @('SAPERROR.exe','SAPERROR.pck','README.md','LICENSES.md','PRIVACY.md','FINAL_BETA_QA.md','SAPERROR.ico','licenses/godot/LICENSE.txt','licenses/godot/COPYRIGHT.txt','RELEASE_CANDIDATE.md')
             "SAPERROR_v${env:GAME_VERSION}_Source.zip" = @('project.godot','export_presets.cfg','docs/SAPERROR_GDD.md','assets/art/terminal_original.png','assets/live/config.json','assets/live/assets/base.png','assets/live/assets/paper_patch_overlay.png','assets/live/assets/audio/01_Old_Ballast(3).wav','assets/audio/finntastico-old-computer-click-152513.mp3','assets/audio/dragon-studio-glitch-effect-1-397982.mp3','assets/narrative/bosses/watcher.svg','assets/narrative/bosses/liar.svg','assets/narrative/bosses/loop.svg','assets/narrative/bosses/admin.svg','assets/narrative/acts/boot.svg','assets/narrative/acts/corruption.svg','assets/narrative/acts/echo.svg','assets/narrative/acts/admin.svg','assets/narrative/endings/shutdown.svg','assets/narrative/endings/containment.svg','assets/narrative/endings/rewrite.svg')
           }
           $expected["SAPERROR_v${env:GAME_VERSION}_Patch.zip"] = @('changes.patch','patch-base.txt')

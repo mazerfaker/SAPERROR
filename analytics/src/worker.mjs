@@ -9,6 +9,28 @@ async function authorized(req,env) {
  const a=await digest(input),b=await digest("admin:"+env.DASHBOARD_PASSWORD);
  let diff=0;for(let i=0;i<a.length;i++)diff|=a[i]^b[i];return diff===0;
 }
+const PILOT_VERSION="0.9.0-rc.7.pilot";
+async function pilotToken(env,bucket) {
+ const password=env.DASHBOARD_PASSWORD;
+ if(typeof password!=="string" || password.length<32)return "";
+ const enc=new TextEncoder();
+ const key=await crypto.subtle.importKey("raw",enc.encode(password),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+ const bytes=new Uint8Array(await crypto.subtle.sign("HMAC",key,enc.encode("SAPERROR-PILOT-v1:"+bucket)));
+ return Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");
+}
+async function pilotAllowed(req,env,now) {
+ const supplied=req.headers.get("X-SAPERROR-Pilot")||"";
+ if(!/^[a-f0-9]{64}$/.test(supplied))return false;
+ const bucket=Math.floor(now/3600);
+ let ok=0;
+ for(const period of [bucket,bucket-1]){
+  const expected=await pilotToken(env,period);
+  if(expected.length!==64)continue;
+  let diff=0;for(let i=0;i<64;i++)diff|=supplied.charCodeAt(i)^expected.charCodeAt(i);
+  ok|=Number(diff===0);
+ }
+ return ok===1;
+}
 async function boundedJson(req) {
  if(!req.body || !/^application\/json(?:;|$)/i.test(req.headers.get("content-type")||""))return null;
  const reader=req.body.getReader();let n=0;const parts=[];
@@ -32,9 +54,9 @@ async function summary(db,now) {
  return {totals,groups:groups.results,daily:daily.results,versions:versions.results};
 }
 const table=(head,rows)=>"<table><thead><tr>"+head.map(s=>"<th>"+esc(s)+"</th>").join("")+"</tr></thead><tbody>"+rows.map(row=>"<tr>"+row.map(s=>"<td>"+esc(s)+"</td>").join("")+"</tr>").join("")+"</tbody></table>";
-function dashboard(d) {
+function dashboard(d,pilotCode="") {
  const t=d.totals;const card=(label,value)=>"<section><small>"+esc(label)+"</small><strong>"+esc(value)+"</strong></section>";
- return '<!doctype html><html lang="uk"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="refresh" content="60"><title>SAPERROR // ANALYTICS</title><style>body{background:#09150e;color:#b6edb1;font:15px Consolas,monospace;max-width:1120px;margin:32px auto;padding:0 20px}h1{letter-spacing:.1em;font-size:26px;border-bottom:1px solid #54785b;padding-bottom:18px}h2{font-size:17px;margin-top:28px}small,p{color:#91b39a}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}section{border:1px solid #42654a;padding:18px;background:#0e2116}strong{display:block;font-size:28px;margin-top:12px}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:10px;border-bottom:1px solid #294b35}th{color:#e5b86c}.scroll{overflow:auto}a{color:inherit}</style><h1>SAPERROR // ANALYTICS ▌</h1><p>Закрита панель · останні 30 днів · оновлення щохвилини</p><div class="cards">'+card("Сесії",t.sessions)+card("Нещодавня активність (2 хв)",t.recent)+card("Години гри",(t.seconds/3600).toFixed(1))+card("Перемоги",t.wins)+card("Поразки",t.losses)+'</div><p>Сесії не дорівнюють унікальним гравцям. Дані добровільні, клієнтські й приблизні.</p><h2>Режими та складність</h2><div class="scroll">'+table(["Режим","Складність","Сесії","Хвилини","Перемоги","Поразки","Макс. сектор"],d.groups.map(r=>[r.mode,["Story","Standard","Expert","Hardcore","N/A"][r.difficulty],r.sessions,Math.round(r.seconds/60),r.wins,r.losses,r.sector]))+'</div><h2>Сесії за днем початку (UTC)</h2>'+table(["Дата","Сесії","Хвилини"],d.daily.map(r=>[r.day,r.sessions,Math.round(r.seconds/60)]))+'<h2>Версії</h2>'+table(["Версія","Сесії"],d.versions.map(r=>[r.version,r.sessions]))+'<p>Дані оновлюються не миттєво; короткі або офлайн-сесії можуть бути відсутні.</p></html>';
+ return '<!doctype html><html lang="uk"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="refresh" content="60"><title>SAPERROR // ANALYTICS</title><style>body{background:#09150e;color:#b6edb1;font:15px Consolas,monospace;max-width:1120px;margin:32px auto;padding:0 20px}h1{letter-spacing:.1em;font-size:26px;border-bottom:1px solid #54785b;padding-bottom:18px}h2{font-size:17px;margin-top:28px}small,p{color:#91b39a}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}section{border:1px solid #42654a;padding:18px;background:#0e2116}strong{display:block;font-size:28px;margin-top:12px}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:10px;border-bottom:1px solid #294b35}th{color:#e5b86c}.scroll{overflow:auto}a{color:inherit}</style><h1>SAPERROR // ANALYTICS ▌</h1><p>Закрита панель · останні 30 днів · оновлення щохвилини</p>'+ (pilotCode ? '<p style="color:#e5b86c">PILOT TEST ONLY · лише контрольні сесії. Тимчасовий код (1–2 години): <code id="pilot-token">'+esc(pilotCode)+'</code>. Не поширюй код. Дані позначаються версією .pilot.</p>' : '') + '<div class="cards">'+card("Сесії",t.sessions)+card("Нещодавня активність (2 хв)",t.recent)+card("Години гри",(t.seconds/3600).toFixed(1))+card("Перемоги",t.wins)+card("Поразки",t.losses)+'</div><p>Сесії не дорівнюють унікальним гравцям. Дані добровільні, клієнтські й приблизні.</p><h2>Режими та складність</h2><div class="scroll">'+table(["Режим","Складність","Сесії","Хвилини","Перемоги","Поразки","Макс. сектор"],d.groups.map(r=>[r.mode,["Story","Standard","Expert","Hardcore","N/A"][r.difficulty],r.sessions,Math.round(r.seconds/60),r.wins,r.losses,r.sector]))+'</div><h2>Сесії за днем початку (UTC)</h2>'+table(["Дата","Сесії","Хвилини"],d.daily.map(r=>[r.day,r.sessions,Math.round(r.seconds/60)]))+'<h2>Версії</h2>'+table(["Версія","Сесії"],d.versions.map(r=>[r.version,r.sessions]))+'<p>Дані оновлюються не миттєво; короткі або офлайн-сесії можуть бути відсутні.</p></html>';
 }
 export default {
  async fetch(req,env) {
@@ -42,11 +64,13 @@ export default {
    const url=new URL(req.url);const now=Math.floor(Date.now()/1000);
    if(url.pathname==="/health" && req.method==="GET")return json({ok:true,schema:2});
    if(url.pathname==="/v2/session" && req.method==="POST"){
-    if(env.INGEST_ENABLED!=="true")return json({error:"disabled"},503);
+    if(env.INGEST_ENABLED!=="true" && env.INGEST_ENABLED!=="pilot")return json({error:"disabled"},503);
     if(!env.INGEST_LIMIT)return json({error:"disabled"},503);
     const ip=req.headers.get("CF-Connecting-IP")||"unknown";
     if(!(await env.INGEST_LIMIT.limit({key:ip})).success)return json({error:"rate limit"},429);
+    if(env.INGEST_ENABLED==="pilot" && !await pilotAllowed(req,env,now))return json({error:"pilot authorization required"},403);
     const x=await boundedJson(req);if(!valid(x))return json({error:"invalid payload"},400);
+    if(env.INGEST_ENABLED==="pilot" && x.version!==PILOT_VERSION)return json({error:"pilot version required"},403);
     await env.DB.prepare(UPSERT).bind(x.id,x.version,x.mode,x.difficulty,x.seconds,x.wins,x.losses,x.sector,now,now).run();
     return reply(null,204);
    }
@@ -54,7 +78,7 @@ export default {
     if(!env.ADMIN_LIMIT || !(await env.ADMIN_LIMIT.limit({key:req.headers.get("CF-Connecting-IP")||"unknown"})).success)return reply("Rate limited",429);
     if(!await authorized(req,env))return reply("Authentication required",401,{"WWW-Authenticate":'Basic realm="SAPERROR Analytics", charset="UTF-8"'});
     const d=await summary(env.DB,now);
-    return url.pathname==="/" ? reply(dashboard(d),200,{"Content-Type":"text/html; charset=utf-8"}) : json(d);
+    return url.pathname==="/" ? reply(dashboard(d,env.INGEST_ENABLED==="pilot"?await pilotToken(env,Math.floor(now/3600)):""),200,{"Content-Type":"text/html; charset=utf-8"}) : json(d);
    }
    return reply("Not found",404);
   }catch{return json({error:"service unavailable"},503)}

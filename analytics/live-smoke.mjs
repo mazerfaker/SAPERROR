@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+const pilot=process.env.EXPECT_PILOT==="true";
 const origin = "https://saperror-analytics.vergil1705200.workers.dev";
 const password = process.env.DASHBOARD_PASSWORD;
 assert.ok(password && password.length >= 32, "Dashboard password missing or too short");
@@ -25,7 +26,9 @@ const d = await r.json();
 assert.ok(d.totals && Number.isInteger(d.totals.sessions) && d.totals.sessions >= 0, "D1 summary shape");
 r = await request("/", {headers:{Authorization:auth}});
 status(r, 200, "authorized dashboard");
-assert.ok((await r.text()).includes("SAPERROR"), "dashboard content");
+const html=await r.text();
+assert.ok(html.includes("SAPERROR"), "dashboard content");
+if(pilot)assert.match(html,/id="pilot-token">[a-f0-9]{64}<\/code>/,"pilot token available only in private dashboard");
 r = await request("/v2/session", {method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
-status(r, 503, "ingestion disabled");
+status(r,pilot?403:503,pilot?"pilot rejects unauthenticated writes":"ingestion disabled");
 console.log("Live smoke passed; no sessions written.");

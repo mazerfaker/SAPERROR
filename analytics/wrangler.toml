@@ -4,7 +4,7 @@ compatibility_date = "2026-11-28"
 workers_dev = true
 preview_urls = false
 [vars]
-INGEST_ENABLED = "false"
+INGEST_ENABLED = "pilot"
 [observability]
 enabled = false
 [[d1_databases]]

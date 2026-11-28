@@ -28,7 +28,7 @@ jobs:
           WRANGLER_SEND_METRICS: 'false'
         run: |
           npx --no-install wrangler d1 migrations apply DB --local --persist-to .wrangler/integration
-          npx --no-install wrangler dev --local --ip 127.0.0.1 --port 8787 --persist-to .wrangler/integration --var INGEST_ENABLED:true --var DASHBOARD_PASSWORD:synthetic-local-test-password-not-production > /tmp/saperror-worker.log 2>&1 &
+          npx --no-install wrangler dev --local --ip 127.0.0.1 --port 8787 --persist-to .wrangler/integration --var INGEST_ENABLED:pilot --var DASHBOARD_PASSWORD:synthetic-local-test-password-not-production > /tmp/saperror-worker.log 2>&1 &
           worker_pid=$!
           trap 'kill "$worker_pid" 2>/dev/null || true; cat /tmp/saperror-worker.log' EXIT
           node test/integration.mjs

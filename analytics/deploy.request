@@ -1,1 +1,1 @@
-Deploy tested Worker runtime entrypoint fix (95c9f8f). Production ingestion remains disabled; mandatory live smoke verifies auth, D1 and disabled ingestion. No game endpoint yet.
+Deploy controlled pilot only: HMAC token from authenticated dashboard, explicit client v3 consent, pilot version restricted, no public release. Verify live unauthorized writes rejected.

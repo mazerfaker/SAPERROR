@@ -180,7 +180,11 @@ func _ready() -> void:
 	if DisplayServer.get_name()!="headless" or analytics_consent_path!=AnalyticsConsent.PATH:
 		analytics_allowed=AnalyticsConsent.allowed(analytics_consent_path)
 	telemetry=AnalyticsClient.new()
-	telemetry.configure(str(ProjectSettings.get_setting("saperror/analytics/endpoint","")))
+	var analytics_endpoint: String=str(ProjectSettings.get_setting("saperror/analytics/endpoint",""))
+	if bool(ProjectSettings.get_setting("saperror/analytics/pilot_only",true)):
+		telemetry.configure_pilot(analytics_endpoint,OS.get_environment("SAPERROR_ANALYTICS_PILOT"),str(ProjectSettings.get_setting("saperror/analytics/pilot_version","")))
+	else:
+		telemetry.configure(analytics_endpoint)
 	telemetry.set_permission(analytics_allowed)
 	add_child(telemetry)
 	warning_pending=require_content_warning and not warning_acknowledged
@@ -740,6 +744,7 @@ func _privacy_settings() -> void:
 	toggle.name="AnalyticsConsent"
 	var note: String=tr("PRIVACY_SAVE_ERROR" if analytics_save_error else "PRIVACY_NOTE")
 	if not analytics_save_error and (telemetry==null or telemetry.endpoint.is_empty()): note+="\n"+tr("PRIVACY_OFFLINE")
+	if not analytics_save_error and telemetry!=null and not telemetry.pilot_token.is_empty(): note+="\n"+tr("PRIVACY_PILOT")
 	_label(note,Rect2(124,650,1040,138),page,24,AMBER if analytics_save_error else DIM)
 	_button(tr("VIS_BACK"),Rect2(124,810,350,57),page,func(): _show("settings"))
 func _set_analytics_consent(value: bool) -> void:
