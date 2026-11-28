@@ -103,9 +103,10 @@ func run() -> void:
 	saved_campaign.erase("streamlined")
 	check(restored_campaign.restore(saved_campaign,1) and not restored_campaign.streamlined and not restored_campaign.compact,"old campaigns remain compatible")
 	ui._start_profile(1)
-	check(not ui.economy.streamlined and ui.economy.slot_limit()==4,"free run legacy economy")
+	check(not ui.economy.streamlined and ui.economy.slot_limit()==3,"free run permanent slot limit")
 	# Header feedback regression: caret keeps its layout and boss art cannot cover body text.
 	ui.reduced=false
+	ui.clear_display=false
 	ui.header_caret_elapsed=0.0
 	ui._update_header_caret(0.0)
 	check(ui.header_cursor.visible and ui.header_title.text=="SAPERROR","caret shown")
@@ -115,7 +116,16 @@ func run() -> void:
 	check(ui.header_cursor.visible,"caret returns")
 	ui.reduced=true
 	ui._update_header_caret(0.5)
-	check(ui.header_cursor.visible,"reduced motion static caret")
+	check(ui.header_cursor.visible and ui.header_cursor.modulate.a<0.01,"reduced motion cursor fades out")
+	ui._update_header_caret(0.5)
+	check(ui.header_cursor.modulate.a>0.99,"reduced motion cursor fades in")
+	ui.reduced=false
+	ui.clear_display=true
+	ui._update_header_caret(0.5)
+	check(ui.header_cursor.modulate.a<0.01,"clear display cursor fades out")
+	ui._update_header_caret(0.5)
+	check(ui.header_cursor.modulate.a>0.99,"clear display cursor fades in")
+	ui.clear_display=false
 	for scale in [0.75,1.0,1.25,1.5]:
 		ui.text_scale=scale
 		ui.theme=ui._terminal_theme()

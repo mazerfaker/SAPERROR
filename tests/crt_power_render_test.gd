@@ -25,6 +25,38 @@ func mean(img: Image, area: Rect2i) -> float:
 			total+=(c.r+c.g+c.b)/3.0
 			n+=1
 	return total/float(maxi(n,1))
+# Read the real native viewport while the ordinary process callback advances the cursor.
+# No direct visibility toggling or fake rendered frames.
+func check_cursor(game, mode: String) -> void:
+	var ui=game.ui
+	ui.reduced=mode=="reduced"
+	ui.clear_display=mode=="clear"
+	ui._show("menu")
+	ui.set_process(true)
+	var region:=Rect2i(ui.header_cursor.get_global_rect())
+	var brightest: float=-1.0
+	var darkest: float=2.0
+	var bright: Image
+	var dark: Image
+	for i in range(16):
+		await create_timer(0.08).timeout
+		await RenderingServer.frame_post_draw
+		var img: Image=game.raster.get_texture().get_image()
+		var light: float=mean(img,region)
+		if light>brightest:
+			brightest=light
+			bright=img
+		if light<darkest:
+			darkest=light
+			dark=img
+	check(brightest-darkest>0.018,"native cursor visible/hidden contrast "+mode)
+	if bright!=null and dark!=null:
+		bright.save_png("res://build/logs/cursor_"+mode+"_on.png")
+		dark.save_png("res://build/logs/cursor_"+mode+"_off.png")
+		var title_area:=Rect2i(88,52,mini(200,region.position.x-88),92)
+		check(absf(mean(bright,title_area)-mean(dark,title_area))<0.008,"title stable "+mode)
+	ui.reduced=false
+	ui.clear_display=false
 func run() -> void:
 	if DisplayServer.get_name()=="headless":
 		quit(1)
@@ -44,6 +76,9 @@ func run() -> void:
 	game.ui.session_path="user://crt_power_test_%d.cfg" % OS.get_process_id()
 	game._finish_boot()
 	game._set_effects(0.0,true,false,false,0.0,false)
+	for mode in ["normal","reduced","clear"]:
+		await check_cursor(game,mode)
+	game.ui._show("menu")
 	# Use the real menu and actual top-level composition, not an isolated shader fixture.
 	var ready: Image=await capture(vp,"ready")
 	game._start_power_on()

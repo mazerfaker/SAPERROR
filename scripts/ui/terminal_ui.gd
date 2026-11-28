@@ -342,9 +342,17 @@ func _build_terminal_header() -> void:
 func _update_header_caret(delta: float) -> void:
 	header_caret_elapsed=fposmod(header_caret_elapsed+delta,HEADER_CARET_INTERVAL*2.0)
 	if not is_instance_valid(header_cursor): return
-	# A separate node avoids glyph clipping and preserves title/emblem layout.
-	# Honor the explicit reduced-motion / clear display safety choice.
-	header_cursor.visible=reduced or clear_display or header_caret_elapsed<HEADER_CARET_INTERVAL
+	# Cursor feedback is independent of the CRT filter and reduced-motion flags.
+	# Keep the first-launch safety notice static; offer a smooth pulse in gentle modes.
+	if warning_pending:
+		header_cursor.visible=true
+		header_cursor.modulate.a=1.0
+	elif reduced or clear_display:
+		header_cursor.visible=true
+		header_cursor.modulate.a=0.5+0.5*cos(TAU*header_caret_elapsed/(HEADER_CARET_INTERVAL*2.0))
+	else:
+		header_cursor.modulate.a=1.0
+		header_cursor.visible=header_caret_elapsed<HEADER_CARET_INTERVAL
 func _menu() -> void:
 	_label(tr("VIS_BOOT"),Rect2(124,190,1170,80),page,36)
 	_label(tr("VIS_TAGLINE"),Rect2(124,266,1170,62),page,28,DIM)

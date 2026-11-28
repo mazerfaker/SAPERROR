@@ -1,4 +1,7 @@
 # Changelog
+### RC.6 visible cursor correction
+Header cursor blinks independently of CRT filter and accessibility preferences; reduced-motion/clear-display use a gentle local fade, initial safety notice remains static. Native raster samples check actual cursor contrast and stable title in all three modes. Also align Final Polish fixture with the permanent three-module shop limit.
+
 ### RC.6 permanent loadout and economy tuning
 All shops limited to three permanent modules, no replacements. Purchases disabled and grey once full; repair remains available. Legacy four-module saves retain owned items but cannot buy more. Sector reward 12 + opened/8 + 6 for clean, bosses 24, archives 8 (+5 Archivist). Prices and starting credits unchanged. Regression checks updated.
 
