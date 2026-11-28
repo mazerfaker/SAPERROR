@@ -1,4 +1,7 @@
 # Changelog
+### RC.7 local background retouch
+Remove the red paper biohazard emblem using a 112×68 transparent retouch at native coordinates (1724,940). Original art, live layers, configuration, timing and audio remain byte-identical. The patch is drawn once per composition before the existing animated layers; native render QA checks all 14 lamp/device combinations and bounds.
+
 ### RC.7 onboarding follow-up
 Update lesson 8 to three free boost choices; remove legacy credit language from the lab. Ensure larger boss grid fits above the footer and keep ADMIN phase advancement monotonic. Public-solver QA explicitly reopens known safe LOOP cells.
 

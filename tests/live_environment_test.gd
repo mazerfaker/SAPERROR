@@ -57,6 +57,14 @@ func run() -> void:
 		check(env.clock.serial>=2880 and env.clock.serial<=4320 and env.clock.steps>0,"100x continued animation")
 		check(env.get_child_count()==initial_nodes and initial_nodes==1 and env.player.get_instance_id()==initial_player,"fixed audio player")
 		check(env.textures==initial_tex and env.textures.size()==21 and env.high_frames.size()==7,"same preloaded textures")
+		check(Env.PAPER_PATCH.get_size()==Vector2(112,68),"local paper retouch native dimensions")
+		var paper_rect:=Rect2(Env.PAPER_POSITION,Env.PAPER_PATCH.get_size())
+		check(Rect2(Vector2.ZERO,Env.NATIVE).encloses(paper_rect),"paper retouch inside original canvas")
+		for key in env.layers:
+			if key=="base": continue
+			var layer: Dictionary=env.layers[key]
+			check(not paper_rect.intersects(Rect2(layer["x"],layer["y"],layer["width"],layer["height"])),"paper retouch clear of animated layer "+str(key))
+		check(not paper_rect.intersects(Rect2(env.post_position,env.high_frames[0].get_size())),"paper retouch clear of device frames")
 		check(env.drawn_level==env.clock.level and env.drawn_lamp==env.clock.lamp_on(),"final frame state")
 		env.set_audio_settings(1.0,true)
 		check(absf(env.player.volume_db+20.0)<0.001,"nominal -20 dB")

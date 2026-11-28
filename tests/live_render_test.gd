@@ -29,6 +29,14 @@ func run() -> void:
 	viewport.add_child(env)
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://build/logs"))
 	var original: Image = env.textures[env.layers["base"]["file"]].get_image()
+	var retouch: Image=Env.PAPER_PATCH.get_image()
+	retouch.convert(Image.FORMAT_RGBA8)
+	var retouch_bounds:=Rect2i(Vector2i(Env.PAPER_POSITION),retouch.get_size())
+	var changed: int=0
+	for y in range(retouch.get_height()):
+		for x in range(retouch.get_width()):
+			if retouch.get_pixel(x,y).a>0.5: changed+=1
+	check(changed>4000 and changed<retouch.get_width()*retouch.get_height(),"localized transparent paper retouch")
 	for level in range(7):
 		for lamp in [true,false]:
 			env._set_visual(level,lamp)
@@ -36,6 +44,7 @@ func run() -> void:
 			await RenderingServer.frame_post_draw
 			var actual: Image = viewport.get_texture().get_image()
 			var expected: Image = original.duplicate()
+			expected.blend_rect(retouch,Rect2i(Vector2i.ZERO,retouch.get_size()),retouch_bounds.position)
 			if not lamp: blend_layer(expected,env,"lamp_off")
 			for i in range(1,7): blend_layer(expected,env,str(i)+("_on" if i<=level else "_off"))
 			var high: Image = env.high_frames[level].get_image()
@@ -49,6 +58,15 @@ func run() -> void:
 					error += (absf(a.r-b.r)+absf(a.g-b.g)+absf(a.b-b.b))/3.0
 					count+=1
 			check(error/float(count)<0.012,"native composition mean error")
+			var patch_error: float=0.0
+			var patch_count: int=0
+			for y in range(retouch_bounds.position.y,retouch_bounds.end.y,2):
+				for x in range(retouch_bounds.position.x,retouch_bounds.end.x,2):
+					var a: Color=actual.get_pixel(x,y)
+					var b: Color=expected.get_pixel(x,y)
+					patch_error+=(absf(a.r-b.r)+absf(a.g-b.g)+absf(a.b-b.b))/3.0
+					patch_count+=1
+			check(patch_error/float(maxi(1,patch_count))<0.015,"retouch present in every lamp/device frame")
 			for y in range(855,1040,12):
 				for x in range(475,1450,12):
 					var a: Color = actual.get_pixel(x,y)

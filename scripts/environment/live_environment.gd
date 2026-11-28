@@ -3,6 +3,9 @@ extends Node2D
 const Clock = preload("res://scripts/environment/environment_clock.gd")
 const ROOT := "res://assets/live/"
 const NATIVE := Vector2(1920,1080)
+# Local approved retouch, outside every animated lamp/device rectangle.
+const PAPER_PATCH = preload("res://assets/live/assets/paper_patch_overlay.png")
+const PAPER_POSITION := Vector2(1724,940)
 const AUDIO_GAIN := 0.1
 var clock := Clock.new()
 var layers: Dictionary = {}
@@ -74,6 +77,7 @@ func _draw_layer(key: String) -> void:
 func _draw() -> void:
 	if not ready_assets: return
 	_draw_layer("base")
+	draw_texture(PAPER_PATCH,PAPER_POSITION)
 	if not drawn_lamp: _draw_layer("lamp_off")
 	for i in range(1,7):
 		_draw_layer(str(i)+("_on" if i<=drawn_level else "_off"))
