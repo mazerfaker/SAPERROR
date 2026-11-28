@@ -1,0 +1,7 @@
+# SAPERROR installer comparison
+
+Two trial setups, the same verified Windows payload and Inno Setup app ID. CRT: dark green, Consolas, outlined controls and segmented phosphor progress. Retro98: gray, navy header, Tahoma and raised native controls. Each displays the original artwork at its actual aspect ratio, without redrawing or cropping. This is a native UI implementation inspired by the concepts, not pixel-identical generated mockups.
+
+Required asset: installer/setup_art.png (original 1670x942 PNG, SHA-256 eff5e285bc85bb9b14a885af57db1c13c9b6257687f3a7598e735c6695f3a31f). Upload this exact file; CI preserves portable builds until it is available. Both setups bundle the same backend and no runtime download. Windows x64, current-user install, optional desktop shortcut, Start Menu shortcuts, actual install progress, uninstall registration, no save deletion, English/Ukrainian. No telemetry or changes to gameplay. No signing yet. The trial packaging step checks actual install and uninstall and saves two UI screenshots. Review on a real PC before choosing the final appearance. Confirm compiler licensing and signing requirements before commercial distribution.
+
+Local build: after preparing build/windows with the verified release payload, run PowerShell installer/build.ps1 -Version 0.9.0-rc.6 -Smoke on Windows. Test each Setup separately; both update the same application, not two independent installs.

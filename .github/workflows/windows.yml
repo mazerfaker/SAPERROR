@@ -284,6 +284,15 @@ jobs:
             } finally { $zip.Dispose() }
             Get-FileHash $path | Out-File -Append build/logs/artifact-hashes.txt
           }
+      - name: Build CRT and Retro98 trial installers
+        shell: pwsh
+        run: |
+          if (!(Test-Path 'installer/setup_art.png')) {
+            'Installer prototypes awaiting original artwork upload; portable build unaffected.' | Out-File build/logs/installer-status.txt
+            Write-Warning 'Add installer/setup_art.png to enable both Setup.exe builds.'
+          } else {
+            & ./installer/build.ps1 -Version $env:GAME_VERSION -Smoke
+          }
       - name: Upload build ZIPs
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2 (Node.js 24)
         if: success()

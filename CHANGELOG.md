@@ -1,4 +1,7 @@
 # Changelog
+### RC.6 dual installer trials
+Prepare native CRT Terminal and Retro Windows 98 setup frontends sharing one per-user Inno Setup payload, localized UI, shortcuts and uninstall. Windows CI compiles both after the exact supplied artwork is uploaded; visual screenshots and common payload install/uninstall smoke gates. No gameplay changes.
+
 ### RC.6 approved Glitch Plus pointer
 Replace the original 32px custom arrow with the user-supplied SAPERROR Cursor 06 Glitch Plus PNG, resampled to 40px preserving transparency and artwork. Hotspot (8,2) at the arrow tip. Existing native cursor integration and hit mapping remain unchanged.
 
