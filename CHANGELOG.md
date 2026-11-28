@@ -1,4 +1,7 @@
 # Changelog
+## 1.0.1 — Stability Hotfix (private use)
+Keep a bounded RAM-only buffer of up to four cumulative final analytics summaries across mode/difficulty switches, including in-flight transitions; erase it on revocation. Native window close saves the current session before exit. Preserve game balance, audio, art and consent model. Update game/installer version, keep public repository visibility unchanged and private-only artifact delivery. CI pending; no public release.
+
 ## 1.0.0 — Private-use build
 Promote the verified RC9 gameplay and assets unchanged; align project and installer version, include bilingual release notes, require all four final archives and SHA256 manifest, and upload release/QA artifacts only on a private repository. Full CI pending. Manual hardware and real-client analytics acceptance not performed; unresolved redistribution rights prohibit public release. No tag, main merge or public release.
 

@@ -1,4 +1,4 @@
-param([string]$Version = '1.0.0', [switch]$Smoke)
+param([string]$Version = '1.0.1', [switch]$Smoke)
 $ErrorActionPreference = 'Stop'
 Set-Location (Split-Path $PSScriptRoot -Parent)
 $art = 'installer/setup_art.png'

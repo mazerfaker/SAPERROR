@@ -58,6 +58,19 @@ func run() -> void:
 	node.observe_clock("classic",0,0,324000,true)
 	check(int(node.snapshot()["seconds"])==301,"suspend gap excluded")
 	node.set_permission(false)
+	check(node.final_summaries.is_empty(),"revocation clears final summary buffer")
+	node.set_permission(true)
+	node.observe("classic",0,0,7.0)
+	var switched_id: String=node.session_id
+	node.in_flight=true
+	node.in_flight_session_id=switched_id
+	node.observe("campaign",1,1,2.0)
+	check(node.final_summaries.size()==1 and node.final_summaries[0]["id"]==switched_id and node.final_summaries[0]["seconds"]==7,"mode switch retains cumulative snapshot during in-flight request")
+	check(node.session_id!=switched_id and node.active_seconds==2.0,"next session independent")
+	for i in range(12): node.observe("classic" if i%2==0 else "campaign",0,0,2.0)
+	check(node.final_summaries.size()==Client.MAX_FINAL_SUMMARIES,"bounded RAM buffer")
+	node.set_permission(false)
+	check(node.final_summaries.is_empty() and not node.in_flight,"revocation discards buffered summaries")
 	node.queue_free()
 	await process_frame
 	await privacy_regression()

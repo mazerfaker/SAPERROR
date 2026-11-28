@@ -1,7 +1,8 @@
 extends Node
-# Ephemeral session summaries only. No local queue, stable identifier, device fingerprint or raw actions.
+# Ephemeral session summaries only. Bounded RAM-only final summaries; no disk queue, stable identifier or raw actions.
 const PERIOD: float=15.0
 const MIN_SEND_INTERVAL: float=5.0
+const MAX_FINAL_SUMMARIES: int=4
 var endpoint: String=""
 var consent: bool=false
 var request: HTTPRequest
@@ -27,6 +28,7 @@ var clock_ms: int=-1
 var clock_active: bool=false
 var clock_mode: String=""
 var clock_difficulty: int=-1
+var final_summaries: Array[Dictionary]=[]
 static func valid_endpoint(value: String) -> bool:
 	var pattern:=RegEx.new()
 	pattern.compile("^https://[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]$")
@@ -50,6 +52,7 @@ func set_permission(value: bool) -> void:
 		in_flight=false
 		in_flight_session_id=""
 		in_flight_seconds=0
+		final_summaries.clear()
 		_clear()
 func _clear() -> void:
 	session_id=""
@@ -90,7 +93,7 @@ func observe_clock(next_mode: String,next_difficulty: int,next_sector: int,now_m
 func observe(next_mode: String,next_difficulty: int,next_sector: int,delta: float,focused: bool=true,finished_id: int=0) -> void:
 	if not enabled(): return
 	if not next_mode.is_empty() and (mode!=next_mode or difficulty!=next_difficulty or active_seconds>=86400.0):
-		_send()
+		_remember_final()
 		_clear()
 		session_id=Crypto.new().generate_random_bytes(16).hex_encode()
 		mode=next_mode
@@ -104,7 +107,7 @@ func observe(next_mode: String,next_difficulty: int,next_sector: int,delta: floa
 		active_seconds=minf(86400.0,active_seconds+clampf(delta,0.0,10.0))
 		sector=maxi(sector,clampi(next_sector,0,10000))
 		if floori(active_seconds)!=previous_seconds or sector!=previous_sector: dirty=true
-	if elapsed>=(PERIOD if attempted_session else MIN_SEND_INTERVAL) or (next_mode.is_empty() and elapsed>=MIN_SEND_INTERVAL): _send()
+	if elapsed>=(PERIOD if attempted_session else MIN_SEND_INTERVAL) or ((next_mode.is_empty() or not final_summaries.is_empty()) and elapsed>=MIN_SEND_INTERVAL): _send()
 func outcome(instance_id: int,won: bool) -> void:
 	if not enabled() or session_id.is_empty() or instance_id==0 or last_result_id==instance_id: return
 	last_result_id=instance_id
@@ -115,22 +118,35 @@ func outcome(instance_id: int,won: bool) -> void:
 func snapshot() -> Dictionary:
 	if not enabled() or session_id.is_empty(): return {}
 	return {"schema":2,"id":session_id,"version":str(ProjectSettings.get_setting("application/config/version","0.0.0")),"mode":mode,"difficulty":difficulty,"seconds":floori(active_seconds),"wins":wins,"losses":losses,"sector":sector}
+func _remember_final() -> void:
+	# Preserve the last cumulative snapshot on a mode/difficulty switch, even if the
+	# previous request is still in flight. D1 upserts by session ID, not addition.
+	if not enabled() or session_id.is_empty(): return
+	if not dirty and not (in_flight and in_flight_session_id==session_id): return
+	if active_seconds<1.0 and wins+losses==0: return
+	if final_summaries.size()>=MAX_FINAL_SUMMARIES: final_summaries.pop_front()
+	final_summaries.append(snapshot())
 func _send() -> void:
-	# Headless QA never touches the network. Failures are discarded, never queued on disk.
-	if not enabled() or not dirty or session_id.is_empty() or not is_instance_valid(request) or in_flight or DisplayServer.get_name()=="headless": return
-	var body: Dictionary=snapshot()
-	if body.is_empty() or (active_seconds<1.0 and wins+losses==0): return
+	# Headless QA never touches the network. Final summaries are RAM-only, best effort.
+	if not enabled() or not is_instance_valid(request) or in_flight or DisplayServer.get_name()=="headless": return
+	var final: bool=not final_summaries.is_empty()
+	var body: Dictionary={}
+	if final:
+		body=final_summaries.pop_front()
+	elif dirty:
+		body=snapshot()
+	if body.is_empty() or (int(body["seconds"])<1 and int(body["wins"])+int(body["losses"])==0): return
 	elapsed=0.0
 	var headers:=PackedStringArray(["Content-Type: application/json"])
 	var result: Error=request.request(endpoint+"/v2/session",headers,HTTPClient.METHOD_POST,JSON.stringify(body))
 	network_attempts+=1
-	attempted_session=true
+	if not final: attempted_session=true
 	if result==OK:
 		in_flight=true
-		in_flight_session_id=session_id
+		in_flight_session_id=str(body["id"])
 		in_flight_seconds=int(body["seconds"])
-		dirty=false
-	else:
+		if not final: dirty=false
+	elif not final:
 		last_http_code=0
 		last_transport_result=int(result)
 		dirty=true

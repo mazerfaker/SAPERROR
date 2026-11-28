@@ -90,3 +90,5 @@ Alpha.7 LIAR authored boss trial, no intermediate CI. Full combined v0.5 Beta ga
 
 
 0.9.0-rc.9: verified Windows CI 46153280062 and Analytics QA 46153280076, including native analytics gate and installer handoff. 1.0.0 private-use preparation approved by owner. Final CI, private artifact delivery, manual acceptance (not performed) and rights clearance for public redistribution remain distinct gates. No public release or tag.
+
+1.0.1 Stability Hotfix: preserve pending final analytics summaries on mode switches; save on native close; repeat full regression and package verification. No new gameplay. Owner intends to make repository private after this hotfix; archives remain gated on private visibility. CI pending.

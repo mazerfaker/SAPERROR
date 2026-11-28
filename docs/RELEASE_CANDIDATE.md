@@ -29,3 +29,6 @@ RC8 c4194f5: Windows run 46152288064, analytics run 46152288079; passed. Server 
 
 ## 1.0.0 — private-use preparation (owner approved)
 RC9 commit e30cbfa passed Windows CI 46153280062 and Analytics QA 46153280076 including mandatory native analytics clock/offline gate and installer allow/deny handoff. The owner approved proceeding to the private-use 1.0.0 build, without personal manual testing. This does not waive public redistribution rights or constitute hardware acceptance. Version and packaging only; no gameplay or approved assets altered. All final archives and SHA256 manifest required. CI pending. The repository was public at preparation time; final archive and image-bearing QA artifact uploads are gated on private repository visibility. No public release, tag or main merge.
+
+## 1.0.1 stability hotfix
+Based on 1.0.0 preparation c2fd175 (its Windows CI was still running when development began). RC9 is the last confirmed full Windows baseline at that point. Add RAM-only bounded final summary buffering and native close save. Final release CI pending, no claim of real production delivery. Owner requested keeping repository public until hotfix completion; do not publish archives while public.

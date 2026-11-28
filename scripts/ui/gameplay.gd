@@ -319,6 +319,8 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		# Alt+F4/native close bypasses the in-game power button.
+		if is_instance_valid(ui) and is_instance_valid(ui.audio): ui._save_session()
 		_release_mouse_cursor()
 	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT and is_instance_valid(ui):
 		ui.protocol.reset_input()
