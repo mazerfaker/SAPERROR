@@ -271,3 +271,7 @@ Two authored boards, visible paired clues, A/B switch, independent health and du
 - First GitHub CI attempt reached engine import; blocked by cold-checkout localization. Replaced generated CSV translations with source-controlled PO catalogs and added locale regression checks. No verified EXE or production art yet.
 
 - Second CI run: 4060 checks passed, 1000 certified seeds, Windows export and headless smoke passed; packaging failed. Fixed no-prior-tag handling and added ZIP entry verification; awaiting CI confirmation.
+
+
+### Analytics privacy notice
+Add bilingual notice and developer contact, full installer privacy dialog, require fresh v3 consent (v1/v2 ignored). Keep network disabled pending controlled rollout.

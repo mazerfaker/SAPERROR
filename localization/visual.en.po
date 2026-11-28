@@ -1234,13 +1234,13 @@ msgid "PRIVACY_TITLE"
 msgstr "Privacy"
 
 msgid "PRIVACY_BODY"
-msgstr "Optional analytics for improving SAPERROR: active play time, mode, difficulty, highest sector, wins/losses, version and a random session ID. Sent over HTTPS to Cloudflare Workers/D1 when configured; records retained 30 days. No names, device IDs or save files. Cloudflare processes IP for request limits."
+msgstr "Optional analytics, off by default, to improve game balance: active play time, mode, difficulty, highest sector, wins/losses, version and random session ID. HTTPS to Cloudflare Workers/D1 when configured; IP used for rate limiting, not stored in D1. Provider may process network metadata. No names, device IDs or saves. Developer: Vergil, vergil1705200@gmail.com."
 
 msgid "PRIVACY_ANALYTICS"
 msgstr "Allow analytics"
 
 msgid "PRIVACY_NOTE"
-msgstr "Turn off at any time to stop future transmission. Already received records expire after 30 days of inactivity. Gameplay is unchanged."
+msgstr "Disable anytime to stop future sends; gameplay is unchanged. Records expire after 30 days since last update (daily cleanup); provider backups may differ. Contact the developer for data requests."
 
 msgid "PRIVACY_SAVE_ERROR"
 msgstr "Could not save your choice. Please try again."

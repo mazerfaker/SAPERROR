@@ -68,9 +68,9 @@ func run() -> void:
 		check(Consent.write_choice(true,privacy_path) and Consent.allowed(privacy_path),"explicit opt in persisted again")
 		var invalid:=FileAccess.open(privacy_path,FileAccess.WRITE)
 		if invalid!=null:
-			invalid.store_string("v1:allow")
+			invalid.store_string("v2:allow")
 			invalid.close()
-		check(not Consent.allowed(privacy_path),"unknown consent version defaults off")
+		check(not Consent.allowed(privacy_path),"previous consent version defaults off")
 		for suffix in ["",".tmp"]: DirAccess.remove_absolute(ProjectSettings.globalize_path(privacy_path+suffix))
 		game.ui.analytics_consent_path=Consent.PATH
 		game.ui.analytics_allowed=false

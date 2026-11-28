@@ -1,16 +1,16 @@
 extends RefCounted
-# Version 2 explicit consent for the documented analytics fields. Old v1 is not authorization.
+# Version 3 explicit consent for the full privacy notice. Old v1/v2 are not authorization.
 const PATH: String="user://analytics_consent.txt"
 static func allowed(path: String=PATH) -> bool:
 	var f:=FileAccess.open(path,FileAccess.READ)
 	if f==null: return false
 	if f.get_length()!=8: return false
-	return f.get_as_text()=="v2:allow"
+	return f.get_as_text()=="v3:allow"
 static func write_choice(value: bool,path: String=PATH) -> bool:
 	var stage: String=path+".tmp"
 	var f:=FileAccess.open(stage,FileAccess.WRITE)
 	if f==null: return false
-	f.store_string("v2:allow" if value else "v2:deny")
+	f.store_string("v3:allow" if value else "v3:deny")
 	f.flush()
 	var status: Error=f.get_error()
 	f.close()

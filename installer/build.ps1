@@ -38,7 +38,7 @@ foreach ($theme in @('Retro98')) {
     $consentFile = Join-Path $env:RUNNER_TEMP ('saperror-consent-' + [Guid]::NewGuid() + '.txt')
     $p = Start-Process -FilePath (Resolve-Path $out).Path -ArgumentList @('--consent-test',('"' + $consentFile + '"')) -PassThru
     if (!$p.WaitForExit(30000)) { $p.Kill(); throw 'Consent test timed out' }
-    if ($p.ExitCode -ne 0 -or !(Test-Path $consentFile) -or (Get-Content $consentFile -Raw) -ne 'v2:deny') { throw 'Consent persistence QA failed' }
+    if ($p.ExitCode -ne 0 -or !(Test-Path $consentFile) -or (Get-Content $consentFile -Raw) -ne 'v3:deny') { throw 'Consent persistence QA failed' }
     Remove-Item $consentFile -Force
   }
   $zipName = 'SAPERROR_v{0}_Setup.zip' -f $Version

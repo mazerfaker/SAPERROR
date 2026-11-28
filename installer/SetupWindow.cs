@@ -12,9 +12,9 @@ internal static class Program {
         if (args.Length == 2 && args[0] == "--consent-test") {
             try {
                 SetupWindow.SaveConsent(args[1], true);
-                if (File.ReadAllText(args[1]) != "v2:allow") Environment.Exit(2);
+                if (File.ReadAllText(args[1]) != "v3:allow") Environment.Exit(2);
                 SetupWindow.SaveConsent(args[1], false);
-                Environment.Exit(File.ReadAllText(args[1]) == "v2:deny" ? 0 : 3);
+                Environment.Exit(File.ReadAllText(args[1]) == "v3:deny" ? 0 : 3);
             } catch { Environment.Exit(4); }
         }
         using (var form = new SetupWindow(false)) {
@@ -61,7 +61,7 @@ internal sealed class SetupWindow : Form {
     readonly TextBox path;
     readonly ComboBox language;
     readonly CheckBox shortcut,launch;
-    readonly Button browse,install,cancel;
+    readonly Button browse,install,cancel,privacyDetails;
     readonly SegmentBar progress;
     readonly Timer timer;
     readonly Image artImage;
@@ -116,8 +116,10 @@ internal sealed class SetupWindow : Form {
         launch=new CheckBox { Location=new Point(463,265), Size=new Size(412,30), Font=normal, ForeColor=fg, BackColor=bg, Checked=true }; Controls.Add(launch);
         consent=new CheckBox { Location=new Point(463,310), Size=new Size(412,45), Font=normal, ForeColor=fg, BackColor=bg, Checked=false, Name="AnalyticsConsent" };
         Controls.Add(consent);
-        privacyNote=LabelAt("",483,357,392,94,normal);
+        privacyNote=LabelAt("",483,357,392,60,normal);
         privacyNote.ForeColor=muted;
+        privacyDetails=ButtonAt(483,420,392,30);
+        privacyDetails.Click+=delegate { MessageBox.Show(this,T("Developer and privacy contact: Vergil — vergil1705200@gmail.com. Contact this address for data questions and requests concerning your rights.\n\nOptional gameplay analytics are off by default and not required to play. The purpose is to understand difficulty, play duration and improve game balance. With consent, the game sends its version, mode, difficulty, approximate active play time, sector, wins/losses and a random session identifier. The identifier is not stored on the device and is not a unique player identifier. Names, accounts, saves, chat, coordinates and device IDs are not sent. Cloudflare processes requests; IP addresses are used for rate limiting and not stored in D1. Cloudflare may separately process network metadata. Records are removed by a daily task after 30 days since the last update; provider backups may have different retention. Consent can be withdrawn in Settings > Privacy; new sends stop, but accepted records are not immediately removed.","Розробник і контакт щодо приватності: Vergil — vergil1705200@gmail.com. З питань даних та реалізації прав звертайтеся за цією адресою.\n\nІгрова аналітика добровільна, вимкнена за замовчуванням і не потрібна для гри. Мета — зрозуміти складність, тривалість ігрових сесій та покращити баланс. За згодою гра передає версію, режим, складність, приблизний активний час, сектор, перемоги/поразки та випадковий ідентифікатор сесії. Ідентифікатор не зберігається на пристрої та не визначає унікального гравця. Не передаються імена, облікові записи, файли збережень, чат, координати чи ідентифікатор пристрою. Запити обробляє Cloudflare; IP використовується для обмеження частоти запитів і не записується до D1. Cloudflare може окремо обробляти мережеві метадані. Записи видаляються щоденним завданням після 30 днів від останнього оновлення; резервні копії провайдера можуть мати інший строк. Згоду можна відкликати у Налаштуваннях > Приватність; це зупиняє нові надсилання, але не видаляє вже прийняті записи негайно."),T("Privacy notice","Повідомлення про приватність"),MessageBoxButtons.OK,MessageBoxIcon.Information); };
         statusLabel=LabelAt("",24,462,850,42,normal);
         statusLabel.BorderStyle=BorderStyle.Fixed3D;
         statusLabel.Padding=new Padding(6,3,6,3);
@@ -139,7 +141,7 @@ internal sealed class SetupWindow : Form {
             else await InstallGame();
         };
         cancel.Click+=delegate { Close(); };
-        foreach (Button button in new[]{browse,install,cancel}) button.FlatStyle=FlatStyle.Standard;
+        foreach (Button button in new[]{browse,install,cancel,privacyDetails}) button.FlatStyle=FlatStyle.Standard;
         FormClosing+=delegate(object sender,FormClosingEventArgs e){ if(busy) e.Cancel=true; };
         timer=new Timer { Interval=120 };
         timer.Tick+=delegate { try { int p; if(progressPath!=null && File.Exists(progressPath) && Int32.TryParse(File.ReadAllText(progressPath),out p)) SetProgress(Math.Min(p,99)); } catch(IOException){} };
@@ -153,7 +155,8 @@ internal sealed class SetupWindow : Form {
         browse.Text=T("Browse...","Огляд..."); shortcut.Text=T("Create desktop shortcut","Створити ярлик на робочому столі");
         launch.Text=T("Launch SAPERROR when finished","Запустити SAPERROR після встановлення");
         consent.Text=T("Allow optional gameplay analytics","Дозволити добровільну ігрову аналітику");
-        privacyNote.Text=T("Optional: active play time, mode, difficulty, sector, wins/losses, version and random session ID. Cloudflare, 30 days. When configured. Disable in game Privacy.","Добровільно: час гри, режим, складність, сектор, перемоги/поразки, версія та випадковий ID сесії. Cloudflare, 30 днів. Якщо сервер підключено. Вимкнення у грі.");
+        privacyNote.Text=T("Optional. Off by default. Cloudflare, 30 days. Read privacy details before consenting.","Добровільно. Вимкнено. Cloudflare, 30 днів. Прочитай умови перед згодою.");
+        privacyDetails.Text=T("Privacy details / Vergil","Умови приватності / Vergil");
         statusLabel.Text=T("Ready to install. Game files and uninstaller will be added to the selected folder.","Готово до встановлення. Файли гри та засіб видалення буде додано до вибраної папки.");
         install.Text=T("Install","Встановити"); cancel.Text=T("Cancel","Скасувати");
     }
@@ -165,7 +168,7 @@ internal sealed class SetupWindow : Form {
         Directory.CreateDirectory(Path.GetDirectoryName(file));
         string tmp=file+"."+Guid.NewGuid().ToString("N")+".tmp";
         try {
-            File.WriteAllText(tmp,allowed?"v2:allow":"v2:deny",new System.Text.UTF8Encoding(false));
+            File.WriteAllText(tmp,allowed?"v3:allow":"v3:deny",new System.Text.UTF8Encoding(false));
             if(File.Exists(file)) File.Replace(tmp,file,null);
             else File.Move(tmp,file);
         } finally { if(File.Exists(tmp)) File.Delete(tmp); }
