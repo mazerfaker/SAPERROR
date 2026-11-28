@@ -58,6 +58,10 @@ signal immersion_triggered(id: String)
 const Immersion=preload("res://scripts/ui/immersion.gd")
 var immersion_cooldown: float=0.0
 const Access=preload("res://scripts/ui/accessibility.gd")
+const AnalyticsConsent=preload("res://scripts/save/analytics_consent.gd")
+var analytics_consent_path: String=AnalyticsConsent.PATH
+var analytics_allowed: bool=false
+var analytics_save_error: bool=false
 var high_contrast: bool=false
 var large_symbols: bool=false
 var clear_display: bool=false
@@ -171,6 +175,8 @@ var glitches: bool = true
 var global_amount: float = 0.0
 func _ready() -> void:
 	_load_session()
+	if DisplayServer.get_name()!="headless" or analytics_consent_path!=AnalyticsConsent.PATH:
+		analytics_allowed=AnalyticsConsent.allowed(analytics_consent_path)
 	warning_pending=require_content_warning and not warning_acknowledged
 	warning_sound=bool(cfg.get_value("settings","sound",true))
 	TranslationServer.set_locale("uk" if is_uk else "en")
@@ -292,6 +298,7 @@ func _show(next: String) -> void:
 	elif screen == "game": _game()
 	elif screen == "settings": _settings()
 	elif screen == "resolution": _resolution_settings()
+	elif screen == "privacy": _privacy_settings()
 	elif screen == "help": _help()
 	elif screen == "performance": _performance()
 	elif screen == "audio": _audio_settings()
@@ -711,9 +718,24 @@ func _settings() -> void:
 	_button(tr("VIS_MOTION")+": "+_on_off(reduced),Rect2(124,553,1040,62),page,func(): reduced = not reduced; _apply(); _show("settings"))
 	_button(tr("VIS_FLICKER")+": "+_on_off(flicker),Rect2(124,635,1040,62),page,func(): flicker = not flicker; _apply(); _show("settings"))
 	_button(tr("VIS_GRADE")+": "+_on_off(global_amount>0.0),Rect2(124,717,1040,62),page,func(): global_amount = 0.25 if global_amount == 0.0 else 0.0; _apply(); _show("settings"))
-	_button(tr("VIS_AUDIO"),Rect2(510,803,310,57),page,func(): _show("audio"))
-	_button(tr("ACC_TITLE"),Rect2(840,803,324,57),page,func(): _show("accessibility"),22)
-	_button(tr("VIS_BACK"),Rect2(124,803,350,57),page,func(): _show("menu"))
+	_button(tr("VIS_BACK"),Rect2(124,803,250,57),page,func(): _show("menu"),23)
+	_button(tr("VIS_AUDIO"),Rect2(384,803,250,57),page,func(): _show("audio"),23)
+	_button(tr("ACC_TITLE"),Rect2(644,803,250,57),page,func(): _show("accessibility"),22)
+	_button(tr("PRIVACY_TITLE"),Rect2(904,803,260,57),page,func(): _show("privacy"),23)
+func _privacy_settings() -> void:
+	_label(tr("PRIVACY_TITLE"),Rect2(124,212,1150,60),page,41)
+	_label(tr("PRIVACY_BODY"),Rect2(124,300,1040,230),page,30)
+	var toggle:=_button(tr("PRIVACY_ANALYTICS")+": "+_on_off(analytics_allowed),Rect2(124,560,1040,76),page,func():
+		_set_analytics_consent(not analytics_allowed),28)
+	toggle.name="AnalyticsConsent"
+	_label(tr("PRIVACY_SAVE_ERROR" if analytics_save_error else "PRIVACY_NOTE"),Rect2(124,665,1040,105),page,24,AMBER if analytics_save_error else DIM)
+	_button(tr("VIS_BACK"),Rect2(124,810,350,57),page,func(): _show("settings"))
+func _set_analytics_consent(value: bool) -> void:
+	# Headless test runs must not change the real player's preference.
+	if DisplayServer.get_name()=="headless" and analytics_consent_path==AnalyticsConsent.PATH: return
+	analytics_save_error=not AnalyticsConsent.write_choice(value,analytics_consent_path)
+	analytics_allowed=AnalyticsConsent.allowed(analytics_consent_path)
+	_show("privacy")
 static func resolution_name(value: Vector2i) -> String:
 	return "%d × %d" % [value.x,value.y]
 static func fit_window_resolution(requested: Vector2i, available: Vector2i) -> Vector2i:
@@ -2104,7 +2126,7 @@ func _accessibility() -> void:
 func back_shortcut() -> bool:
 	if protocol_active or warning_pending or screen=="menu": return false
 	var parent_screen: String={
-		"audio":"settings","resolution":"settings","accessibility":"settings","text_scale":"accessibility","confirm_run":"profiles","performance":"menu",
+		"audio":"settings","resolution":"settings","privacy":"settings","accessibility":"settings","text_scale":"accessibility","confirm_run":"profiles","performance":"menu",
 		"classic":"modes","profiles":"modes","challenge":"challenges",
 		"archive_preview":"archives","gallery_preview":"gallery","archives":"gallery",
 		"campaign_archive":"campaign_route","rewrite_trial":"ending_choice"

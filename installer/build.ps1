@@ -21,10 +21,9 @@ if (!(Test-Path $iscc)) { throw 'Inno Setup compiler missing' }
 if ($LASTEXITCODE -ne 0) { throw 'Payload installer compile failed' }
 $csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if (!(Test-Path $csc)) { throw '.NET Framework C# compiler missing' }
-foreach ($theme in @('CRT','Retro98')) {
-  $out = "build/installer/SAPERROR_Setup_$theme.exe"
+foreach ($theme in @('Retro98')) {
+  $out = "build/installer/SAPERROR_Setup.exe"
   $args = @('/nologo','/target:winexe','/platform:x64','/optimize+','/codepage:65001','/reference:System.Windows.Forms.dll','/reference:System.Drawing.dll',"/out:$out",('/win32icon:'+(Resolve-Path 'installer/setup_icon.ico').Path),('/resource:'+(Resolve-Path 'build/installer/SAPERROR_Backend.exe').Path+',setup.payload'),('/resource:'+(Resolve-Path 'installer/setup_art.png').Path+',setup.art'),(Resolve-Path 'installer/SetupWindow.cs').Path)
-  if ($theme -eq 'CRT') { $args += '/define:CRT' }
   & $csc @args
   if ($LASTEXITCODE -ne 0 -or !(Test-Path $out)) { throw "Failed to compile $theme Setup" }
   Add-Type -AssemblyName System.Drawing
@@ -36,8 +35,13 @@ foreach ($theme in @('CRT','Retro98')) {
     $p = Start-Process -FilePath (Resolve-Path $out).Path -ArgumentList @('--snapshot',('"' + $png + '"')) -PassThru
     if (!$p.WaitForExit(30000)) { $p.Kill(); throw "Setup screenshot timeout: $theme" }
     if ($p.ExitCode -ne 0 -or !(Test-Path $png)) { throw "Setup visual smoke failed: $theme" }
+    $consentFile = Join-Path $env:RUNNER_TEMP ('saperror-consent-' + [Guid]::NewGuid() + '.txt')
+    $p = Start-Process -FilePath (Resolve-Path $out).Path -ArgumentList @('--consent-test',('"' + $consentFile + '"')) -PassThru
+    if (!$p.WaitForExit(30000)) { $p.Kill(); throw 'Consent test timed out' }
+    if ($p.ExitCode -ne 0 -or !(Test-Path $consentFile) -or (Get-Content $consentFile -Raw) -ne 'v1:deny') { throw 'Consent persistence QA failed' }
+    Remove-Item $consentFile -Force
   }
-  $zipName = 'SAPERROR_v{0}_Setup_{1}.zip' -f $Version,$theme
+  $zipName = 'SAPERROR_v{0}_Setup.zip' -f $Version
   Compress-Archive -Path $out -DestinationPath (Join-Path 'build/dist' $zipName) -Force
   Get-FileHash $out | Out-File -Append build/logs/installer-hashes.txt
 }
@@ -56,5 +60,5 @@ if ($Smoke) {
   if ($p.ExitCode -ne 0) { throw 'Uninstall smoke failed' }
   for ($i=0; $i -lt 30 -and (Test-Path (Join-Path $test 'SAPERROR.exe')); $i++) { Start-Sleep -Seconds 1 }
   if (Test-Path (Join-Path $test 'SAPERROR.exe')) { throw 'Uninstall left the game executable' }
-  'INSTALLER_QA both frontends captured; common payload install/hash/uninstall verified' | Out-File build/logs/installer-status.txt
+  'INSTALLER_QA Retro98 captured; default opt-out and consent persistence checked; payload install/hash/uninstall verified' | Out-File build/logs/installer-status.txt
 }

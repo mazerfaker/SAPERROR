@@ -2,6 +2,7 @@ extends SceneTree
 const Geometry = preload("res://scripts/ui/crt_geometry.gd")
 const UI=preload("res://scripts/ui/terminal_ui.gd")
 const Store=preload("res://scripts/save/session_store.gd")
+const Consent=preload("res://scripts/save/analytics_consent.gd")
 const ART := "res://assets/art/terminal_original.png"
 var failures: int = 0
 var checks: int = 0
@@ -52,6 +53,27 @@ func run() -> void:
 		var interior: Color=pointer.get_pixel(12,20)
 		check(interior.g<0.25,"dark cursor interior")
 		check(game.CUSTOM_CURSOR_SHAPES.has(Input.CURSOR_ARROW) and game.CUSTOM_CURSOR_SHAPES.has(Input.CURSOR_POINTING_HAND) and game.CUSTOM_CURSOR_SHAPES.has(Input.CURSOR_IBEAM),"shared themed cursor for normal interface shapes")
+		var privacy_path: String="user://analytics_qa_%d.txt" % OS.get_process_id()
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(privacy_path))
+		check(not Consent.allowed(privacy_path),"missing consent defaults off")
+		check(Consent.write_choice(true,privacy_path) and Consent.allowed(privacy_path),"installer-compatible opt in")
+		game.ui.analytics_consent_path=privacy_path
+		game.ui.analytics_allowed=Consent.allowed(privacy_path)
+		game.ui._show("privacy")
+		var opt:=game.ui.page.find_child("AnalyticsConsent",true,false) as Button
+		check(is_instance_valid(opt),"privacy control exists")
+		if is_instance_valid(opt): opt.pressed.emit()
+		check(not game.ui.analytics_allowed and not Consent.allowed(privacy_path),"revocation persisted")
+		check(game.ui.back_shortcut() and game.ui.screen=="settings","privacy back navigation")
+		check(Consent.write_choice(true,privacy_path) and Consent.allowed(privacy_path),"explicit opt in persisted again")
+		var invalid:=FileAccess.open(privacy_path,FileAccess.WRITE)
+		if invalid!=null:
+			invalid.store_string("v2:allow")
+			invalid.close()
+		check(not Consent.allowed(privacy_path),"unknown consent version defaults off")
+		for suffix in ["",".tmp"]: DirAccess.remove_absolute(ProjectSettings.globalize_path(privacy_path+suffix))
+		game.ui.analytics_consent_path=Consent.PATH
+		game.ui.analytics_allowed=false
 		game.ui._show("settings")
 		var entry:=game.ui.page.find_child("ResolutionSetting",true,false) as Button
 		check(is_instance_valid(entry),"resolution settings entry")

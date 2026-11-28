@@ -1,4 +1,7 @@
 # Changelog
+### RC.6 selected Retro98 setup and privacy preference
+Package only the approved Retro98 installer as SAPERROR_Setup.exe. Polish classic controls and layout, retain original art/icon, add unchecked voluntary analytics choice, persisted local versioned preference and in-game Privacy settings. No telemetry transmission or endpoint in this build. Tests verify default opt-out, explicit allow/deny, revocation and unknown version handling.
+
 ### RC.6 display settings and audio cleanup
 Remove Music Preview / Stop while retaining music volume and SFX test. Add localized resolution submenu with 12 window sizes, native desktop fullscreen, safe work-area limits, persisted size/mode and F11 synchronization. Preserve fixed CRT raster and aspect ratio. Add persistence and geometry regression checks.
 

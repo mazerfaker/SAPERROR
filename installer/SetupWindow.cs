@@ -9,13 +9,17 @@ using System.Threading.Tasks;
 internal static class Program {
     [STAThread] static void Main(string[] args) {
         Application.SetCompatibleTextRenderingDefault(false);
-#if CRT
-        const bool crt = true;
-#else
-        const bool crt = false;
-#endif
-        using (var form = new SetupWindow(crt)) {
+        if (args.Length == 2 && args[0] == "--consent-test") {
+            try {
+                SetupWindow.SaveConsent(args[1], true);
+                if (File.ReadAllText(args[1]) != "v1:allow") Environment.Exit(2);
+                SetupWindow.SaveConsent(args[1], false);
+                Environment.Exit(File.ReadAllText(args[1]) == "v1:deny" ? 0 : 3);
+            } catch { Environment.Exit(4); }
+        }
+        using (var form = new SetupWindow(false)) {
             if (args.Length == 2 && args[0] == "--snapshot") {
+                if (form.ConsentChecked) Environment.Exit(5);
                 form.Shown += delegate {
                     form.BeginInvoke((Action)delegate {
                         using (var bitmap = new Bitmap(form.Width, form.Height)) {
@@ -51,7 +55,9 @@ internal sealed class SetupWindow : Form {
     readonly bool crt;
     readonly Color bg,panel,fg,muted;
     readonly Font normal,heading;
-    readonly Label subtitle,artCaption,pathLabel,statusLabel,percent,languageLabel;
+    readonly Label subtitle,artCaption,pathLabel,statusLabel,percent,languageLabel,privacyNote;
+    readonly CheckBox consent;
+    internal bool ConsentChecked { get { return consent.Checked; } }
     readonly TextBox path;
     readonly ComboBox language;
     readonly CheckBox shortcut,launch;
@@ -86,15 +92,17 @@ internal sealed class SetupWindow : Form {
         normal=new Font(crt?"Consolas":"Tahoma",10);
         heading=new Font(crt?"Consolas":"Tahoma",21,FontStyle.Bold);
         Font=normal; Text=crt?"SAPERROR // SETUP":"SAPERROR Setup";
-        BackColor=bg; ForeColor=fg; ClientSize=new Size(900,536);
+        BackColor=bg; ForeColor=fg; ClientSize=new Size(900,602);
         FormBorderStyle=FormBorderStyle.FixedDialog; MaximizeBox=false; MinimizeBox=true;
         StartPosition=FormStartPosition.CenterScreen; AutoScaleMode=AutoScaleMode.Dpi;
         Icon=System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         var title=LabelAt("SAPERROR",22,15,856,43,heading);
+        title.TextAlign=ContentAlignment.MiddleLeft;
+        title.Padding=new Padding(12,0,0,0);
         if(!crt) { title.BackColor=Color.Navy; title.ForeColor=Color.White; }
         subtitle=LabelAt("",24,65,850,30,normal);
         var art=new PictureBox { Location=new Point(24,112), Size=new Size(416,234), SizeMode=PictureBoxSizeMode.Zoom,
-            BackColor=Color.Black, BorderStyle=BorderStyle.FixedSingle };
+            BackColor=Color.Black, BorderStyle=BorderStyle.Fixed3D };
         using(var stream=Resource("setup.art")) using(var original=Image.FromStream(stream)) artImage=new Bitmap(original);
         art.Image=artImage; Controls.Add(art);
         artCaption=LabelAt("",24,358,416,60,normal); artCaption.ForeColor=muted;
@@ -106,10 +114,18 @@ internal sealed class SetupWindow : Form {
         Controls.Add(path); browse=ButtonAt(778,176,97,30);
         shortcut=new CheckBox { Location=new Point(463,225), Size=new Size(412,30), Font=normal, ForeColor=fg, BackColor=bg, Checked=true }; Controls.Add(shortcut);
         launch=new CheckBox { Location=new Point(463,265), Size=new Size(412,30), Font=normal, ForeColor=fg, BackColor=bg, Checked=true }; Controls.Add(launch);
-        statusLabel=LabelAt("",463,315,412,90,normal);
-        progress=new SegmentBar { Location=new Point(24,431), Size=new Size(790,24), Retro=!crt }; Controls.Add(progress);
-        percent=LabelAt("0%",825,432,65,23,normal);
-        install=ButtonAt(537,478,164,39); cancel=ButtonAt(711,478,164,39);
+        consent=new CheckBox { Location=new Point(463,310), Size=new Size(412,45), Font=normal, ForeColor=fg, BackColor=bg, Checked=false, Name="AnalyticsConsent" };
+        Controls.Add(consent);
+        privacyNote=LabelAt("",483,357,392,94,normal);
+        privacyNote.ForeColor=muted;
+        statusLabel=LabelAt("",24,462,850,42,normal);
+        statusLabel.BorderStyle=BorderStyle.Fixed3D;
+        statusLabel.Padding=new Padding(6,3,6,3);
+        progress=new SegmentBar { Location=new Point(24,512), Size=new Size(790,24), Retro=true }; Controls.Add(progress);
+        percent=LabelAt("0%",825,513,65,23,normal);
+        install=ButtonAt(537,554,164,35); cancel=ButtonAt(711,554,164,35);
+        AcceptButton=install;
+        CancelButton=cancel;
         language.SelectedIndexChanged+=delegate { Localize(); };
         browse.Click+=delegate {
             using(var picker=new FolderBrowserDialog()){
@@ -123,6 +139,7 @@ internal sealed class SetupWindow : Form {
             else await InstallGame();
         };
         cancel.Click+=delegate { Close(); };
+        foreach (Button button in new[]{browse,install,cancel}) button.FlatStyle=FlatStyle.Standard;
         FormClosing+=delegate(object sender,FormClosingEventArgs e){ if(busy) e.Cancel=true; };
         timer=new Timer { Interval=120 };
         timer.Tick+=delegate { try { int p; if(progressPath!=null && File.Exists(progressPath) && Int32.TryParse(File.ReadAllText(progressPath),out p)) SetProgress(Math.Min(p,99)); } catch(IOException){} };
@@ -135,11 +152,24 @@ internal sealed class SetupWindow : Form {
         languageLabel.Text=T("Language","Мова"); pathLabel.Text=T("Installation folder:","Папка встановлення:");
         browse.Text=T("Browse...","Огляд..."); shortcut.Text=T("Create desktop shortcut","Створити ярлик на робочому столі");
         launch.Text=T("Launch SAPERROR when finished","Запустити SAPERROR після встановлення");
+        consent.Text=T("Allow optional gameplay analytics","Дозволити добровільну ігрову аналітику");
+        privacyNote.Text=T("Planned: session duration, modes and outcomes. This build sends nothing. Optional; change your choice in Settings > Privacy.","Заплановано: тривалість сесій, режими та результати. Ця збірка нічого не надсилає. Вибір можна змінити в налаштуваннях приватності.");
         statusLabel.Text=T("Ready to install. Game files and uninstaller will be added to the selected folder.","Готово до встановлення. Файли гри та засіб видалення буде додано до вибраної папки.");
         install.Text=T("Install","Встановити"); cancel.Text=T("Cancel","Скасувати");
     }
     void SetProgress(int value){ progress.Value=value; percent.Text=value+"%"; }
-    void SetBusy(bool value){ busy=value; path.Enabled=!value; browse.Enabled=!value; shortcut.Enabled=!value; language.Enabled=!value; launch.Enabled=!value; install.Enabled=!value; cancel.Enabled=!value; }
+    void SetBusy(bool value){ busy=value; path.Enabled=!value; browse.Enabled=!value; shortcut.Enabled=!value; language.Enabled=!value; launch.Enabled=!value; consent.Enabled=!value; install.Enabled=!value; cancel.Enabled=!value; }
+    // A versioned, local-only preference shared with Godot's default user:// path.
+    // No network calls or telemetry are performed by Setup.
+    internal static void SaveConsent(string file,bool allowed){
+        Directory.CreateDirectory(Path.GetDirectoryName(file));
+        string tmp=file+"."+Guid.NewGuid().ToString("N")+".tmp";
+        try {
+            File.WriteAllText(tmp,allowed?"v1:allow":"v1:deny",new System.Text.UTF8Encoding(false));
+            if(File.Exists(file)) File.Replace(tmp,file,null);
+            else File.Move(tmp,file);
+        } finally { if(File.Exists(tmp)) File.Delete(tmp); }
+    }
     async Task InstallGame(){
         string dir;
         try{
@@ -164,8 +194,13 @@ internal sealed class SetupWindow : Form {
             });
             if(code!=0||!File.Exists(Path.Combine(dir,"SAPERROR.exe"))||!File.Exists(Path.Combine(dir,"SAPERROR.pck")))throw new InvalidOperationException("Setup exit code: "+code);
             done=true;SetProgress(100);statusLabel.Text=T("Installation complete. SAPERROR is ready.","Встановлення завершено. SAPERROR готовий.");install.Text=T("Finish","Завершити");
+            try {
+                SaveConsent(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"Godot","app_userdata","SAPERROR","analytics_consent.txt"),consent.Checked);
+            } catch(Exception) {
+                MessageBox.Show(this,T("Installed, but the privacy preference could not be saved. Review it in Settings > Privacy.","Гру встановлено, але вибір приватності не збережено. Перевірте його в налаштуваннях гри."),Text,MessageBoxButtons.OK,MessageBoxIcon.Warning);
+            }
         }catch(Exception ex){statusLabel.Text=T("Installation failed. Check the folder and try again.","Не вдалося встановити. Перевірте папку та спробуйте знову.");MessageBox.Show(this,ex.Message,Text,MessageBoxButtons.OK,MessageBoxIcon.Error);}
-        finally{timer.Stop();SetBusy(false);if(done){path.Enabled=false;browse.Enabled=false;shortcut.Enabled=false;language.Enabled=false;cancel.Enabled=false;}try{Directory.Delete(tempDir,true);}catch(IOException){}catch(UnauthorizedAccessException){}}
+        finally{timer.Stop();SetBusy(false);if(done){path.Enabled=false;browse.Enabled=false;shortcut.Enabled=false;language.Enabled=false;consent.Enabled=false;cancel.Enabled=false;}try{Directory.Delete(tempDir,true);}catch(IOException){}catch(UnauthorizedAccessException){}}
     }
     protected override void Dispose(bool disposing){if(disposing){if(timer!=null)timer.Dispose();if(artImage!=null)artImage.Dispose();if(normal!=null)normal.Dispose();if(heading!=null)heading.Dispose();}base.Dispose(disposing);}
 }

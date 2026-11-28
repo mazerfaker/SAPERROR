@@ -284,12 +284,12 @@ jobs:
             } finally { $zip.Dispose() }
             Get-FileHash $path | Out-File -Append build/logs/artifact-hashes.txt
           }
-      - name: Build CRT and Retro98 trial installers
+      - name: Build final Retro98 installer
         shell: pwsh
         run: |
           if (!(Test-Path 'installer/setup_art.png') -or !(Test-Path 'installer/setup_icon.ico')) {
             'Installer prototypes awaiting approved artwork or icon upload; portable build unaffected.' | Out-File build/logs/installer-status.txt
-            Write-Warning 'Add installer/setup_art.png and installer/setup_icon.ico to enable both Setup.exe builds.'
+            Write-Warning 'Add installer/setup_art.png and installer/setup_icon.ico to enable the Retro98 Setup.exe build.'
           } else {
             & ./installer/build.ps1 -Version $env:GAME_VERSION -Smoke
           }

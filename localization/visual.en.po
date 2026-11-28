@@ -1229,3 +1229,18 @@ msgstr "Aspect ratio and mouse accuracy are preserved."
 
 msgid "VIS_RESOLUTION_UNAVAILABLE"
 msgstr "This window size does not fit the current display."
+
+msgid "PRIVACY_TITLE"
+msgstr "Privacy"
+
+msgid "PRIVACY_BODY"
+msgstr "Optional gameplay analytics preference. Planned statistics: session duration, game modes and outcomes. This build does not collect or transmit analytics."
+
+msgid "PRIVACY_ANALYTICS"
+msgstr "Allow analytics"
+
+msgid "PRIVACY_NOTE"
+msgstr "Your choice is stored on this device. You can turn it off at any time; gameplay is unchanged."
+
+msgid "PRIVACY_SAVE_ERROR"
+msgstr "Could not save your choice. Please try again."
