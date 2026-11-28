@@ -1,4 +1,7 @@
 # Changelog
+## 0.9.0-rc.4 — Narrative Overhaul candidate
+Live campaign transmissions for all ten sectors, responsive damage and anomaly lines, typewriter presentation, revised act/optional archive/final dialogue and clearer boss instructions. No save or gameplay rule changes. Manual narrative pacing and visual review pending.
+
 ## 0.9.0-rc.3 — First Experience candidate
 Guided story recommendation, contextual early-field coach, simplified controls, revised opening hook and optional upgrade messaging. Other difficulties and save format unchanged. Manual novice acceptance pending.
 

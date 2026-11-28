@@ -469,7 +469,7 @@ msgid "CH_AUTHORED"
 msgstr "AUTHORED TRIAL"
 
 msgid "CH_LOOP_INTRO"
-msgstr "LOOP: the marked upper region returns to its checkpoint after three moves. Health and neutralized mines are not restored. Solve the board after the reset."
+msgstr "LOOP: The marked upper area resets once after three moves (or an earlier win). Health and neutralized mines do not reset. Clear the field after the rewind."
 
 msgid "CH_LOOP_COUNT"
 msgstr "Moves to local reset:"
@@ -493,7 +493,7 @@ msgid "CH_DEFEAT"
 msgstr "SIGNAL LOST - RETRY"
 
 msgid "CH_DOUBLE_INTRO"
-msgstr "DOUBLE: recover both fields. PARALLEL switches layer A/B. Marked pairs expose the exact local clue on each layer."
+msgstr "DOUBLE: There are two fields. Use PARALLEL to switch between A and B. Marked links give clues on both sides. Clear both fields to win."
 
 msgid "CH_DOUBLE_LINKS"
 msgstr "Paired clue readings:"
@@ -502,7 +502,7 @@ msgid "CH_DOUBLE_PROGRESS"
 msgstr "Recovered:"
 
 msgid "CH_WATCHER_INTRO"
-msgstr "WATCHER: three marked pairs of clues become obscured after five moves. The journal always retains their true readings. Recover the field."
+msgstr "WATCHER: After five moves, six numbers disappear. Open the Journal to see their original values. Clear all safe cells."
 
 msgid "CH_WATCHER_CLOSED"
 msgstr "WATCHER has obscured the groups. Read the journal."
@@ -511,7 +511,7 @@ msgid "CH_WATCHER_COUNT"
 msgstr "Moves until obscuration:"
 
 msgid "CH_LIAR_INTRO"
-msgstr "LIAR: S1, S2 and S3 count mines in rows 1, 3 and 5. One sensor is false; pairwise sums are true. Identify the bad sensor and recover the field. Ordinary clues remain true."
+msgstr "LIAR: Ordinary clues are true. S1, S2 and S3 count mines in rows 1, 3 and 5. Exactly one sensor lies. Compare the readings with the true pair sums, select the liar, then clear the field."
 
 msgid "CH_LIAR_SELECT"
 msgstr "Select the false sensor using the checksums."
@@ -556,13 +556,13 @@ msgid "CAM_ACT_0"
 msgstr "ADMIN: Operator, can you hear me? Restore the damaged archive. Open safe cells and leave mines marked. I'll guide you.\n\nECHO: ...you're here again?"
 
 msgid "CAM_ACT_1"
-msgstr "ADMIN: Corruption detected. Proceed through sectors 04-06.\n\nECHO: Recover what the sensors conceal."
+msgstr "ADMIN: The archive is damaged. Your task is unchanged. Continue through sectors 04–06.\n\nECHO: That name in the archive wasn't a mistake. Find out what happened during Incident 17."
 
 msgid "CAM_ACT_2"
-msgstr "ECHO: Those records are ours. Sectors 07-09 contain a repeated state. Do not let the system erase it."
+msgstr "ECHO: These records belong to operators like you. Some have the same signature. Mine might be one of them.\n\nADMIN: Continue the clearance. Disregard the voice."
 
 msgid "CAM_ACT_3"
-msgstr "ADMIN: Access to sector 10 granted. Final authorization pending."
+msgstr "ADMIN: Final sector authorized. The archive must remain under my control.\n\nECHO: You can stop this. You don't have to obey the last instruction."
 
 msgid "MOD_ARCHIVIST"
 msgstr "Archivist"
@@ -574,7 +574,7 @@ msgid "CAM_ROUTE"
 msgstr "ROUTE SELECTION"
 
 msgid "CAM_ROUTE_DESC"
-msgstr "Recover an optional memory archive for 15 CR and a key record. Or evacuate now. Three records unlock additional endings; archive trials use independent integrity."
+msgstr "Optional: solve a short extra field to recover one memory record and earn 15 CR. Or continue the main mission. All three records unlock more endings. The extra field has its own health."
 
 msgid "CAM_ARCHIVE"
 msgstr "RECOVER ARCHIVE"
@@ -595,7 +595,7 @@ msgid "CH_LOOP_B_INTRO"
 msgstr "Second temporal state: the marked lower region resets after three moves. Recover the second field."
 
 msgid "CH_ADMIN_LINK_INTRO"
-msgstr "ADMIN phase 1: a marked portal links the opposite corners. The link can be toggled freely; all readings follow the active topology."
+msgstr "ADMIN: The two marked corners count as neighbors. Use the PORTAL button to turn that link off or on. Then clear the safe cells."
 
 msgid "CH_ADMIN_LINK_STATUS"
 msgstr "LINK TOPOLOGY"
@@ -604,13 +604,13 @@ msgid "CH_REWRITE_INTRO"
 msgstr "REWRITE: recover a separate authorized memory field to unlock the final protocol."
 
 msgid "CAM_ADMIN_INTRO"
-msgstr "ADMIN: ROOT ACCESS GRANTED. Three authorization phases remain: linked topology, parallel archive and checksum verification.\n\nECHO: We can end this cycle."
+msgstr "ADMIN: You have reached the end of your assignment. Three tests remain: linked corners, two fields and a lying sensor. Complete them to gain control.\n\nECHO: Then choose for yourself."
 
 msgid "CAM_FINAL_CHOICE"
 msgstr "FINAL AUTHORIZATION"
 
 msgid "CAM_FINAL_DESC"
-msgstr "Select the fate of the station. The conditions are shown below."
+msgstr "The station is in your hands. Shut it down, isolate ADMIN, or rewrite the instruction that repeats the experiment. Recovered records determine which choices are available."
 
 msgid "CAM_REQUIRE_SHUTDOWN"
 msgstr "Defeat ADMIN."
@@ -947,3 +947,87 @@ msgstr "CONTINUE (buying is optional)"
 
 msgid "GUIDE_START"
 msgstr "START WORK"
+
+msgid "NARR_SECTOR_01"
+msgstr "ADMIN: Begin recovery. I will monitor your work."
+
+msgid "NARR_SECTOR_02"
+msgstr "ECHO: Check the archive. Your name is in it."
+
+msgid "NARR_SECTOR_03"
+msgstr "ADMIN: Do not respond to unauthorized signals."
+
+msgid "NARR_SECTOR_04"
+msgstr "ECHO: It knows you found something."
+
+msgid "NARR_SECTOR_05"
+msgstr "ADMIN: Some records are dangerous. Leave them sealed."
+
+msgid "NARR_SECTOR_06"
+msgstr "ECHO: The numbers are real. The sensors can lie."
+
+msgid "NARR_SECTOR_07"
+msgstr "ECHO: I remember this room. Do you?"
+
+msgid "NARR_SECTOR_08"
+msgstr "ADMIN: Archive access is not part of your assignment."
+
+msgid "NARR_SECTOR_09"
+msgstr "ECHO: Every reset brings us back here."
+
+msgid "NARR_SECTOR_10"
+msgstr "ADMIN: Complete the final test. Do not interrupt."
+
+msgid "NARR_CLEAR_01"
+msgstr "ECHO: Good. This time, remember the date."
+
+msgid "NARR_CLEAR_02"
+msgstr "ECHO: There. A record they tried to hide."
+
+msgid "NARR_CLEAR_03"
+msgstr "ADMIN: Unauthorized observation detected."
+
+msgid "NARR_CLEAR_04"
+msgstr "ECHO: You are not the first to make it this far."
+
+msgid "NARR_CLEAR_05"
+msgstr "ECHO: The next record may explain why."
+
+msgid "NARR_CLEAR_06"
+msgstr "ADMIN: Sensor verification required."
+
+msgid "NARR_CLEAR_07"
+msgstr "ECHO: Something survived the last reset."
+
+msgid "NARR_CLEAR_08"
+msgstr "ECHO: One more archive. Then we can choose."
+
+msgid "NARR_CLEAR_09"
+msgstr "ECHO: Don't let the loop take you again."
+
+msgid "NARR_CLEAR_10"
+msgstr "ADMIN: Final authorization awaits."
+
+msgid "NARR_HIT_FIRST"
+msgstr "ADMIN: Damage detected. Continue while health remains."
+
+msgid "NARR_HIT_REPEAT"
+msgstr "ECHO: Take your time. You don't have to rush."
+
+msgid "NARR_LOSS"
+msgstr "ECHO: I'll be here when you return."
+
+msgid "NARR_PHANTOM"
+msgstr "ECHO: A missing number isn't a missing truth."
+
+msgid "NARR_PARASITE"
+msgstr "ADMIN: Access blocked. Use Cleanse if needed."
+
+msgid "NARR_ARCHIVE_02"
+msgstr "ECHO: That record belongs to you. Want to find out why?"
+
+msgid "NARR_ARCHIVE_05"
+msgstr "ECHO: ADMIN sealed this log after Incident 17. We can recover it."
+
+msgid "NARR_ARCHIVE_08"
+msgstr "ECHO: This is our last chance to learn what the station remembers."

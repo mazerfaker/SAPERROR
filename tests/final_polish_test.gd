@@ -57,6 +57,24 @@ func run() -> void:
 		TranslationServer.set_locale(lang)
 		for id in ["GUIDE_MENU_TITLE","GUIDE_MENU_BODY","GUIDE_RECOMMENDED","GUIDE_MINES","GUIDE_FIRST","GUIDE_NUMBERS","GUIDE_HIT","GUIDE_HINT","GUIDE_PHANTOM","GUIDE_ECHO","GUIDE_WATCHER","GUIDE_WIN","GUIDE_LOSS","GUIDE_NEXT","GUIDE_SHOP","GUIDE_SHOP_NEXT","GUIDE_START"]:
 			check(TranslationServer.translate(id)!=id,"guided translation "+lang+" "+id)
+	ui._start_profile(0,true)
+	ui.campaign.acknowledge(1)
+	ui.reduced=true
+	ui._show("game")
+	check(is_instance_valid(ui.narrative_label) and ui.narrative_label.text==TranslationServer.translate("NARR_SECTOR_01"),"first campaign transmission")
+	check(ui.narrative_label.visible_ratio==1.0,"reduced motion instant transmission")
+	ui._reveal(0)
+	if ui.board!=null and not ui.board.finished():
+		ui.protocol.prepare(ui.board)
+		ui.protocol.advance(ui.board,ui.board.cells.size())
+		ui._after_action()
+		check(ui.narrative_label.text==TranslationServer.translate("NARR_CLEAR_01"),"victory transmission")
+	ui._start_profile(1)
+	check(not is_instance_valid(ui.narrative_label),"free run has no campaign transmissions")
+	for lang in ["en","uk"]:
+		TranslationServer.set_locale(lang)
+		for id in ["NARR_SECTOR_01","NARR_SECTOR_02","NARR_SECTOR_03","NARR_SECTOR_04","NARR_SECTOR_05","NARR_SECTOR_06","NARR_SECTOR_07","NARR_SECTOR_08","NARR_SECTOR_09","NARR_SECTOR_10","NARR_CLEAR_01","NARR_CLEAR_02","NARR_CLEAR_03","NARR_CLEAR_04","NARR_CLEAR_05","NARR_CLEAR_06","NARR_CLEAR_07","NARR_CLEAR_08","NARR_CLEAR_09","NARR_CLEAR_10","NARR_HIT_FIRST","NARR_HIT_REPEAT","NARR_LOSS","NARR_PHANTOM","NARR_PARASITE","NARR_ARCHIVE_02","NARR_ARCHIVE_05","NARR_ARCHIVE_08"]:
+			check(TranslationServer.translate(id)!=id,"narrative translation "+lang+" "+id)
 	# Header feedback regression: caret keeps its layout and boss art cannot cover body text.
 	ui.reduced=false
 	ui.header_caret_elapsed=0.0

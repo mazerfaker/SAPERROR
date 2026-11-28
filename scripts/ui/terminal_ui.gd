@@ -141,6 +141,8 @@ var refresh_style_writes: int=0
 var page: Control
 var header_title: Label
 var guide_label: Label
+var narrative_label: Label
+var narrative_tween: Tween
 var guide_rule_title: Label
 var guide_rule_help: Label
 var header_emblem_slot: Control
@@ -246,6 +248,9 @@ func _show(next: String) -> void:
 		seed_input = null
 	screen = next
 	guide_label=null
+	narrative_label=null
+	if narrative_tween!=null and narrative_tween.is_valid(): narrative_tween.kill()
+	narrative_tween=null
 	guide_rule_title=null
 	guide_rule_help=null
 	active_trial=null
@@ -262,7 +267,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_build_terminal_header()
-	var version := _label("0.9.0-rc3",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("0.9.0-rc4",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -697,9 +702,17 @@ func _game() -> void:
 	var right := _panel(Rect2(1062,180,284,608))
 	_label(tr("VIS_SECTOR")+" %02d" % sector_number,Rect2(16,17,252,50),left,32)
 	if campaign.active: _label("ACT %d // %s" % [campaign.act_index(sector_number)+1,Campaign.ACT_IDS[campaign.act_index(sector_number)]],Rect2(16,65,252,22),left,17,AMBER)
-	_label(tr("VIS_DIFFICULTY")+"\n"+tr("VIS_PROFILE_"+Profiles.IDS[profile].to_upper()),Rect2(16,85,252,84),left,30)
-	integrity = _label("",Rect2(16,189,252,105),left,33)
-	recovered = _label("",Rect2(16,315,252,93),left,31)
+	if campaign.active:
+		_label(tr("VIS_PROFILE_"+Profiles.IDS[profile].to_upper()),Rect2(16,92,252,32),left,21,DIM)
+		narrative_label=_label("",Rect2(16,130,252,136),left,21,AMBER)
+		narrative_label.name="LiveTransmission"
+		narrative_label.mouse_filter=Control.MOUSE_FILTER_IGNORE
+		integrity=_label("",Rect2(16,274,252,66),left,24)
+		recovered=_label("",Rect2(16,344,252,68),left,24)
+	else:
+		_label(tr("VIS_DIFFICULTY")+"\n"+tr("VIS_PROFILE_"+Profiles.IDS[profile].to_upper()),Rect2(16,85,252,84),left,30)
+		integrity=_label("",Rect2(16,189,252,105),left,33)
+		recovered=_label("",Rect2(16,315,252,93),left,31)
 	var track := ColorRect.new()
 	track.color = Color("193b24")
 	track.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1025,6 +1038,7 @@ func _refresh() -> void:
 	flag_count.text = tr("VIS_FLAGS")+"\n%d / %d" % [flags,Profiles.MINES[profile] if board == null else board.mine_total]
 	_refresh_tools()
 	_refresh_field_guide()
+	_refresh_transmission()
 
 # Hidden input is intercepted before forwarding normal UI key events.
 func protocol_input(event: InputEventKey) -> bool:
@@ -1198,6 +1212,31 @@ func _leave_cell(i: int) -> void:
 	if hover_cell==i:
 		hover_cell = -1
 		_refresh_marks()
+func _transmission_key() -> String:
+	if board!=null:
+		if board.won(): return "NARR_CLEAR_%02d" % clampi(sector_number,1,10)
+		if board.hp<=0: return "NARR_LOSS"
+		if message_key=="CORE_HIT": return "NARR_HIT_FIRST" if board.hits==1 else "NARR_HIT_REPEAT"
+		if message_key=="VIS_PHANTOM_ALERT": return "NARR_PHANTOM"
+		if message_key in ["VIS_PARASITE_WARNING","VIS_PARASITE_BLOCKED"]: return "NARR_PARASITE"
+	return "NARR_SECTOR_%02d" % clampi(sector_number,1,10)
+func _animate_transmission(target: Label) -> Tween:
+	target.visible_ratio=1.0
+	if reduced or target.text.is_empty(): return null
+	target.visible_ratio=0.0
+	var animation:=target.create_tween()
+	animation.tween_property(target,"visible_ratio",1.0,clampf(float(target.text.length())/52.0,0.25,2.4))
+	return animation
+func _refresh_transmission() -> void:
+	if not campaign.active or not is_instance_valid(narrative_label): return
+	var value: String=tr(_transmission_key())
+	if narrative_label.text==value: return
+	if narrative_tween!=null and narrative_tween.is_valid(): narrative_tween.kill()
+	narrative_label.text=value
+	narrative_label.tooltip_text=value
+	narrative_label.add_theme_font_size_override("font_size",Access.fit_font(theme.default_font,value,21,text_scale,Vector2(252,136),true))
+	narrative_label.add_theme_color_override("font_color",Access.readable(AMBER if value.begins_with("ECHO:") else GREEN,high_contrast))
+	narrative_tween=_animate_transmission(narrative_label)
 func _guided_early() -> bool:
 	return campaign.active and profile==0 and sector_number<=3
 func _refresh_field_guide() -> void:
@@ -1561,6 +1600,7 @@ func _campaign_intro() -> void:
 	_label(tr("CAM_ACT_RANGE")+" "+ranges[act]+"  //  "+tr("CAM_ACT_SIGNAL_%d" % act),Rect2(124,298,1170,48),page,25,tint)
 	var dialogue:=_label(tr("CAM_ACT_%d" % act),Rect2(124,363,696,300),page,30)
 	dialogue.name="ActDialogue"
+	_animate_transmission(dialogue)
 	var plate:=ActPlate.new()
 	plate.name="ActIllustration"
 	plate.act_index=act
@@ -1653,7 +1693,8 @@ func _campaign_recovery() -> void:
 func _campaign_route() -> void:
 	if not pending_sector or not campaign.archive_pending(sector_number): return
 	_label(tr("CAM_ROUTE"),Rect2(124,215,1170,80),page,42,AMBER)
-	_label(tr("CAM_ROUTE_DESC"),Rect2(124,310,1170,220),page,30)
+	var route_dialogue:=_label(tr("NARR_ARCHIVE_%02d" % sector_number)+"\n\n"+tr("CAM_ROUTE_DESC"),Rect2(124,310,1170,220),page,30)
+	_animate_transmission(route_dialogue)
 	_button(tr("CAM_ARCHIVE"),Rect2(124,575,1170,80),page,func(): _show("campaign_archive"))
 	_button(tr("CAM_SKIP"),Rect2(124,680,1170,80),page,func():
 		if campaign.choose_route(sector_number,false):
@@ -1690,7 +1731,8 @@ func _campaign_archive() -> void:
 func _admin_intro() -> void:
 	if not campaign.active or not pending_sector or campaign.boss_pending(sector_number)!="ADMIN": return
 	_label("ADMIN // ROOT ACCESS",Rect2(124,215,1170,90),page,48,RED)
-	_label(tr("CAM_ADMIN_INTRO"),Rect2(124,330,1170,350),page,32)
+	var admin_dialogue:=_label(tr("CAM_ADMIN_INTRO"),Rect2(124,330,1170,350),page,32)
+	_animate_transmission(admin_dialogue)
 	var emblem:=BossEmblem.new()
 	emblem.boss_id="ADMIN"
 	emblem.reduced_motion=reduced
@@ -1754,6 +1796,7 @@ func _ending_scene(id: String) -> void:
 	_label(tr("CAM_FINAL_STATUS")+" // "+tr("CAM_END_STATUS_"+id),Rect2(124,298,1170,48),page,25,tint)
 	var dialogue:=_label(tr("CAM_END_"+id),Rect2(124,365,696,340),page,30)
 	dialogue.name="EndingDialogue"
+	_animate_transmission(dialogue)
 	var plate:=EndingPlate.new()
 	plate.name="EndingIllustration"
 	plate.ending_id=id
