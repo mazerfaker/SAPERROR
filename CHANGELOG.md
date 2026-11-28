@@ -1,4 +1,7 @@
 # Changelog
+### RC.6 installer-specific icon
+Both Setup frontends and shared backend use the approved red glitch gear ICO, independent of the installed game icon. Build gate verifies exact ICO hash and embedded frontend icons.
+
 ### RC.6 dual installer trials
 Prepare native CRT Terminal and Retro Windows 98 setup frontends sharing one per-user Inno Setup payload, localized UI, shortcuts and uninstall. Windows CI compiles both after the exact supplied artwork is uploaded; visual screenshots and common payload install/uninstall smoke gates. No gameplay changes.
 

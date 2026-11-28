@@ -287,9 +287,9 @@ jobs:
       - name: Build CRT and Retro98 trial installers
         shell: pwsh
         run: |
-          if (!(Test-Path 'installer/setup_art.png')) {
-            'Installer prototypes awaiting original artwork upload; portable build unaffected.' | Out-File build/logs/installer-status.txt
-            Write-Warning 'Add installer/setup_art.png to enable both Setup.exe builds.'
+          if (!(Test-Path 'installer/setup_art.png') -or !(Test-Path 'installer/setup_icon.ico')) {
+            'Installer prototypes awaiting approved artwork or icon upload; portable build unaffected.' | Out-File build/logs/installer-status.txt
+            Write-Warning 'Add installer/setup_art.png and installer/setup_icon.ico to enable both Setup.exe builds.'
           } else {
             & ./installer/build.ps1 -Version $env:GAME_VERSION -Smoke
           }

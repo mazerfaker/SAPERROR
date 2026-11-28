@@ -2,6 +2,9 @@ param([string]$Version = '0.9.0-rc.6', [switch]$Smoke)
 $ErrorActionPreference = 'Stop'
 Set-Location (Split-Path $PSScriptRoot -Parent)
 $art = 'installer/setup_art.png'
+$icon = 'installer/setup_icon.ico'
+if (!(Test-Path $icon)) { throw 'Missing approved installer/setup_icon.ico' }
+if ((Get-FileHash $icon -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'bad834b2b509d0e453a85da0edb4d67f6040540a85cefa63e8423246ea9fb1e6') { throw 'Installer icon differs from the approved ICO' }
 if (!(Test-Path $art)) { throw 'Missing approved installer/setup_art.png' }
 if ((Get-FileHash $art -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'eff5e285bc85bb9b14a885af57db1c13c9b6257687f3a7598e735c6695f3a31f') { throw 'Installer art differs from the supplied PNG' }
 foreach ($file in @('SAPERROR.exe','SAPERROR.pck','LICENSES.md')) {
@@ -20,10 +23,14 @@ $csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if (!(Test-Path $csc)) { throw '.NET Framework C# compiler missing' }
 foreach ($theme in @('CRT','Retro98')) {
   $out = "build/installer/SAPERROR_Setup_$theme.exe"
-  $args = @('/nologo','/target:winexe','/platform:x64','/optimize+','/codepage:65001','/reference:System.Windows.Forms.dll','/reference:System.Drawing.dll',"/out:$out",'/win32icon:assets/icon/SAPERROR.ico','/resource:build/installer/SAPERROR_Backend.exe,setup.payload','/resource:installer/setup_art.png,setup.art','installer/SetupWindow.cs')
+  $args = @('/nologo','/target:winexe','/platform:x64','/optimize+','/codepage:65001','/reference:System.Windows.Forms.dll','/reference:System.Drawing.dll',"/out:$out",'/win32icon:installer/setup_icon.ico','/resource:build/installer/SAPERROR_Backend.exe,setup.payload','/resource:installer/setup_art.png,setup.art','installer/SetupWindow.cs')
   if ($theme -eq 'CRT') { $args += '/define:CRT' }
   & $csc @args
   if ($LASTEXITCODE -ne 0 -or !(Test-Path $out)) { throw "Failed to compile $theme Setup" }
+  Add-Type -AssemblyName System.Drawing
+  $actual = [System.Drawing.Icon]::ExtractAssociatedIcon((Resolve-Path $out).Path)
+  if ($null -eq $actual) { throw "Missing embedded setup icon: $theme" }
+  $actual.Dispose()
   if ($Smoke) {
     $png = Join-Path $PWD "build/logs/installer_$theme.png"
     $p = Start-Process -FilePath (Resolve-Path $out).Path -ArgumentList @('--snapshot',('"' + $png + '"')) -PassThru
