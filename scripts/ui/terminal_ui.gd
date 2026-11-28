@@ -140,6 +140,9 @@ var last_visual_styles: Array=[]
 var refresh_style_writes: int=0
 var page: Control
 var header_title: Label
+var guide_label: Label
+var guide_rule_title: Label
+var guide_rule_help: Label
 var header_emblem_slot: Control
 var active_trial: ChallengeUI
 var header_caret_elapsed: float=0.0
@@ -242,6 +245,9 @@ func _show(next: String) -> void:
 		seed_value = seed_input.text
 		seed_input = null
 	screen = next
+	guide_label=null
+	guide_rule_title=null
+	guide_rule_help=null
 	active_trial=null
 	if is_instance_valid(page):
 		remove_child(page)
@@ -256,7 +262,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_build_terminal_header()
-	var version := _label("0.9.0-rc2",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("0.9.0-rc3",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -330,8 +336,12 @@ func _menu() -> void:
 	_button(tr("VIS_HELP"),Rect2(124,579,640,65),page,func(): _show("help"))
 	_button(tr("VIS_SETTINGS"),Rect2(124,657,640,65),page,func(): _show("settings"))
 	_button("power off",Rect2(124,735,640,65),page,func(): _show("confirm_exit"))
-	_label(tr("VIS_STATS")+"\n"+tr("VIS_RUNS")+" "+str(sessions)+"\n"+tr("VIS_WINS")+" "+str(wins)+"\n"+tr("VIS_LOSSES")+" "+str(losses),Rect2(820,345,500,285),page,32)
-	_label(tr("VIS_LESSONS")+" %d / 9" % tutorial_done,Rect2(820,650,500,62),page,29,AMBER)
+	if sessions==0 and not _has_run():
+		_label(tr("GUIDE_MENU_TITLE"),Rect2(820,345,500,64),page,32,AMBER)
+		_label(tr("GUIDE_MENU_BODY"),Rect2(820,423,500,260),page,29)
+	else:
+		_label(tr("VIS_STATS")+"\n"+tr("VIS_RUNS")+" "+str(sessions)+"\n"+tr("VIS_WINS")+" "+str(wins)+"\n"+tr("VIS_LOSSES")+" "+str(losses),Rect2(820,345,500,285),page,32)
+		_label(tr("VIS_LESSONS")+" %d / 9" % tutorial_done,Rect2(820,650,500,62),page,29,AMBER)
 	if save_failed: _label(tr("VIS_SAVE_ERROR"),Rect2(820,714,500,80),page,27,RED)
 	elif save_recovered: _label(tr("VIS_SAVE_RECOVERED"),Rect2(820,714,500,80),page,25,AMBER)
 	_button(tr("CH_MENU"),Rect2(820,810,245,60),page,func(): _show("challenges"),21)
@@ -342,6 +352,7 @@ func _profiles() -> void:
 		_label(tr("VIS_REPLACE_RUN"),Rect2(124,265,1170,80),page,29,AMBER)
 	for i in range(4):
 		var label: String = tr("VIS_PROFILE_"+Profiles.IDS[i].to_upper())+"  //  %d×%d  ·  %d  ·  HP %d" % [Profiles.SIZES[i],Profiles.SIZES[i],Profiles.MINES[i],Profiles.HP[i]]
+		if i==0 and campaign_selected: label=tr("GUIDE_RECOMMENDED")+"  //  6×6 · 4 "+tr("GUIDE_MINES")+" · 5 HP"
 		var choice:=_button(label,Rect2(124,350+i*100,1170,74),page,_request_profile.bind(i,campaign_selected,finite_selected),32)
 		choice.tooltip_text="%d CR | %s %d | %s %d" % [Economy.START_CREDITS[i],tr("VIS_STOCK"),Economy.START_STOCK[i],tr("VIS_HINT"),Tools.HINT_LIMITS[i]]
 	_button(tr("VIS_BACK"),Rect2(124,803,350,57),page,func(): _show("menu"))
@@ -701,9 +712,9 @@ func _game() -> void:
 	credit_label = _label("",Rect2(16,504,252,35),left,24,AMBER)
 	journal_button = _button(tr("VIS_JOURNAL"),Rect2(16,548,122,48),left,_open_journal,18)
 	cleanse_button = _button(tr("VIS_CLEANSE"),Rect2(146,548,122,48),left,_cleanse,18)
-	_label(tr("VIS_RULE"),Rect2(16,17,252,44),right,30,DIM)
+	guide_rule_title=_label(tr("VIS_RULE"),Rect2(16,17,252,44),right,30,DIM)
 	rule_button = _button("CLASSIC",Rect2(16,64,252,56),right,_cycle_rule,28)
-	_label(tr("VIS_RULE_HOVER"),Rect2(16,132,252,42),right,18,DIM)
+	guide_rule_help=_label(tr("VIS_RULE_HOVER"),Rect2(16,132,252,42),right,18,DIM)
 	portal_button = _button("PORTAL",Rect2(16,178,252,42),right,_toggle_portal,22)
 	portal_button.hide()
 	hint_button = _button("",Rect2(16,232,252,62),right,_request_hint,25)
@@ -711,6 +722,9 @@ func _game() -> void:
 	shield_button = _button("",Rect2(16,388,252,62),right,_arm_shield,24)
 	analyzer_button = _button("",Rect2(16,466,252,56),right,_select_inspection.bind("analyzer"),22)
 	third_button = _button("",Rect2(16,538,252,56),right,_select_inspection.bind("third"),22)
+	if _guided_early():
+		guide_label=_label("",Rect2(16,17,252,202),right,24,AMBER)
+		guide_label.name="FieldGuide"
 	grid = GridContainer.new()
 	var w: int = Profiles.SIZES[profile] if board == null else board.width
 	var h: int = Profiles.SIZES[profile] if board == null else board.height
@@ -748,11 +762,13 @@ func _game() -> void:
 		last_states.append(-1)
 		last_visual_styles.append([])
 	status = _label("",Rect2(86,794,1250,46),page,31)
-	_label(tr("CORE_SEED"),Rect2(86,850,100,54),page,28)
+	var seed_caption:=_label(tr("CORE_SEED"),Rect2(86,850,100,54),page,28)
+	seed_caption.visible=not _guided_early()
 	seed_input = LineEdit.new()
 	seed_input.text = str(active_seed) if board != null else seed_value
 	seed_input.editable = board == null
 	_place(seed_input,Rect2(184,844,230,60),page)
+	seed_input.visible=not _guided_early()
 	next_button = _button(tr("CORE_NEW"),Rect2(430,844,470,60),page,func():
 		if pending_sector:
 			_advance_sector()
@@ -1008,6 +1024,7 @@ func _refresh() -> void:
 		if b.tooltip_text!=tooltip: b.tooltip_text=tooltip
 	flag_count.text = tr("VIS_FLAGS")+"\n%d / %d" % [flags,Profiles.MINES[profile] if board == null else board.mine_total]
 	_refresh_tools()
+	_refresh_field_guide()
 
 # Hidden input is intercepted before forwarding normal UI key events.
 func protocol_input(event: InputEventKey) -> bool:
@@ -1181,6 +1198,37 @@ func _leave_cell(i: int) -> void:
 	if hover_cell==i:
 		hover_cell = -1
 		_refresh_marks()
+func _guided_early() -> bool:
+	return campaign.active and profile==0 and sector_number<=3
+func _refresh_field_guide() -> void:
+	if not _guided_early() or not is_instance_valid(guide_label): return
+	var advanced_rule: bool=board!=null and board.rule!=Rules.Rule.CLASSIC
+	guide_rule_title.visible=advanced_rule
+	guide_rule_help.visible=advanced_rule
+	rule_button.visible=advanced_rule
+	guide_label.visible=not advanced_rule
+	var key: String="GUIDE_FIRST"
+	if pending_sector: key="GUIDE_WIN"
+	elif board!=null:
+		if board.hp<=0: key="GUIDE_LOSS"
+		elif message_key=="CORE_HIT": key="GUIDE_HIT"
+		elif hint_cell>=0: key="GUIDE_HINT"
+		elif phantom.active(): key="GUIDE_PHANTOM"
+		elif sector_number==1: key="GUIDE_NUMBERS"
+		elif sector_number==2: key="GUIDE_ECHO"
+		else: key="GUIDE_WATCHER"
+	guide_label.text=tr(key)
+	guide_label.add_theme_font_size_override("font_size",Access.fit_font(theme.default_font,guide_label.text,24,text_scale,Vector2(252,202),true))
+	guide_label.tooltip_text=guide_label.text
+	hint_button.visible=true
+	rewind_button.visible=sector_number>=2 or (board!=null and board.hits>0)
+	shield_button.visible=economy.shield_stock>0 or economy.shield_armed
+	analyzer_button.visible=sector_number>=2 and economy.stock>0
+	third_button.visible=economy.owned.has("THIRD_EYE")
+	journal_button.visible=sector_number>=3 or phantom.active()
+	cleanse_button.visible=sector_number>=3 or phantom.active() or parasite.active()
+	if pending_sector:
+		next_button.text=tr("GUIDE_NEXT")
 func _refresh_tools() -> void:
 	var active: bool = board!=null and not board.finished() and not protocol_active
 	if is_instance_valid(portal_button):
@@ -1238,7 +1286,7 @@ func _shop() -> void:
 	if not _shop_available():
 		_show("game")
 		return
-	_label(tr("VIS_SHOP")+" // %02d" % sector_number,Rect2(124,185,1160,65),page,40)
+	_label((tr("GUIDE_SHOP") if campaign.active and profile==0 else tr("VIS_SHOP"))+" // %02d" % sector_number,Rect2(124,185,1160,65),page,40)
 	_label("CR %d  |  HP %d/%d  |  %s %d/%d  |  %s %d/4" % [economy.credits,run_hp,_max_hp(),tr("VIS_STOCK"),economy.stock,economy.capacity(),tr("VIS_MODULES"),economy.owned.size()],Rect2(124,256,1170,60),page,27,AMBER)
 	var offers: Array[String] = economy.offers()
 	for i in range(offers.size()):
@@ -1258,7 +1306,7 @@ func _shop() -> void:
 	var installed := PackedStringArray()
 	for id in economy.owned: installed.append(tr("MOD_"+id))
 	_label(tr("VIS_MODULES")+": "+(", ".join(installed) if not installed.is_empty() else "—"),Rect2(124,754,1160,68),page,24,DIM)
-	_button(tr("VIS_NEXT_SECTOR"),Rect2(124,836,570,64),page,func(): _show("game"),28)
+	_button(tr("GUIDE_SHOP_NEXT" if campaign.active and profile==0 else "VIS_NEXT_SECTOR"),Rect2(124,836,570,64),page,func(): _show("game"),28)
 	_button(tr("VIS_BACK"),Rect2(714,836,570,64),page,func(): _show("menu"),28)
 func _buy_module(id: String) -> void:
 	if not _shop_available() or screen!="shop": return
@@ -1519,7 +1567,7 @@ func _campaign_intro() -> void:
 	plate.reduced_motion=reduced
 	_place(plate,Rect2(850,353,470,372),page)
 	_label(tr("CAM_RECORDS")+" %d / 3" % campaign.records.size(),Rect2(124,705,696,52),page,27,DIM)
-	_button(tr("CAM_ENTER"),Rect2(124,810,570,60),page,func():
+	_button(tr("GUIDE_START" if act==0 else "CAM_ENTER"),Rect2(124,810,570,60),page,func():
 		campaign.acknowledge(sector_number)
 		_save_session()
 		_show("shop" if _shop_available() else "game"))

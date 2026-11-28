@@ -43,6 +43,20 @@ func run() -> void:
 			for screen in ["menu","settings","accessibility","text_scale","profiles","confirm_exit"]:
 				ui._show(screen)
 				check(ui.page.size==Vector2(1426,962),"fixed CRT page "+screen)
+	ui._start_profile(0,true)
+	ui.campaign.acknowledge(1)
+	ui._show("game")
+	check(ui.guide_label.visible and not ui.seed_input.visible and not ui.rule_button.visible,"guided story hides technical controls")
+	check(ui.guide_label.text==TranslationServer.translate("GUIDE_FIRST"),"first safe click explained")
+	ui._reveal(0)
+	check(ui.board!=null and ui.board.hp==Profiles.HP[0],"guided first move safe")
+	check(ui.guide_label.visible and ui.hint_button.visible,"in-field guidance available")
+	ui._start_profile(1)
+	check(not is_instance_valid(ui.guide_label) and ui.seed_input.visible and ui.rule_button.visible,"advanced controls preserved")
+	for lang in ["en","uk"]:
+		TranslationServer.set_locale(lang)
+		for id in ["GUIDE_MENU_TITLE","GUIDE_MENU_BODY","GUIDE_RECOMMENDED","GUIDE_MINES","GUIDE_FIRST","GUIDE_NUMBERS","GUIDE_HIT","GUIDE_HINT","GUIDE_PHANTOM","GUIDE_ECHO","GUIDE_WATCHER","GUIDE_WIN","GUIDE_LOSS","GUIDE_NEXT","GUIDE_SHOP","GUIDE_SHOP_NEXT","GUIDE_START"]:
+			check(TranslationServer.translate(id)!=id,"guided translation "+lang+" "+id)
 	# Header feedback regression: caret keeps its layout and boss art cannot cover body text.
 	ui.reduced=false
 	ui.header_caret_elapsed=0.0

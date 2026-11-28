@@ -1,4 +1,7 @@
 # Changelog
+## 0.9.0-rc.3 — First Experience candidate
+Guided story recommendation, contextual early-field coach, simplified controls, revised opening hook and optional upgrade messaging. Other difficulties and save format unchanged. Manual novice acceptance pending.
+
 ## 0.9.0-rc.2 — Final Polish candidate
 Cancel-first exit and replacement confirmation, persisted preferred text size with fixed CRT fit, locale parity and 4000 certified profile seed QA. Manual graphics/audio/hardware acceptance still required.
 

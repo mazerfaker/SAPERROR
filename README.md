@@ -1,4 +1,4 @@
-# SAPERROR — 0.9.0-rc.2 (Release Candidate)
+# SAPERROR — 0.9.0-rc.3 (Release Candidate)
 The numbers don't lie. Usually. / Числа не брешуть. Зазвичай.
 
 Offline Windows x64 analog-horror minesweeper roguelite. Godot 4.7.2 stable. This is a feature-frozen release candidate, not 1.0 or a manually accepted release.

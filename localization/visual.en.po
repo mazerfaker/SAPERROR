@@ -553,7 +553,7 @@ msgid "CAM_BOUNDARY"
 msgstr "ADMIN encounter is not available in this development build. Sector completion is saved. This is not an ending."
 
 msgid "CAM_ACT_0"
-msgstr "ADMIN: Your task is to clear ten sectors. Recover the archive.\n\nECHO: You've cleared them before. Look at the date."
+msgstr "ADMIN: Operator, can you hear me? Restore the damaged archive. Open safe cells and leave mines marked. I'll guide you.\n\nECHO: ...you're here again?"
 
 msgid "CAM_ACT_1"
 msgstr "ADMIN: Corruption detected. Proceed through sectors 04-06.\n\nECHO: Recover what the sensors conceal."
@@ -896,3 +896,54 @@ msgstr "Text size"
 
 msgid "POLISH_SCALE_DESC"
 msgstr "Choose a preferred text size. Text is fitted to the fixed terminal display; narrow controls may use a smaller size to remain readable."
+
+msgid "GUIDE_MENU_TITLE"
+msgstr "FIRST TIME?"
+
+msgid "GUIDE_MENU_BODY"
+msgstr "New game → Campaign → Guided story. Learn as you play. No separate training required."
+
+msgid "GUIDE_RECOMMENDED"
+msgstr "GUIDED STORY (recommended)"
+
+msgid "GUIDE_MINES"
+msgstr "mines"
+
+msgid "GUIDE_FIRST"
+msgstr "ADMIN: Click any cell. Your first move is safe."
+
+msgid "GUIDE_NUMBERS"
+msgstr "A number tells you how many mines touch it, including diagonals. Right-click to mark a mine. Stuck? Use a hint."
+
+msgid "GUIDE_HIT"
+msgstr "You hit a mine. Keep going — you still have health. Rewind can undo a mistake."
+
+msgid "GUIDE_HINT"
+msgstr "Open the highlighted safe cell. The marked numbers explain why it is safe."
+
+msgid "GUIDE_PHANTOM"
+msgstr "A number vanished. Use Journal to read it, or Cleanse to restore it."
+
+msgid "GUIDE_ECHO"
+msgstr "ECHO: You have done this before. Finish this field. Look for the hidden archive."
+
+msgid "GUIDE_WATCHER"
+msgstr "ADMIN: Clear every safe cell. Something is watching the terminal. Use the journal if a number disappears."
+
+msgid "GUIDE_WIN"
+msgstr "Sector cleared. Follow the next signal."
+
+msgid "GUIDE_LOSS"
+msgstr "No health left. Retry from your checkpoint."
+
+msgid "GUIDE_NEXT"
+msgstr "CONTINUE MISSION"
+
+msgid "GUIDE_SHOP"
+msgstr "OPTIONAL UPGRADES"
+
+msgid "GUIDE_SHOP_NEXT"
+msgstr "CONTINUE (buying is optional)"
+
+msgid "GUIDE_START"
+msgstr "START WORK"
