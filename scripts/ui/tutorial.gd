@@ -14,6 +14,7 @@ const Phantom = preload("res://scripts/board/phantom.gd")
 var phantom := Phantom.new()
 var practice := Economy.new()
 var practice_label: Label
+var practice_buttons: Dictionary={}
 var prior: Dictionary = {}
 var tool_button: Button
 signal completed(step: int)
@@ -61,6 +62,7 @@ func _build() -> void:
 	solved = false
 	invalid_action=false
 	practice_label=null
+	practice_buttons.clear()
 	phantom = Phantom.new()
 	var mask := PackedByteArray()
 	mask.resize(16)
@@ -93,15 +95,19 @@ func _build() -> void:
 	_label(tr("TUT_TITLE_"+str(step)),Vector2(0,76),Vector2(1266,65),35)
 	hint = _label("",Vector2(550,158),Vector2(700,360),33)
 	tool_button = null
-	if step>=5:
-		tool_button = _button(tr("VIS_REWIND") if step==5 else ("CLASSIC" if step==6 else (tr("MOD_ASSISTANT")+" / 30 CR" if step==7 else tr("VIS_JOURNAL"))),Vector2(550,530),Vector2(700,64),_lesson_tool)
+	if step>=5 and step!=7:
+		tool_button = _button(tr("VIS_REWIND") if step==5 else ("CLASSIC" if step==6 else tr("VIS_JOURNAL")),Vector2(550,530),Vector2(700,64),_lesson_tool)
 	if step==7:
 		practice.reset(1)
-		practice.streamlined=true
-		practice.compact=true
-		practice.reward(1,54,0)
+		practice.choice_mode=true
 		practice.begin_sector(2)
-		practice_label = _label("",Vector2(45,185),Vector2(470,300),32)
+		practice.prepare_rewards(1702,false)
+		for i in range(practice.reward_choices.size()):
+			var id: String=practice.reward_choices[i]
+			var b:=_button(tr("MOD_"+id),Vector2(45,180+i*100),Vector2(470,80),_choose_practice.bind(id))
+			practice_buttons[id]=b
+			if id=="ASSISTANT": tool_button=b
+		practice_label = _label("",Vector2(45,484),Vector2(470,110),28)
 	var grid := GridContainer.new()
 	grid.columns = 4
 	grid.position = Vector2(45,158)
@@ -214,9 +220,12 @@ func _refresh() -> void:
 			tool_button.add_theme_font_size_override("font_size",Access.fit_font(get_theme_default_font(),tool_button.text,26,text_scale,Vector2(680,52),false))
 		if step==8: tool_button.text = tr("VIS_JOURNAL") if phase==0 else tr("VIS_CLEANSE")
 		if step==7:
-			practice_label.text = "CR %d\n%s %d\n%s %d/3" % [practice.credits,tr("SIMPLE_HINT"),2+(1 if practice.owned.has("ASSISTANT") else 0),tr("VIS_MODULES"),practice.owned.size()]
-			practice_label.add_theme_font_size_override("font_size",Access.fit_font(get_theme_default_font(),practice_label.text,32,text_scale,Vector2(470,300),true))
-		if step==7 and solved: tool_button.text=tr("MOD_ASSISTANT")+" ✓"
+			practice_label.text=tr("RC7_REWARD_LOCKED") if solved else tr("RC7_REWARD_CHOOSE")
+			practice_label.add_theme_font_size_override("font_size",Access.fit_font(get_theme_default_font(),practice_label.text,28,text_scale,Vector2(470,110),true))
+			for id in practice_buttons:
+				var option: Button=practice_buttons[id]
+				option.disabled=solved
+				option.text=("✓ " if practice.chosen_reward==id else "")+tr("MOD_"+id)
 	for i in range(tiles.size()):
 		var state: int = board.cells[i]
 		var b: Button = tiles[i]
@@ -232,6 +241,11 @@ func _refresh() -> void:
 		b.add_theme_stylebox_override("normal",style)
 		b.tooltip_text = "%s %d" % [tr("CORE_CELL"),i+1]
 
+func _choose_practice(id: String) -> void:
+	if step!=7 or solved: return
+	solved=practice.claim_reward(id)
+	if solved: completed.emit(step)
+	_refresh()
 func _lesson_tool() -> void:
 	if solved: return
 	invalid_action=false
@@ -242,7 +256,8 @@ func _lesson_tool() -> void:
 		phase += 1
 		if phase>=2: solved = board.clue(5,Rules.Rule.DIAGONAL)==1
 	elif step==7:
-		solved = practice.buy("ASSISTANT") and practice.owned.has("ASSISTANT") and practice.credits==24
+		_choose_practice("ASSISTANT")
+		return
 	elif step==8:
 		if phase==0 and phantom.active() and phantom.value==board.clue(1,board.rule): phase=1
 		elif phase==1: solved = phantom.clear_zone() and not phantom.active()

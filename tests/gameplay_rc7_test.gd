@@ -53,6 +53,9 @@ func run() -> void:
 			for step in range(300):
 				if model.done(): break
 				if not model.corruption.is_empty(): model.restore_signal()
+				if not model.reopened.is_empty():
+					model.act(int(model.reopened.keys()[0]))
+					continue
 				var proof: Dictionary=Tools.safe_hint(board.observation([0]))
 				if proof.is_empty(): break
 				model.act(int(proof["cell"]))

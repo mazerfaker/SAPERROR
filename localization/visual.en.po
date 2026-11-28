@@ -358,10 +358,10 @@ msgid "DESC_AUDITOR"
 msgstr "+6 CR per 15 clean reveals, up to twice per sector."
 
 msgid "TUT_TITLE_7"
-msgstr "Shop and modules"
+msgstr "Choose a boost"
 
 msgid "TUT_HINT_7_0"
-msgstr "Buy Assistant for 30 CR to gain one extra free hint per sector. This practice shop does not affect your real game."
+msgstr "After a sector, select one of three free boosts. Try Assistant for two extra hints, or choose another boost. The other two lock. This practice does not affect your real game."
 
 msgid "MOD_RESONANCE"
 msgstr "Resonance"
@@ -463,7 +463,7 @@ msgid "CH_MENU"
 msgstr "Anomaly Lab"
 
 msgid "CH_MENU_INTRO"
-msgstr "Independent authored trials. Retry freely; campaign progress and credits are not affected."
+msgstr "Independent anomaly trials. Retry freely; your campaign progress is not affected."
 
 msgid "CH_AUTHORED"
 msgstr "AUTHORED TRIAL"

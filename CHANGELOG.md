@@ -1,4 +1,7 @@
 # Changelog
+### RC.7 onboarding follow-up
+Update lesson 8 to three free boost choices; remove legacy credit language from the lab. Ensure larger boss grid fits above the footer and keep ADMIN phase advancement monotonic. Public-solver QA explicitly reopens known safe LOOP cells.
+
 ### RC.7 story boss rework
 New campaigns use one certified CLASSIC board per boss: 8×8 WATCHER, LIAR, LOOP; 12×12 ADMIN with three progress-dependent anomaly phases. Visible unreliable clues are temporary and can be restored; LOOP marks previously opened safe tiles; mines never move. Free temporary reward applies to boss encounter, health carried forward. Original authored trials and old saves preserved. RC7 regression covers new route, draft and public-solver boss completion across all difficulties.
 

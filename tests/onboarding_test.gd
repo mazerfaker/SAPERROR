@@ -80,7 +80,7 @@ func run() -> void:
 	check(tutorial.tool_button.text=="DIAGONAL" and tutorial.tool_button.disabled,"lesson 7 final label")
 	tutorial._next()
 	tutorial._lesson_tool()
-	check(tutorial.solved and tutorial.practice.credits==24 and tutorial.practice.owned.has("ASSISTANT"),"lesson 8 current campaign module purchase")
+	check(tutorial.solved and tutorial.practice.credits==0 and tutorial.practice.owned.has("ASSISTANT"),"lesson 8 one free reward")
 	tutorial._next()
 	check(tutorial.phantom.active() and tutorial.tiles[1].text=="?","lesson 9 phantom hidden")
 	tutorial._lesson_tool()

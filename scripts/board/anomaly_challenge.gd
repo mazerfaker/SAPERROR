@@ -168,7 +168,7 @@ func start_reworked(next_kind: String, integrity: int, profile: int, seed_value:
 			mask[pool[j]]=1
 		var candidate:=Board.new(side,side,mask,starting_hp)
 		candidate.reveal(first)
-		if candidate.finished() or candidate.opened>(side*side-density)*0.55: continue
+		if candidate.finished() or candidate.opened>(side*side-density)*(0.30 if kind=="ADMIN" else 0.55): continue
 		var proof: Dictionary=Validator.certify(side,side,mask,first,rules)
 		if proof.is_empty(): continue
 		boards.append(candidate)
@@ -244,7 +244,7 @@ func _rework_act(index: int, flag: bool, chord: bool) -> bool:
 	if actions>=corruption_until: corruption.clear()
 	if kind=="ADMIN":
 		var fraction: float=float(b.opened)/maxi(1,b.cells.size()-b.mine_total)
-		var next_phase: int=mini(2,floori(fraction*3.0))
+		var next_phase: int=mini(rework_phase+1,mini(2,floori(fraction*3.0)))
 		if next_phase>rework_phase:
 			rework_phase=next_phase
 			corruption.clear()

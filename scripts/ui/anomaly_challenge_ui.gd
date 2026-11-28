@@ -102,7 +102,7 @@ func restart() -> void:
 		var gap: int=4 if reworked_encounter else 5
 		grid.add_theme_constant_override("h_separation",gap)
 		grid.add_theme_constant_override("v_separation",gap)
-		var cell: int=floori((478.0-(grid.columns-1)*gap)/grid.columns) if reworked_encounter else 84
+		var cell: int=floori((450.0-(grid.columns-1)*gap)/grid.columns) if reworked_encounter else 84
 		body.add_child(grid)
 		var focus: StyleBoxFlat=Access.focus_style(high_contrast)
 		for i in range(model.board().cells.size()):
