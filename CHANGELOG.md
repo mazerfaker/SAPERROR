@@ -1,4 +1,7 @@
 # Changelog
+
+### RC.5 ending cleanup
+Removed the in-game credits page and buttons. Endings now link directly to the main menu or ending gallery; replay returns to the gallery. License inventory remains in the release files. CRT lifecycle unchanged.
 ## 0.9.0-rc.5 — Gameplay Simplification candidate
 New campaigns use six shop modules, three slots, two rotating offers, repair, simpler HUD and rules, single scheduled anomaly at a time on Story/Standard. Existing campaigns and free modes retain their original systems. Campaign field-count restructuring is deferred pending progression/save QA.
 

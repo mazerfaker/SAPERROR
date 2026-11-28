@@ -166,10 +166,18 @@ func full_campaign(route: int, difficulty: int=1) -> void:
 	var resumed := Campaign.new()
 	check(resumed.restore(ui.campaign.snapshot(),10),"final save validation")
 	check(not resumed.choose_ending("SHUTDOWN"),"ending immutable")
-	ui._show("credits")
-	check(ui.screen=="credits","credits screen")
-	ui._show("gallery")
+	var gallery_button:=ui.page.find_child("EndingGallery",true,false) as Button
+	var back_button:=ui.page.find_child("EndingBack",true,false) as Button
+	check(is_instance_valid(gallery_button) and is_instance_valid(back_button),"ending links directly to gallery and menu")
+	if is_instance_valid(gallery_button): gallery_button.pressed.emit()
+	check(ui.screen=="gallery","direct gallery navigation")
+	if ui.screen!="gallery": ui._show("gallery")
 	ui._show_gallery_ending(Campaign.ENDINGS[route])
 	check(ui.screen=="gallery_preview","ending replay")
+	check(ui.page.find_child("EndingGallery",true,false)==null,"replay only needs back")
+	var replay_back:=ui.page.find_child("EndingBack",true,false) as Button
+	check(is_instance_valid(replay_back),"replay back available")
+	if is_instance_valid(replay_back): replay_back.pressed.emit()
+	check(ui.screen=="gallery","replay returns to gallery")
 	ui.queue_free()
 	await process_frame

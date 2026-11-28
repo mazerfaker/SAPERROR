@@ -297,7 +297,6 @@ func _show(next: String) -> void:
 	elif screen == "ending_choice": _ending_choice()
 	elif screen == "rewrite_trial": _rewrite_trial()
 	elif screen == "ending_scene": _ending_scene(campaign.ending)
-	elif screen == "credits": _credits()
 	elif screen == "gallery": _gallery()
 	elif screen == "archives": _archives()
 	elif screen == "archive_preview": _archive_preview()
@@ -1853,14 +1852,11 @@ func _ending_scene(id: String) -> void:
 	plate.ending_id=id
 	plate.reduced_motion=reduced
 	_place(plate,Rect2(850,353,470,372),page)
-	var back_button:=_button(tr("VIS_BACK"),Rect2(714,810,570,60),page,func(): _show("gallery" if replay else "menu"))
+	if not replay:
+		var gallery_button:=_button(tr("CAM_GALLERY"),Rect2(124,810,570,60),page,func(): _show("gallery"))
+		gallery_button.name="EndingGallery"
+	var back_button:=_button(tr("VIS_BACK"),Rect2(124,810,1170,60) if replay else Rect2(714,810,570,60),page,func(): _show("gallery" if replay else "menu"))
 	back_button.name="EndingBack"
-	_button(tr("CAM_CREDITS"),Rect2(124,810,570,60),page,func(): _show("credits"))
-func _credits() -> void:
-	_label("SAPERROR",Rect2(124,205,1170,110),page,64)
-	_label(tr("CAM_CREDIT_TEXT"),Rect2(124,350,1170,380),page,30)
-	_button(tr("CAM_GALLERY"),Rect2(124,810,570,60),page,func(): _show("gallery"))
-	_button(tr("VIS_BACK"),Rect2(714,810,570,60),page,func(): _show("menu"))
 func _gallery() -> void:
 	_label(tr("CAM_GALLERY")+" %d/3" % ending_gallery.size(),Rect2(124,205,1170,70),page,42)
 	_label(tr("COLLECTION_DESC"),Rect2(124,280,1170,48),page,24,DIM)
@@ -1879,9 +1875,8 @@ func _gallery() -> void:
 			thumb.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			thumb.mouse_filter=Control.MOUSE_FILTER_IGNORE
 			_place(thumb,Rect2(1010,6,148,100),item)
-	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("menu"))
-	_button(tr("COLLECTION_ARCHIVES")+" %d/3" % collection.archives.size(),Rect2(494,810,390,60),page,func(): _show("archives"),24)
-	_button(tr("CAM_CREDITS"),Rect2(904,810,390,60),page,func(): _show("credits"),24)
+	_button(tr("VIS_BACK"),Rect2(124,810,570,60),page,func(): _show("menu"))
+	_button(tr("COLLECTION_ARCHIVES")+" %d/3" % collection.archives.size(),Rect2(714,810,570,60),page,func(): _show("archives"),24)
 
 func _show_gallery_ending(id: String) -> void:
 	if not ending_gallery.has(id): return
