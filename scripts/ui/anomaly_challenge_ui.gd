@@ -16,6 +16,8 @@ signal encounter_won
 signal trial_completed(id: String)
 var completion_reported: bool=false
 var campaign_encounter: bool = false
+var guided_encounter: bool=false
+var coach: Label
 var encounter_hp: int=3
 var encounter_title: String = ""
 var proceed_button: Button
@@ -99,8 +101,12 @@ func restart() -> void:
 			tile.gui_input.connect(_tile_input.bind(i))
 			grid.add_child(tile)
 			tiles.append(tile)
-		info=label("",Vector2(515,166),Vector2(720,116),29)
-		readout=label("",Vector2(515,292),Vector2(720,222),26)
+		info=label("",Vector2(515,166),Vector2(720,70 if guided_encounter else 116),26 if guided_encounter else 29)
+		coach=null
+		if guided_encounter:
+			coach=label("",Vector2(515,239),Vector2(720,66),23)
+			coach.add_theme_color_override("font_color",Access.readable(Color("edc27b"),high_contrast))
+		readout=label("",Vector2(515,310 if guided_encounter else 292),Vector2(720,204 if guided_encounter else 222),22 if guided_encounter else 26)
 		layer_button=null
 		journal_button=null
 		scan_button=null
@@ -165,6 +171,15 @@ func refresh() -> void:
 	var b: Board = model.board()
 	info.text="%s %d  |  %s %d/%d  |  %s %d" % [tr("CORE_HP"),b.hp,tr("CORE_OPEN"),b.opened,b.cells.size()-b.mine_total,tr("CH_ACTIONS"),model.actions]
 	readout.text=model.details()
+	if guided_encounter and is_instance_valid(coach):
+		var key: String="BOSS_COACH_"+kind
+		if model.won(): key="BOSS_COACH_WIN"
+		elif model.lost(): key="BOSS_COACH_LOSS"
+		elif kind=="WATCHER" and model.journal_open: key="BOSS_COACH_WATCHER_OPEN"
+		elif kind=="LIAR" and model.liar_solved: key="BOSS_COACH_LIAR_DONE"
+		elif kind=="DOUBLE" and b.won(): key="BOSS_COACH_DOUBLE_SWITCH"
+		coach.text=tr(key)
+		coach.tooltip_text=coach.text
 	if is_instance_valid(layer_button):
 		layer_button.text=("PORTAL: "+("ON" if b.portal_enabled else "OFF")) if kind=="ADMIN_LINK" else "PARALLEL: "+("A → B" if model.active_layer==0 else "B → A")
 		layer_button.disabled=model.done()

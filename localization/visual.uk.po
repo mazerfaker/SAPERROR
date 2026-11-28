@@ -1067,3 +1067,48 @@ msgstr "Блокує перший PHANTOM, затримує PARASITE й дає �
 
 msgid "SIMPLE_DESC_ARCHIVIST"
 msgstr "+10 кредитів за відновлення додаткового архіву."
+
+msgid "COMPACT_ROUTE_DESC"
+msgstr "Прочитай необов'язковий запис пам'яті. Збережи його, щоб відкрити додаткові кінцівки й отримати 15 CR, або продовжуй без нього. Без додаткового поля."
+
+msgid "COMPACT_READ"
+msgstr "ПРОЧИТАТИ ЗАПИС"
+
+msgid "COMPACT_SKIP"
+msgstr "ПРОДОВЖИТИ МІСІЮ"
+
+msgid "COMPACT_KEEP"
+msgstr "ЗБЕРЕГТИ ЗАПИС І ПРОДОВЖИТИ"
+
+msgid "BOSS_COACH_WATCHER"
+msgstr "Стеж за позначеними числами. Коли вони зникнуть, відкрий Журнал."
+
+msgid "BOSS_COACH_WATCHER_OPEN"
+msgstr "Використай записані числа як підказки й відкрий безпечні клітинки."
+
+msgid "BOSS_COACH_LIAR"
+msgstr "Порівняй S1+S2, S1+S3 і S2+S3 зі справжніми сумами. У двох хибних парах спільний брехун."
+
+msgid "BOSS_COACH_LIAR_DONE"
+msgstr "Датчик знайдено. Тепер відкрий безпечні клітинки як завжди."
+
+msgid "BOSS_COACH_LOOP"
+msgstr "Позначена зона один раз відкотиться. Продовжуй після відкату."
+
+msgid "BOSS_COACH_LOOP_B"
+msgstr "Друга зона один раз відкотиться. Заверши поле після відкату."
+
+msgid "BOSS_COACH_ADMIN_LINK"
+msgstr "Можеш вимкнути зв'язок кутів кнопкою PORTAL і грати як звичайно."
+
+msgid "BOSS_COACH_DOUBLE"
+msgstr "Розв'яжи поточне поле, потім перемкнися на інше."
+
+msgid "BOSS_COACH_DOUBLE_SWITCH"
+msgstr "Це поле очищено. Перемкнися на інше."
+
+msgid "BOSS_COACH_WIN"
+msgstr "Успіх. Переходь до наступного сигналу."
+
+msgid "BOSS_COACH_LOSS"
+msgstr "Спробуй ще раз. У випробування окремий запас здоров'я."

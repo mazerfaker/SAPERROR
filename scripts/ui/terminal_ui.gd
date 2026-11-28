@@ -242,6 +242,12 @@ func _panel(rect: Rect2) -> Panel:
 	return p
 func _show(next: String) -> void:
 	if protocol_active or (warning_pending and next!="warning"): return
+	if next=="game" and campaign.active and campaign.compact and sector_ready and board==null and not pending_sector and not campaign.boss_pending(sector_number).is_empty():
+		# Entry only; do not invent a win or reward before the encounter is solved.
+		sector_ready=false
+		pending_sector=true
+		next="admin_intro" if sector_number==10 and not campaign.admin_intro_seen else "campaign_boss"
+		_save_session()
 	protocol.reset_input()
 	if is_instance_valid(seed_input):
 		seed_value = seed_input.text
@@ -267,7 +273,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_build_terminal_header()
-	var version := _label("0.9.0-rc5",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("0.9.0-rc5.1",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -365,6 +371,7 @@ func _start_profile(next_profile: int, story: bool = false, finite: bool = false
 	campaign=Campaign.new()
 	campaign.active=story
 	campaign.streamlined=story
+	campaign.compact=story
 	finite_run=finite and not story
 	finite_selected=false
 	campaign_selected=false
@@ -787,7 +794,7 @@ func _game() -> void:
 	next_button = _button(tr("CORE_NEW"),Rect2(430,844,470,60),page,func():
 		if pending_sector:
 			_advance_sector()
-			if screen=="game": _show("shop")
+			if screen=="game" and _shop_available(): _show("shop")
 		elif _shop_available(): _show("shop")
 		elif campaign.active and campaign_failed: _show("campaign_recovery")
 		else: _show("modes"),28)
@@ -1265,6 +1272,7 @@ func _refresh_simple_hud() -> void:
 	integrity.text=tr("SIMPLE_HEALTH")+"\n%d / %d" % [run_hp if board==null else board.hp,_max_hp()]
 	recovered.text=tr("SIMPLE_PROGRESS")+"\n%d / %d" % [0 if board==null else board.opened,Profiles.SIZES[profile]*Profiles.SIZES[profile]-Profiles.MINES[profile] if board==null else board.cells.size()-board.mine_total]
 	if pending_sector: next_button.text=tr("GUIDE_NEXT")
+	else: next_button.visible=board==null or board.finished()
 func _refresh_field_guide() -> void:
 	if not _guided_early() or not is_instance_valid(guide_label): return
 	var advanced_rule: bool=board!=null and board.rule!=Rules.Rule.CLASSIC
@@ -1346,7 +1354,7 @@ func _hint_limit() -> int:
 func _rewind_limit() -> int:
 	return Tools.REWIND_LIMITS[profile]+(1 if economy.owned.has("CHRONOMANCER") else 0)
 func _shop_available() -> bool:
-	return sector_number>1 and sector_ready and board==null and not protocol_active
+	return sector_number>1 and sector_ready and board==null and not protocol_active and (not campaign.active or not campaign.compact or sector_number in [2,4,7,8])
 func _shop() -> void:
 	if not _shop_available():
 		_show("game")
@@ -1672,6 +1680,7 @@ func _campaign_boss() -> void:
 	trial.reduced_motion=reduced
 	trial.kind=kind
 	trial.boss_identity=id
+	trial.guided_encounter=campaign.compact
 	trial.campaign_encounter=true
 	trial.encounter_hp=Profiles.HP[profile]
 	if id=="LOOP": trial.encounter_title="LOOP // %d/2" % (campaign.loop_phase+1)
@@ -1686,10 +1695,18 @@ func _campaign_boss() -> void:
 	trial.encounter_won.connect(func():
 		if screen!="campaign_boss" or not pending_sector or not trial.model.won(): return
 		if not campaign.advance_phase(sector_number,kind): return
+		if campaign.compact and campaign.cleared.has(sector_number):
+			# One sector reward after the final phase, not after each retry or phase.
+			var opened: int=0
+			var hits: int=0
+			for field in trial.model.boards:
+				opened+=field.opened
+				hits+=field.hits
+			last_reward=economy.reward(sector_number,opened,hits)
 		audio.play_event("phase")
 		_save_session()
 		_advance_sector()
-		if screen=="game": _show("shop"))
+		if screen=="game" and _shop_available(): _show("shop"))
 	active_trial=trial
 	page.add_child(trial)
 
@@ -1743,17 +1760,35 @@ func _campaign_recovery() -> void:
 func _campaign_route() -> void:
 	if not pending_sector or not campaign.archive_pending(sector_number): return
 	_label(tr("CAM_ROUTE"),Rect2(124,215,1170,80),page,42,AMBER)
-	var route_dialogue:=_label(tr("NARR_ARCHIVE_%02d" % sector_number)+"\n\n"+tr("CAM_ROUTE_DESC"),Rect2(124,310,1170,220),page,30)
+	var route_dialogue:=_label(tr("NARR_ARCHIVE_%02d" % sector_number)+"\n\n"+tr("COMPACT_ROUTE_DESC" if campaign.compact else "CAM_ROUTE_DESC"),Rect2(124,310,1170,220),page,30)
 	_animate_transmission(route_dialogue)
-	_button(tr("CAM_ARCHIVE"),Rect2(124,575,1170,80),page,func(): _show("campaign_archive"))
-	_button(tr("CAM_SKIP"),Rect2(124,680,1170,80),page,func():
+	_button(tr("COMPACT_READ" if campaign.compact else "CAM_ARCHIVE"),Rect2(124,575,1170,80),page,func(): _show("campaign_archive"))
+	_button(tr("COMPACT_SKIP" if campaign.compact else "CAM_SKIP"),Rect2(124,680,1170,80),page,func():
 		if campaign.choose_route(sector_number,false):
 			_save_session()
 			_advance_sector()
-			if screen=="game": _show("shop"))
+			if screen=="game" and _shop_available(): _show("shop"))
 	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("menu"))
+func _keep_compact_archive() -> void:
+	if screen!="campaign_archive" or not campaign.active or not campaign.compact or not pending_sector or not campaign.choose_route(sector_number,true): return
+	collection.recover("MEMORY_%02d" % sector_number)
+	last_reward=economy.archive_reward()
+	audio.play_event("archive")
+	_save_session()
+	_advance_sector()
+	if screen=="game" and _shop_available(): _show("shop")
 func _campaign_archive() -> void:
 	if not pending_sector or not campaign.archive_pending(sector_number): return
+	if campaign.compact:
+		var record: String="MEMORY_%02d" % sector_number
+		_label(tr("COL_TITLE_"+record),Rect2(124,215,1170,90),page,38,AMBER)
+		var text_record:=_label(tr("COL_BODY_"+record),Rect2(124,320,1170,380),page,30)
+		text_record.name="RecoveredRecord"
+		_animate_transmission(text_record)
+		var save_record:=_button(tr("COMPACT_KEEP"),Rect2(124,810,570,60),page,_keep_compact_archive)
+		save_record.name="KeepRecord"
+		_button(tr("VIS_BACK"),Rect2(714,810,570,60),page,func(): _show("campaign_route"))
+		return
 	var trial := ChallengeUI.new()
 	trial.emblem_host=header_emblem_slot
 	trial.reduced_motion=reduced
@@ -1774,7 +1809,7 @@ func _campaign_archive() -> void:
 		audio.play_event("archive")
 		_save_session()
 		_advance_sector()
-		if screen=="game": _show("shop"))
+		if screen=="game" and _shop_available(): _show("shop"))
 	active_trial=trial
 	page.add_child(trial)
 

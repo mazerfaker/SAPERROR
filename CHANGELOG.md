@@ -1,4 +1,7 @@
 # Changelog
+## 0.9.0-rc.5.1 — Campaign Refinement candidate
+New compact campaigns enter boss sectors directly, optional memory records replace repeat puzzles, four shop visits, contextual boss coaching, and direct progression. Original campaign routes remain supported for old saves. Full campaign and manual QA pending.
+
 
 ### RC.5 ending cleanup
 Removed the in-game credits page and buttons. Endings now link directly to the main menu or ending gallery; replay returns to the gallery. License inventory remains in the release files. CRT lifecycle unchanged.

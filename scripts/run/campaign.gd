@@ -5,6 +5,8 @@ const ARCHIVES := {2:"WATCHER",5:"LIAR",8:"DOUBLE"}
 var active: bool = false
 # Old campaign saves retain their original rules and purchases.
 var streamlined: bool=false
+# RC5.1 campaigns replace normal boss-sector boards with the encounter itself.
+var compact: bool=false
 var seen: Array[int] = []
 var cleared: Array[int] = []
 var records: Array[String] = []
@@ -64,7 +66,7 @@ func choose_route(sector: int, recovered: bool) -> bool:
 	if recovered: records.append("MEMORY_%02d" % sector)
 	return true
 func snapshot() -> Dictionary:
-	return {"active":active,"streamlined":streamlined,"seen":seen.duplicate(),"cleared":cleared.duplicate(),"records":records.duplicate(),"routes":routes.duplicate(),"loop_phase":loop_phase,"admin_phase":admin_phase,"admin_intro_seen":admin_intro_seen,"rewrite_done":rewrite_done,"ending":ending}
+	return {"active":active,"streamlined":streamlined,"compact":compact,"seen":seen.duplicate(),"cleared":cleared.duplicate(),"records":records.duplicate(),"routes":routes.duplicate(),"loop_phase":loop_phase,"admin_phase":admin_phase,"admin_intro_seen":admin_intro_seen,"rewrite_done":rewrite_done,"ending":ending}
 func restore(raw: Variant, sector: int) -> bool:
 	if not raw is Dictionary or typeof(raw.get("active"))!=TYPE_BOOL: return false
 	if not raw["active"]: return true
@@ -113,6 +115,9 @@ func restore(raw: Variant, sector: int) -> bool:
 	ending=final_id
 	var simple: Variant=raw.get("streamlined",false)
 	if typeof(simple)!=TYPE_BOOL: return false
+	var shorter: Variant=raw.get("compact",false)
+	if typeof(shorter)!=TYPE_BOOL or (shorter and not simple): return false
+	compact=shorter
 	streamlined=simple
 	active=true
 	seen=s

@@ -80,6 +80,7 @@ func run() -> void:
 		await full_campaign(route)
 	for difficulty in [0,2,3]:
 		await full_campaign(2,difficulty)
+	await full_campaign(2,1,false)
 	print("CAMPAIGN_QA checks=",checks," failures=",failures)
 	quit(0 if failures==0 else 1)
 
@@ -98,11 +99,13 @@ func solve_trial(trial: ChallengeUI) -> bool:
 		if proof.is_empty(): break
 		trial._move(int(proof["cell"]),false,false)
 	return trial.model.won()
-func full_campaign(route: int, difficulty: int=1) -> void:
+func full_campaign(route: int, difficulty: int=1, compact: bool=true) -> void:
 	var ui := TerminalUI.new()
 	ui.size=Vector2(1426,962)
 	root.add_child(ui)
 	ui._start_profile(difficulty,true)
+	ui.campaign.compact=compact
+	var boss_phases: int=0
 	var entered: int=0
 	var completed: int=0
 	for transition in range(100):
@@ -134,7 +137,13 @@ func full_campaign(route: int, difficulty: int=1) -> void:
 				ui.campaign.choose_route(ui.sector_number,false)
 				ui._advance_sector()
 			else: ui._show("campaign_archive")
+		elif ui.screen=="campaign_archive" and compact:
+			var record_button:=ui.page.find_child("KeepRecord",true,false) as Button
+			check(is_instance_valid(record_button) and not is_instance_valid(ui.active_trial),"archive has no repeated puzzle")
+			if not is_instance_valid(record_button): break
+			record_button.pressed.emit()
 		elif ui.screen in ["campaign_archive","campaign_boss","rewrite_trial"]:
+			if ui.screen=="campaign_boss": boss_phases+=1
 			var trial: ChallengeUI
 			for child in ui.page.get_children():
 				if child is ChallengeUI: trial=child
@@ -158,7 +167,8 @@ func full_campaign(route: int, difficulty: int=1) -> void:
 		elif ui.screen=="ending_scene": break
 		else: break
 		await process_frame
-	check(entered==10 and completed==10,"all ten normal sectors route "+str(route))
+	check(entered==(6 if compact else 10) and completed==entered,"expected ordinary sectors route "+str(route))
+	check(boss_phases==7,"all seven boss phases retained")
 	check(ui.campaign.ending==Campaign.ENDINGS[route] and ui.screen=="ending_scene","correct ending "+str(route))
 	check(ui.ending_gallery.has(Campaign.ENDINGS[route]),"gallery records ending")
 	check(ui.campaign.cleared.size()==4 and ui.campaign.loop_phase==2 and ui.campaign.admin_phase==3,"all boss phases")

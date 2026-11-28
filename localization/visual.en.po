@@ -1067,3 +1067,48 @@ msgstr "Suppress the first PHANTOM effect, delay PARASITE and get one free clean
 
 msgid "SIMPLE_DESC_ARCHIVIST"
 msgstr "Earn 10 extra credits for recovering an optional archive."
+
+msgid "COMPACT_ROUTE_DESC"
+msgstr "Read an optional memory record. Keep it to unlock more endings and earn 15 CR, or continue without it. No extra puzzle."
+
+msgid "COMPACT_READ"
+msgstr "READ RECORD"
+
+msgid "COMPACT_SKIP"
+msgstr "CONTINUE MISSION"
+
+msgid "COMPACT_KEEP"
+msgstr "KEEP RECORD AND CONTINUE"
+
+msgid "BOSS_COACH_WATCHER"
+msgstr "Watch the marked numbers. When they disappear, open Journal."
+
+msgid "BOSS_COACH_WATCHER_OPEN"
+msgstr "Use the stored numbers as clues and clear the safe cells."
+
+msgid "BOSS_COACH_LIAR"
+msgstr "Compare S1+S2, S1+S3 and S2+S3 with the true sums. The two wrong pairs share the liar."
+
+msgid "BOSS_COACH_LIAR_DONE"
+msgstr "Sensor identified. Now clear the safe cells as usual."
+
+msgid "BOSS_COACH_LOOP"
+msgstr "The marked zone will reset once. Continue after it resets."
+
+msgid "BOSS_COACH_LOOP_B"
+msgstr "The second zone will reset once. Finish the field after it resets."
+
+msgid "BOSS_COACH_ADMIN_LINK"
+msgstr "You can turn off the corner link with PORTAL and solve normally."
+
+msgid "BOSS_COACH_DOUBLE"
+msgstr "Solve the current field, then switch to the other one."
+
+msgid "BOSS_COACH_DOUBLE_SWITCH"
+msgstr "This field is cleared. Switch to the other field."
+
+msgid "BOSS_COACH_WIN"
+msgstr "Success. Continue to the next signal."
+
+msgid "BOSS_COACH_LOSS"
+msgstr "Try again. This encounter has its own health."
