@@ -7,8 +7,8 @@ const Lifecycle = preload("res://scripts/ui/crt_lifecycle.gd")
 const Immersion = preload("res://scripts/ui/immersion.gd")
 const PowerMask = preload("res://assets/shaders/crt_power.gdshader")
 const ART_PATH := "res://assets/art/terminal_original.png"
-const MOUSE_CURSOR = preload("res://assets/ui/mouse_cursor.svg")
-const MOUSE_HOTSPOT := Vector2(5,2)
+const MOUSE_CURSOR = preload("res://assets/ui/mouse_cursor_glitch_plus.png")
+const MOUSE_HOTSPOT := Vector2(8,2)
 const CUSTOM_CURSOR_SHAPES := [Input.CURSOR_ARROW,Input.CURSOR_POINTING_HAND,Input.CURSOR_IBEAM,Input.CURSOR_CROSS,Input.CURSOR_HELP,Input.CURSOR_FORBIDDEN]
 const LiveEnvironment = preload("res://scripts/environment/live_environment.gd")
 var live: LiveEnvironment

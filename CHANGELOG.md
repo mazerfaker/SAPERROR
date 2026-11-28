@@ -1,4 +1,7 @@
 # Changelog
+### RC.6 approved Glitch Plus pointer
+Replace the original 32px custom arrow with the user-supplied SAPERROR Cursor 06 Glitch Plus PNG, resampled to 40px preserving transparency and artwork. Hotspot (8,2) at the arrow tip. Existing native cursor integration and hit mapping remain unchanged.
+
 ### RC.6 DOS startup transcript
 Use the approved screenshot-inspired MS-DOS 7.10 startup transcript verbatim with Vergil and KONAMI lines. English console text in both locales. Remove progress bar and static BIOS heading; begin with | after the CRT fully opens, type the transcript for five seconds, hold C:\\>_ for 0.5 seconds, then show menu. Shutdown unchanged.
 
