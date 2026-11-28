@@ -1,4 +1,7 @@
 # Changelog
+### RC.6 power lifecycle hotfix
+Direct autosave and power-off, no confirmation screen. CRT startup and shutdown independent of filter strength; first normal startup after safety acknowledgement. Preserve reduced-motion and clear-display exceptions.
+
 ### RC.6 authored challenge readability hotfix
 Replace raw cell addresses and engineering shorthand with localized explanations, matching board labels and action-based controls in all authored encounters. LIAR uses A/B/C row sensors and explicit true totals. Existing puzzle state, proof routes and K-30 unchanged.
 

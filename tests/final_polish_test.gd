@@ -32,16 +32,17 @@ func run() -> void:
 	var confirm:=ui.page.find_child("ConfirmAction",true,false) as Button
 	if is_instance_valid(confirm): confirm.pressed.emit()
 	check(ui.profile==3 and ui.campaign.active and ui.board==null,"explicit replacement")
+	var shutdown_requests: Array[int]=[0]
+	ui.shutdown_requested.connect(func(): shutdown_requests[0]+=1)
 	for lang in ["en","uk"]:
 		TranslationServer.set_locale(lang)
 		ui._show("menu")
 		var power_button:=ui.page.find_child("PowerOff",true,false) as Button
 		var expected_exit: String="Вимкнути" if lang=="uk" else "Power Off"
 		check(is_instance_valid(power_button) and power_button.text==expected_exit,"localized power menu "+lang)
-		ui._show("confirm_exit")
-		var power_confirm:=ui.page.find_child("ConfirmAction",true,false) as Button
-		check(is_instance_valid(power_confirm) and power_confirm.text==expected_exit,"localized power confirmation "+lang)
-		check(ui.back_shortcut() and ui.screen=="menu","escape cancels exit")
+		var count_before: int=shutdown_requests[0]
+		if is_instance_valid(power_button): power_button.pressed.emit()
+		check(shutdown_requests[0]==count_before+1 and ui.screen=="menu","one-click shutdown without confirmation "+lang)
 	TranslationServer.set_locale("uk" if ui.is_uk else "en")
 	for lang in ["en","uk"]:
 		TranslationServer.set_locale(lang)
@@ -50,7 +51,7 @@ func run() -> void:
 		for scale in [0.75,1.0,1.25,1.5]:
 			ui.text_scale=scale
 			ui.theme=ui._terminal_theme()
-			for screen in ["menu","settings","accessibility","text_scale","profiles","confirm_exit"]:
+			for screen in ["menu","settings","accessibility","text_scale","profiles","confirm_run"]:
 				ui._show(screen)
 				check(ui.page.size==Vector2(1426,962),"fixed CRT page "+screen)
 	ui._start_profile(0,true)

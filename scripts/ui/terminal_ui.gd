@@ -47,6 +47,7 @@ signal protocol_triggered
 signal fault_triggered
 signal fullscreen_requested
 signal shutdown_requested
+signal warning_accepted
 signal outcome_triggered(won: bool)
 signal immersion_triggered(id: String)
 const Immersion=preload("res://scripts/ui/immersion.gd")
@@ -292,7 +293,6 @@ func _show(next: String) -> void:
 	elif screen == "accessibility": _accessibility()
 	elif screen == "profiles": _profiles()
 	elif screen == "confirm_run": _confirm_run()
-	elif screen == "confirm_exit": _confirm_exit()
 	elif screen == "text_scale": _text_scale_page()
 	elif screen == "modes": _modes()
 	elif screen == "classic": _classic()
@@ -319,7 +319,7 @@ func _show(next: String) -> void:
 	else: _menu()
 	_update_music()
 	if screen!="game" or not Access.focus_tiles(buttons): Access.focus_first(page)
-	if screen in ["confirm_run","confirm_exit"]:
+	if screen=="confirm_run":
 		var cancel:=page.find_child("ConfirmCancel",true,false) as Button
 		if is_instance_valid(cancel): cancel.grab_focus()
 func _build_terminal_header() -> void:
@@ -355,7 +355,7 @@ func _menu() -> void:
 	_button(tr("VIS_NEW_GAME"),Rect2(124,423,640,65),page,func(): _show("modes"))
 	_button(tr("VIS_TUTORIAL"),Rect2(124,501,640,65),page,func(): _show("tutorial"))
 	_button(tr("VIS_SETTINGS"),Rect2(124,579,640,65),page,func(): _show("settings"))
-	var power_button:=_button(tr("VIS_EXIT"),Rect2(124,657,640,65),page,func(): _show("confirm_exit"))
+	var power_button:=_button(tr("VIS_EXIT"),Rect2(124,657,640,65),page,_power_off)
 	power_button.name="PowerOff"
 	if sessions==0 and not _has_run():
 		_label(tr("GUIDE_MENU_TITLE"),Rect2(820,345,500,64),page,32,AMBER)
@@ -607,6 +607,7 @@ func _save_session() -> void:
 	save_failed = Store.write_config(cfg,session_path) != OK
 	if not save_failed: save_recovered=false
 func begin_boot() -> void:
+	end_boot()
 	boot_overlay = ColorRect.new()
 	(boot_overlay as ColorRect).color = Color("081710")
 	boot_overlay.size = size
@@ -2055,7 +2056,7 @@ func _accessibility() -> void:
 func back_shortcut() -> bool:
 	if protocol_active or warning_pending or screen=="menu": return false
 	var parent_screen: String={
-		"audio":"settings","accessibility":"settings","text_scale":"accessibility","confirm_run":"profiles","confirm_exit":"menu","performance":"menu",
+		"audio":"settings","accessibility":"settings","text_scale":"accessibility","confirm_run":"profiles","performance":"menu",
 		"classic":"modes","profiles":"modes","challenge":"challenges",
 		"archive_preview":"archives","gallery_preview":"gallery","archives":"gallery",
 		"campaign_archive":"campaign_route","rewrite_trial":"ending_choice","replace":"shop"
@@ -2088,6 +2089,7 @@ func _accept_warning(safe: bool) -> void:
 		audio.set_levels(audio.sfx_level,audio.hum_level,warning_sound)
 	_apply()
 	_show("menu")
+	warning_accepted.emit()
 
 func _has_run() -> bool:
 	return sector_ready or pending_sector or (campaign.active and campaign_failed) or (board!=null and not board.finished())
@@ -2106,13 +2108,11 @@ func _confirm_run() -> void:
 	cancel.name="ConfirmCancel"
 	var confirm:=_button(tr("POLISH_REPLACE_CONFIRM"),Rect2(124,730,1170,72),page,func(): _start_profile(requested_profile,requested_campaign,requested_finite))
 	confirm.name="ConfirmAction"
-func _confirm_exit() -> void:
-	_label(tr("POLISH_EXIT_TITLE"),Rect2(124,240,1170,100),page,42,AMBER)
-	_label(tr("POLISH_EXIT_BODY"),Rect2(124,365,1170,200),page,32)
-	var cancel:=_button(tr("POLISH_CANCEL"),Rect2(124,630,1170,72),page,func(): _show("menu"))
-	cancel.name="ConfirmCancel"
-	var confirm:=_button(tr("VIS_EXIT"),Rect2(124,730,1170,72),page,func(): _save_session(); shutdown_requested.emit())
-	confirm.name="ConfirmAction"
+func _power_off() -> void:
+	if screen!="menu" or warning_pending or protocol_active: return
+	_save_session()
+	shutdown_requested.emit()
+
 func _text_scale_page() -> void:
 	_label(tr("POLISH_TEXT_SCALE"),Rect2(124,205,1170,72),page,42)
 	_label(tr("POLISH_SCALE_DESC"),Rect2(124,300,1170,145),page,30)

@@ -102,6 +102,7 @@ func _ready() -> void:
 	ui.connect("fault_triggered", _on_fault)
 	ui.connect("fullscreen_requested", _toggle_fullscreen)
 	ui.connect("shutdown_requested", _shutdown)
+	ui.connect("warning_accepted", _after_warning)
 	ui.connect("outcome_triggered", _on_outcome)
 	ui.connect("protocol_triggered", _on_protocol)
 	ui.connect("immersion_triggered", _on_immersion)
@@ -109,12 +110,23 @@ func _ready() -> void:
 	var quiet: bool=ui.clear_display or ui.warning_pending
 	_set_effects(0.0 if quiet else ui.amount, ui.glass and not ui.warning_pending, ui.reduced or ui.warning_pending, ui.flicker and not quiet, 0.0 if quiet else ui.global_amount, ui.glitches and not quiet)
 	if is_instance_valid(live): live.set_lamp_enabled(ui.lamp_animation and not ui.warning_pending)
-	if DisplayServer.get_name() == "headless" or reduced_motion or effects <= 0.0:
-		lifecycle.skip_boot()
-	else:
-		ui.begin_boot()
+	_start_power_on()
 	if DisplayServer.get_name() != "headless": display.grab_focus()
 	_apply_lifecycle()
+func _power_animation_allowed() -> bool:
+	return Lifecycle.animation_allowed(DisplayServer.get_name()=="headless",ui.reduced,ui.clear_display)
+func _start_power_on() -> void:
+	# Keep the first-launch safety notice ahead of the animation.
+	if ui.warning_pending or not _power_animation_allowed():
+		lifecycle.skip_boot()
+	else:
+		lifecycle.begin_boot()
+		ui.begin_boot()
+	_apply_lifecycle()
+func _after_warning() -> void:
+	if not _power_animation_allowed(): return
+	ui.audio.play_event("boot")
+	_start_power_on()
 func _set_effects(amount: float, glass: bool, reduced: bool, flicker: bool, global_amount: float, glitches: bool = true) -> void:
 	effects = amount
 	glass_enabled = glass
@@ -160,7 +172,7 @@ func _finish_boot() -> void:
 func _shutdown() -> void:
 	if not lifecycle.accepts_input(): return
 	pointer_captured = false
-	if reduced_motion or effects <= 0.0 or DisplayServer.get_name() == "headless":
+	if not _power_animation_allowed():
 		get_tree().quit()
 		return
 	lifecycle.begin_shutdown()
@@ -208,6 +220,8 @@ func _input(event: InputEvent) -> void:
 	if not is_instance_valid(ui) or not event is InputEventKey: return
 	if not lifecycle.accepts_input():
 		ui.protocol.reset_input()
+		if lifecycle.phase==Lifecycle.Phase.BOOT and event.pressed and not event.echo and event.keycode in [KEY_ESCAPE,KEY_ENTER,KEY_SPACE]: _finish_boot()
+		get_viewport().set_input_as_handled()
 		return
 	if ui.protocol_input(event):
 		get_viewport().set_input_as_handled()

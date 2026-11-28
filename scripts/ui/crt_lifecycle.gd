@@ -4,6 +4,13 @@ const BOOT_TIME: float = 2.4
 const SHUTDOWN_TIME: float = 0.65
 var phase: int = Phase.BOOT
 var elapsed: float = 0.0
+# CRT filters and power lifecycle are independent; explicit accessibility choices win.
+static func animation_allowed(headless: bool, reduced: bool, clear: bool) -> bool:
+	return not headless and not reduced and not clear
+func begin_boot() -> void:
+	if phase!=Phase.READY: return
+	phase=Phase.BOOT
+	elapsed=0.0
 func advance(delta: float) -> void:
 	elapsed += maxf(delta,0.0)
 	if phase == Phase.BOOT and elapsed >= BOOT_TIME:
