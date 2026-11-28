@@ -62,6 +62,35 @@ func run() -> void:
 				board.reveal(int(proof["cell"]))
 			check(board.won() and board.hp==hp,"public proof route, no damage")
 		print("BALANCE_PROFILE id=",Profiles.IDS[difficulty]," seeds=16 fallback=",fallback," avg_proof_steps=",float(proof_steps)/16.0," avg_first_open=",float(opened_on_first)/16.0," avg_generation_ms=",float(generation_usec)/16000.0," clean_reward=",expected)
+	for difficulty in range(4):
+		var compact:=Economy.new()
+		compact.reset(difficulty)
+		compact.streamlined=true
+		compact.compact=true
+		compact.stock=0
+		compact.begin_sector(2)
+		compact.replenish_campaign_stock()
+		check(compact.stock==(1 if difficulty<=1 else 0),"compact reserve charge")
+		check(compact.repair_price()==Economy.COMPACT_REPAIR_COST[difficulty],"compact repair cost")
+		var available: Array[String]=[]
+		for sector in [2,4,7,8]:
+			compact.begin_sector(sector)
+			for id in compact.offers():
+				if not available.has(id): available.append(id)
+		check(available.size()==6,"all compact modules offered across the four shops")
+		compact.begin_sector(3)
+		var prior_credits: int=compact.credits
+		check(compact.boss_reward(3)==40 and compact.credits==prior_credits+40,"fixed boss reward")
+		check(compact.boss_reward(3)==0,"no duplicate boss reward")
+		var snapshot: Dictionary=compact.snapshot()
+		var resumed:=Economy.new()
+		resumed.reset(difficulty)
+		resumed.streamlined=true
+		resumed.compact=true
+		resumed.restore(snapshot,3,true)
+		check(resumed.boss_reward(3)==0 and resumed.snapshot()==snapshot,"boss reward persisted")
+		compact.reset(difficulty)
+		check(not compact.compact and compact.repair_price()==Economy.REPAIR_COST[difficulty],"legacy reset")
 	var ui:=UI.new()
 	ui.size=Vector2(1426,962)
 	root.add_child(ui)

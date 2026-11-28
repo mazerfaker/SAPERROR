@@ -1112,3 +1112,9 @@ msgstr "Success. Continue to the next signal."
 
 msgid "BOSS_COACH_LOSS"
 msgstr "Try again. This encounter has its own health."
+
+msgid "BALANCE_STOCK_NOTE"
+msgstr "At least one reserve charge is available at the start of each sector."
+
+msgid "BALANCE_MINES"
+msgstr "Marked mines / total:"

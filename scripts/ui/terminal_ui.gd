@@ -273,7 +273,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_build_terminal_header()
-	var version := _label("0.9.0-rc5.1",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("0.9.0-rc5.2",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -383,6 +383,7 @@ func _start_profile(next_profile: int, story: bool = false, finite: bool = false
 	profile = next_profile
 	economy.reset(profile)
 	economy.streamlined=campaign.active and campaign.streamlined
+	economy.compact=campaign.active and campaign.compact
 	run_hp = Profiles.HP[profile]
 	sector_start_hp = run_hp
 	protected_hits = 0
@@ -423,6 +424,7 @@ func _advance_sector() -> void:
 	sector_ready = true
 	sector_number += 1
 	economy.begin_sector(sector_number)
+	economy.replenish_campaign_stock()
 	sector_start_hp = run_hp
 	protected_hits = 0
 	_reset_tools()
@@ -502,6 +504,7 @@ func _load_session() -> void:
 	seed_value = str(active_seed)
 	economy.reset(profile)
 	economy.streamlined=campaign.active and campaign.streamlined
+	economy.compact=campaign.active and campaign.compact
 	run_hp = clampi(int(cfg.get_value("run","hp",Profiles.HP[profile])),1,Profiles.HP[profile])
 	sector_start_hp = run_hp
 	protected_hits = 0
@@ -1273,6 +1276,7 @@ func _refresh_simple_hud() -> void:
 	journal_button.visible=phantom.active() or not _journal_entries().is_empty()
 	cleanse_button.visible=phantom.active() or parasite.active()
 	flag_count.visible=false
+	if campaign.compact: recovered.tooltip_text=tr("BALANCE_MINES")+" "+(flag_count.text.split("\n")[-1])
 	integrity.text=tr("SIMPLE_HEALTH")+"\n%d / %d" % [run_hp if board==null else board.hp,_max_hp()]
 	recovered.text=tr("SIMPLE_PROGRESS")+"\n%d / %d" % [0 if board==null else board.opened,Profiles.SIZES[profile]*Profiles.SIZES[profile]-Profiles.MINES[profile] if board==null else board.cells.size()-board.mine_total]
 	next_button.visible=pending_sector or campaign_failed or (not campaign.compact and board==null) or _shop_available()
@@ -1354,7 +1358,7 @@ func _refresh_marks() -> void:
 			if marks[i].get_theme_stylebox("panel")!=style: marks[i].add_theme_stylebox_override("panel",style)
 
 func _hint_limit() -> int:
-	return Tools.HINT_LIMITS[profile]+(1 if economy.owned.has("ASSISTANT") else 0)
+	return Tools.HINT_LIMITS[profile]+(1 if campaign.active and campaign.compact and profile==1 else 0)+(1 if economy.owned.has("ASSISTANT") else 0)
 func _rewind_limit() -> int:
 	return Tools.REWIND_LIMITS[profile]+(1 if economy.owned.has("CHRONOMANCER") else 0)
 func _shop_available() -> bool:
@@ -1395,6 +1399,8 @@ func _simple_shop() -> void:
 	repair.name="SimpleRepair"
 	repair.disabled=run_hp>=_max_hp() or economy.credits<economy.repair_price()
 	_label(tr("SIMPLE_REPAIR_DESC"),Rect2(654,340,630,86),page,25)
+	if campaign.compact and profile<=1:
+		_label(tr("BALANCE_STOCK_NOTE"),Rect2(124,310,1160,28),page,18,DIM)
 	var offers: Array[String]=economy.offers()
 	for i in range(offers.size()):
 		var id: String=offers[i]
@@ -1700,13 +1706,8 @@ func _campaign_boss() -> void:
 		if screen!="campaign_boss" or not pending_sector or not trial.model.won(): return
 		if not campaign.advance_phase(sector_number,kind): return
 		if campaign.compact and campaign.cleared.has(sector_number):
-			# One sector reward after the final phase, not after each retry or phase.
-			var opened: int=0
-			var hits: int=0
-			for field in trial.model.boards:
-				opened+=field.opened
-				hits+=field.hits
-			last_reward=economy.reward(sector_number,opened,hits)
+			# Fixed reward after the complete encounter; no misleading last-phase clean bonus.
+			last_reward=economy.boss_reward(sector_number)
 		audio.play_event("phase")
 		_save_session()
 		_advance_sector()
@@ -1741,6 +1742,7 @@ func _retry_checkpoint() -> void:
 	seed_value=str(active_seed)
 	economy.reset(profile)
 	economy.streamlined=campaign.active and campaign.streamlined
+	economy.compact=campaign.active and campaign.compact
 	economy.restore(data,target,false)
 	run_hp=clampi(int(act_checkpoint.get("hp",1)),1,_max_hp())
 	sector_start_hp=run_hp

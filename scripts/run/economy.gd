@@ -5,6 +5,9 @@ const PRICES := [32,36,28,30,34,40,35,34,32,45,30,28,26,30,30]
 const MAX_MODULES := 4
 const SIMPLE_MODULES := ["ASSISTANT","CHRONOMANCER","SECOND_LIFE","THIRD_EYE","STABILIZER","ARCHIVIST"]
 var streamlined: bool=false
+var compact: bool=false
+const COMPACT_REPAIR_COST := [15,20,30,30]
+const COMPACT_SHOP_ORDER := {2:["ASSISTANT","SECOND_LIFE"],4:["STABILIZER","CHRONOMANCER"],7:["THIRD_EYE","ARCHIVIST"],8:["ARCHIVIST","SECOND_LIFE"]}
 const MAX_CREDITS := 1000000
 # Provisional product-beta economy tuning; Standard stays identical.
 const START_CREDITS := [40,30,25,20]
@@ -37,6 +40,7 @@ func capacity() -> int:
 	return 4+(2 if owned.has("CAPACITOR") else 0)
 func reset(profile: int) -> void:
 	streamlined=false
+	compact=false
 	difficulty=clampi(profile,0,3)
 	credits=START_CREDITS[difficulty]
 	stock=START_STOCK[difficulty]
@@ -60,6 +64,9 @@ func begin_sector(sector: int) -> void:
 	resonance_value = 0
 	resonance_streak = 0
 	third_used = false
+func replenish_campaign_stock() -> void:
+	# Called only for a genuine sector transition, never during restore/retry.
+	if compact and difficulty<=1: stock=maxi(stock,1)
 func add_stock(n: int) -> void:
 	stock = mini(capacity(),stock+maxi(0,n))
 func reward(sector: int, opened: int, hits: int) -> int:
@@ -71,6 +78,12 @@ func reward(sector: int, opened: int, hits: int) -> int:
 	_gain(amount)
 	rewarded_sector = sector
 	return amount
+func boss_reward(sector: int) -> int:
+	# Fixed reward for the complete encounter; phases have independent HP.
+	if not compact or sector<=rewarded_sector or sector!=offer_sector: return 0
+	_gain(40)
+	rewarded_sector=sector
+	return 40
 func observe(opened: int, clean: bool, clue: int = 0) -> void:
 	if not clean:
 		clean_streak = 0
@@ -106,6 +119,13 @@ func observe(opened: int, clean: bool, clue: int = 0) -> void:
 		add_stock(1)
 func offers() -> Array[String]:
 	var out: Array[String] = []
+	if compact and COMPACT_SHOP_ORDER.has(offer_sector):
+		for id in COMPACT_SHOP_ORDER[offer_sector]:
+			if not owned.has(id): out.append(id)
+		for id in SIMPLE_MODULES:
+			if out.size()>=2: break
+			if not owned.has(id) and not out.has(id): out.append(id)
+		return out
 	var pool: Array=SIMPLE_MODULES if streamlined else MODULES
 	var start: int=posmod(offer_sector-2 if streamlined else offer_sector+rerolls,pool.size())
 	for i in range(pool.size()):
@@ -233,4 +253,4 @@ func archive_reward() -> int:
 	return value
 
 func repair_price() -> int:
-	return REPAIR_COST[difficulty]
+	return COMPACT_REPAIR_COST[difficulty] if compact else REPAIR_COST[difficulty]

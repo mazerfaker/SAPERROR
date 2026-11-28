@@ -1,4 +1,7 @@
 # Changelog
+## 0.9.0-rc.5.2 — Balance & Playtest candidate
+Compact campaign tuning: guaranteed coverage of all six modules across four shops, lower Story/Standard repair prices, reserve charge on genuine sector transitions, two Standard free hints, fixed boss-sector reward. Legacy economy untouched. Added automated balance checks; human playtest pending.
+
 ## 0.9.0-rc.5.1 — Campaign Refinement candidate
 New compact campaigns enter boss sectors directly, optional memory records replace repeat puzzles, four shop visits, contextual boss coaching, and direct progression. Original campaign routes remain supported for old saves. Full campaign and manual QA pending.
 
