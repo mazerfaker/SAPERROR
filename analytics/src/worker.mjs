@@ -1,14 +1,4 @@
-const modes = new Set(["campaign","free","endless","classic","lab"]);
-const fields = ["schema","id","version","mode","difficulty","seconds","wins","losses","sector"];
-const integer = (x,min,max) => Number.isInteger(x) && x>=min && x<=max;
-export function valid(x) {
- return x && typeof x==="object" && !Array.isArray(x) &&
- Object.keys(x).length===fields.length && fields.every(k=>Object.hasOwn(x,k)) &&
- x.schema===2 && typeof x.id==="string" && /^[a-f0-9]{32}$/.test(x.id) &&
- typeof x.version==="string" && /^\d{1,3}\.\d{1,3}\.\d{1,3}(?:-[a-z0-9.]{1,24})?$/.test(x.version) &&
- modes.has(x.mode) && integer(x.difficulty,0,4) && integer(x.seconds,0,86400) &&
- integer(x.wins,0,10000) && integer(x.losses,0,10000) && integer(x.sector,0,10000);
-}
+import {valid} from "./validation.mjs";
 const headers={"Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Referrer-Policy":"no-referrer","X-Frame-Options":"DENY","Content-Security-Policy":"default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"};
 function reply(body,status=200,extra={}) {return new Response(body,{status,headers:{...headers,...extra}})}
 function json(x,status=200){return reply(JSON.stringify(x),status,{"Content-Type":"application/json; charset=utf-8"})}
@@ -26,7 +16,7 @@ async function boundedJson(req) {
  const bytes=new Uint8Array(n);let pos=0;for(const part of parts){bytes.set(part,pos);pos+=part.length}
  return JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes));}catch{return null}finally{reader.releaseLock()}
 }
-export const UPSERT=`INSERT INTO sessions(id,version,mode,difficulty,seconds,wins,losses,sector,started,updated)
+const UPSERT=`INSERT INTO sessions(id,version,mode,difficulty,seconds,wins,losses,sector,started,updated)
  VALUES(?,?,?,?,?,?,?,?,?,?)
  ON CONFLICT(id) DO UPDATE SET seconds=MAX(sessions.seconds,excluded.seconds), wins=MAX(sessions.wins,excluded.wins),
  losses=MAX(sessions.losses,excluded.losses),sector=MAX(sessions.sector,excluded.sector),updated=excluded.updated
