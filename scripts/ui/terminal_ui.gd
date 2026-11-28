@@ -615,6 +615,8 @@ func _save_session() -> void:
 	if not save_failed: save_recovered=false
 func begin_boot() -> void:
 	end_boot()
+	# Hide the real menu until BIOS has finished; it must never leak through the line.
+	if is_instance_valid(page): page.hide()
 	boot_overlay = ColorRect.new()
 	(boot_overlay as ColorRect).color = Color("081710")
 	boot_overlay.size = size
@@ -644,6 +646,7 @@ func end_boot() -> void:
 		remove_child(boot_overlay)
 		boot_overlay.queue_free()
 		boot_overlay = null
+		if is_instance_valid(page): page.show()
 func _show_outcome(won: bool) -> void:
 	if is_instance_valid(outcome_banner):
 		outcome_banner.queue_free()

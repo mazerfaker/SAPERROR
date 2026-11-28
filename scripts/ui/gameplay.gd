@@ -150,8 +150,8 @@ func _start_power_on() -> void:
 		lifecycle.begin_boot()
 		power_first_frame=true
 		power_dark_frames=0
-		# Keep BIOS only in normal motion; gentle fade reveals menu in reduced motion.
-		if not ui.reduced and not ui.clear_display: ui.begin_boot()
+		# BIOS is the only visible source from the first illuminated line onward.
+		ui.begin_boot()
 	_apply_lifecycle()
 func _after_warning() -> void:
 	if not _power_animation_allowed(): return
@@ -193,23 +193,21 @@ func _on_outcome(won: bool) -> void:
 	outcome = 1.0
 	outcome_sign = 1.0 if won else -1.0
 func _apply_lifecycle() -> void:
-	# The original CRT shader stays neutral; a dedicated top layer owns power transitions.
+	# Compress the actual raster vertically and mask everything outside its aperture.
+	# The mask sits above all other filters. Both use the same lifecycle clock.
 	_set_crt("power",1.0)
 	_set_crt("beam",1.0)
-	if not is_instance_valid(power_layer): return
-	var gentle: bool=ui.reduced or ui.clear_display
 	var active: bool=lifecycle.phase!=Lifecycle.Phase.READY
+	var aperture: float=lifecycle.beam() if active else 1.0
+	_set_crt("vertical_aperture",maxf(0.004,aperture))
+	if not is_instance_valid(power_layer): return
 	power_layer.visible=active
 	if not active: return
 	var level: float=lifecycle.power()
-	var aperture: float=lifecycle.beam()
-	if gentle:
-		aperture=1.0
-		if lifecycle.phase==Lifecycle.Phase.BOOT: level=smoothstep(0.0,1.0,lifecycle.progress())
-		elif lifecycle.phase==Lifecycle.Phase.SHUTDOWN: level=1.0-smoothstep(0.0,1.0,lifecycle.progress())
+	var gentle: bool=ui.reduced or ui.clear_display
 	power_material.set_shader_parameter("screen_power",level)
 	power_material.set_shader_parameter("screen_beam",aperture)
-	power_material.set_shader_parameter("line_strength",0.0 if gentle else (1.0-aperture)*level)
+	power_material.set_shader_parameter("line_strength",lifecycle.line_strength()*(0.30 if gentle else 0.75))
 func _finish_boot() -> void:
 	lifecycle.skip_boot()
 	power_first_frame=false
@@ -240,7 +238,7 @@ func _process(delta: float) -> void:
 	else:
 		lifecycle.advance(delta)
 	if lifecycle.phase == Lifecycle.Phase.BOOT:
-		ui.update_boot(lifecycle.progress())
+		ui.update_boot(lifecycle.bios_progress())
 	elif previous == Lifecycle.Phase.BOOT:
 		ui.end_boot()
 	if lifecycle.phase == Lifecycle.Phase.SHUTDOWN:

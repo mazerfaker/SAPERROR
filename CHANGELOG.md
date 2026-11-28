@@ -1,4 +1,7 @@
 # Changelog
+### RC.6 synchronized CRT aperture and BIOS
+Replace full-screen fade with vertically compressed raster expanding from the central phosphor line and collapsing back on shutdown. BIOS exclusively visible from first illumination, starts at 0%, runs after opening and holds at 100% before menu. Reduced motion and clear display retain geometry with dimmer line. Native framebuffer checks cover spatial aperture, BIOS ordering and shutdown line.
+
 ### RC.6 custom mouse pointer
 Original in-game 32px CRT-green outlined arrow with dark fill and transparent background, using native custom mouse cursors for the client UI. Exact tip hotspot; no software pointer delay or change to CRT input coordinates. Asset and hotspot regression checks; physical Windows appearance still requires manual review.
 

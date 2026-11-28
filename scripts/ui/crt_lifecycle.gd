@@ -1,7 +1,13 @@
 extends RefCounted
 enum Phase { BOOT, READY, SHUTDOWN, OFF }
-const BOOT_TIME: float = 2.4
-const SHUTDOWN_TIME: float = 1.10
+const BOOT_LINE_TIME: float=0.16
+const BOOT_OPEN_TIME: float=0.90
+const BIOS_TIME: float=1.85
+const BIOS_HOLD: float=0.30
+const BOOT_TIME: float=BOOT_OPEN_TIME+BIOS_TIME+BIOS_HOLD
+const SHUTDOWN_CLOSE_TIME: float=0.85
+const SHUTDOWN_LINE_HOLD: float=0.16
+const SHUTDOWN_TIME: float=1.20
 var phase: int = Phase.BOOT
 var elapsed: float = 0.0
 # CRT filters and power lifecycle are independent; explicit accessibility choices win.
@@ -31,11 +37,19 @@ func progress() -> float:
 	if phase == Phase.BOOT: return clampf(elapsed/BOOT_TIME,0.0,1.0)
 	if phase == Phase.SHUTDOWN: return clampf(elapsed/SHUTDOWN_TIME,0.0,1.0)
 	return 1.0
+func bios_progress() -> float:
+	if phase==Phase.BOOT: return clampf((elapsed-BOOT_OPEN_TIME)/BIOS_TIME,0.0,1.0)
+	return 1.0
 func beam() -> float:
-	if phase == Phase.BOOT: return lerpf(0.005,1.0,smoothstep(0.0,0.95,elapsed))
-	if phase == Phase.SHUTDOWN: return lerpf(1.0,0.003,smoothstep(0.0,0.86,elapsed))
-	return 0.0 if phase == Phase.OFF else 1.0
+	if phase==Phase.BOOT: return lerpf(0.004,1.0,smoothstep(BOOT_LINE_TIME,BOOT_OPEN_TIME,elapsed))
+	if phase==Phase.SHUTDOWN: return lerpf(1.0,0.004,smoothstep(0.0,SHUTDOWN_CLOSE_TIME,elapsed))
+	return 0.0 if phase==Phase.OFF else 1.0
 func power() -> float:
-	if phase == Phase.BOOT: return smoothstep(0.0,1.15,elapsed)
-	if phase == Phase.SHUTDOWN: return 1.0-smoothstep(0.25,SHUTDOWN_TIME,elapsed)
-	return 0.0 if phase == Phase.OFF else 1.0
+	# No whole-screen opacity fade. Only the last narrow phosphor line dies out.
+	if phase==Phase.BOOT: return 0.0 if elapsed<=0.0 else 1.0
+	if phase==Phase.SHUTDOWN: return 1.0 if elapsed<SHUTDOWN_CLOSE_TIME+SHUTDOWN_LINE_HOLD else 1.0-smoothstep(SHUTDOWN_CLOSE_TIME+SHUTDOWN_LINE_HOLD,SHUTDOWN_TIME,elapsed)
+	return 0.0 if phase==Phase.OFF else 1.0
+func line_strength() -> float:
+	if phase==Phase.BOOT: return power()*(1.0-beam())
+	if phase==Phase.SHUTDOWN: return power()*(1.0-beam())
+	return 0.0
