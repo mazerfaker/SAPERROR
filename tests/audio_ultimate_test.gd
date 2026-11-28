@@ -43,6 +43,20 @@ func run() -> void:
 	var ui:=UI.new()
 	ui.size=Vector2(1426,962)
 	root.add_child(ui)
+	ui._show("menu")
+	var power:=ui.page.find_child("PowerOff",true,false) as Button
+	var before_clicks: int=ui.audio.ui_click_requests
+	if is_instance_valid(power): power.pressed.emit()
+	check(ui.screen=="confirm_exit" and ui.audio.ui_click_requests==before_clicks+1,"menu click uses shared MP3 request")
+	var cancel:=ui.page.find_child("ConfirmCancel",true,false) as Button
+	if is_instance_valid(cancel): cancel.pressed.emit()
+	check(ui.screen=="menu" and ui.audio.ui_click_requests==before_clicks+2,"confirmation click uses shared sound")
+	ui._show("tutorial")
+	before_clicks=ui.audio.ui_click_requests
+	ui.tutorial.tiles[1].pressed.emit()
+	check(ui.audio.ui_click_requests==before_clicks,"tutorial cell excludes UI sound")
+	ui.tutorial.next_button.pressed.emit()
+	check(ui.audio.ui_click_requests==before_clicks+1,"tutorial next uses shared sound")
 	ui._show("audio")
 	var master:=ui.page.find_child("AudioSlider_master",true,false) as HSlider
 	check(is_instance_valid(master),"real master slider")

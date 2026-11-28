@@ -6,6 +6,7 @@ const Classic = preload("res://scripts/board/classic_game.gd")
 const Board = preload("res://scripts/board/state.gd")
 signal back
 signal clicked
+signal ui_clicked
 const StyleBank=preload("res://scripts/ui/style_bank.gd")
 var style_bank:=StyleBank.new()
 var shown_second: int=-1
@@ -33,7 +34,7 @@ func button(value: String,pos: Vector2,extent: Vector2,cb: Callable) -> Button:
 	b.position=pos
 	b.size=extent
 	b.add_theme_font_size_override("font_size",24)
-	b.pressed.connect(func(): clicked.emit(); cb.call())
+	b.pressed.connect(func(): ui_clicked.emit(); cb.call())
 	body.add_child(b)
 	return b
 func rebuild() -> void:

@@ -18,6 +18,8 @@ var prior: Dictionary = {}
 var tool_button: Button
 signal completed(step: int)
 signal back
+signal ui_clicked
+signal cell_clicked
 var start_at: int = 0
 var step: int = 0
 var phase: int = 0
@@ -44,7 +46,7 @@ func _button(value: String, p: Vector2, extent: Vector2, action: Callable) -> Bu
 	b.text = value
 	b.position = p
 	b.size = extent
-	b.pressed.connect(action)
+	b.pressed.connect(func(): ui_clicked.emit(); action.call())
 	b.add_theme_font_size_override("font_size",Access.fit_font(get_theme_default_font(),value,26,text_scale,extent-Vector2(20,12),false))
 	body.add_child(b)
 	return b
@@ -184,6 +186,7 @@ func _action(i: int, kind: String) -> void:
 				board.reveal(i)
 				if board.hp==2: phase=1
 	invalid_action=not solved and phase==old_phase and board.opened==old_opened and board.hp==old_hp and board.cells==old_cells
+	if not invalid_action: cell_clicked.emit()
 	if solved: completed.emit(step)
 	_refresh()
 func _previous() -> void:

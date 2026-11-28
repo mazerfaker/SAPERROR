@@ -42,7 +42,7 @@ func run() -> void:
 			check(stream.loop_mode == AudioStreamWAV.LOOP_DISABLED,"one-shot "+kind)
 	check(Audio.button_event("menu")=="menu_click","menu uses dedicated click")
 	for screen in ["game","settings","audio","shop","profiles","help"]:
-		check(Audio.button_event(screen)=="key","non-menu sounds unchanged "+screen)
+		check(Audio.button_event(screen)=="menu_click","shared UI sound "+screen)
 	var menu_click := Audio.menu_click_stream()
 	if FileAccess.file_exists(Audio.MENU_CLICK_PATH):
 		check(FileAccess.get_sha256(Audio.MENU_CLICK_PATH)==Audio.MENU_CLICK_SHA,"exact original menu MP3 bytes")

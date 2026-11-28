@@ -43,6 +43,8 @@ const EVENTS := ["key","reveal","flood","flag","unflag","fault","win","loss","in
 const VOICE_COUNT: int=6
 var sounds: Dictionary = {}
 var ambience: AudioStreamPlayer
+var ui_click_player: AudioStreamPlayer
+var ui_click_requests: int=0
 var voices: Array[AudioStreamPlayer] = []
 var next_voice: int = 0
 var voice_priorities: Array[int]=[]
@@ -184,8 +186,8 @@ static func pick_voice(busy: Array[bool], priorities: Array[int], start: int, in
 static func gain_db(channel: float,master: float,active: bool) -> float:
 	return linear_to_db(maxf(0.0001,clampf(channel,0.0,1.0)*clampf(master,0.0,1.0))) if active else -80.0
 
-static func button_event(screen: String) -> String:
-	return "menu_click" if screen=="menu" else "key"
+static func button_event(_screen: String) -> String:
+	return "menu_click"
 
 static func menu_click_stream() -> AudioStreamMP3:
 	if not ResourceLoader.exists(MENU_CLICK_PATH): return null
@@ -211,6 +213,10 @@ func _ready() -> void:
 	# Source checkout stays usable while original asset is awaiting upload.
 	# The old procedural click is only a fallback, never a replacement asset.
 	sounds["menu_click"] = menu_click if menu_click!=null else sounds["key"]
+	ui_click_player=AudioStreamPlayer.new()
+	ui_click_player.name="UIClickPlayer"
+	ui_click_player.stream=sounds["menu_click"]
+	add_child(ui_click_player)
 	var intro := admin_intro_stream()
 	if intro!=null: sounds["admin_intro"]=intro
 	ambience = AudioStreamPlayer.new()
@@ -234,6 +240,9 @@ func set_levels(sfx: float, hum: float, active: bool) -> void:
 func _apply_levels() -> void:
 	if not is_instance_valid(ambience): return
 	ambience.volume_db = gain_db(hum_level,master_level,enabled)
+	if is_instance_valid(ui_click_player):
+		ui_click_player.volume_db=gain_db(sfx_level,master_level,enabled)
+		if not enabled or sfx_level<=0.0 or master_level<=0.0: ui_click_player.stop()
 	for voice in voices:
 		voice.volume_db = gain_db(sfx_level,master_level,enabled)
 		if not enabled or sfx_level <= 0.0: voice.stop()
@@ -245,6 +254,12 @@ func _apply_levels() -> void:
 func play_event(kind: String) -> void:
 	if kind not in EVENTS and kind not in ["menu_click","admin_intro"]: return
 	last_event=kind
+	if kind=="menu_click":
+		ui_click_requests+=1
+		# Separate voice: a busy gameplay mixer cannot swallow a button click.
+		if enabled and sfx_level>0.0 and master_level>0.0 and is_instance_valid(ui_click_player):
+			ui_click_player.play(0.0)
+		return
 	if not enabled or sfx_level<=0.0 or master_level<=0.0 or voices.is_empty() or not sounds.has(kind): return
 	var busy: Array[bool]=[]
 	for voice in voices: busy.append(voice.playing)

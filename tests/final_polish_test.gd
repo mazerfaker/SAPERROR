@@ -107,14 +107,14 @@ func run() -> void:
 	ui.reduced=false
 	ui.header_caret_elapsed=0.0
 	ui._update_header_caret(0.0)
-	check(ui.header_title.visible_characters==-1,"caret shown")
+	check(ui.header_cursor.visible and ui.header_title.text=="SAPERROR","caret shown")
 	ui._update_header_caret(0.5)
-	check(ui.header_title.visible_characters==ui.header_title.text.length()-1,"only caret hidden")
+	check(not ui.header_cursor.visible and ui.header_title.visible,"only caret hidden")
 	ui._update_header_caret(0.5)
-	check(ui.header_title.visible_characters==-1,"caret returns")
+	check(ui.header_cursor.visible,"caret returns")
 	ui.reduced=true
 	ui._update_header_caret(0.5)
-	check(ui.header_title.visible_characters==-1,"reduced motion static caret")
+	check(ui.header_cursor.visible,"reduced motion static caret")
 	for scale in [0.75,1.0,1.25,1.5]:
 		ui.text_scale=scale
 		ui.theme=ui._terminal_theme()

@@ -143,6 +143,7 @@ var last_visual_styles: Array=[]
 var refresh_style_writes: int=0
 var page: Control
 var header_title: Label
+var header_cursor: Label
 var guide_label: Label
 var narrative_label: Label
 var narrative_tween: Tween
@@ -322,11 +323,18 @@ func _show(next: String) -> void:
 		var cancel:=page.find_child("ConfirmCancel",true,false) as Button
 		if is_instance_valid(cancel): cancel.grab_focus()
 func _build_terminal_header() -> void:
-	header_title=_label("SAPERROR ▌",Rect2(88,52,620,92),page,72)
+	header_title=_label("SAPERROR",Rect2(88,52,620,92),page,72)
 	header_title.name="TerminalHeaderTitle"
 	header_title.mouse_filter=Control.MOUSE_FILTER_IGNORE
-	var font_size: int=header_title.get_theme_font_size("font_size")
-	var title_width: float=theme.default_font.get_string_size(header_title.text,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x
+	var font_size: int=Access.fit_font(theme.default_font,"SAPERROR ▌",72,text_scale,Vector2(620,92),true)
+	header_title.add_theme_font_size_override("font_size",font_size)
+	var prefix_width: float=theme.default_font.get_string_size("SAPERROR ",HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x
+	var title_width: float=theme.default_font.get_string_size("SAPERROR ▌",HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x
+	header_cursor=_label("▌",Rect2(88.0+prefix_width,52,maxf(30.0,title_width-prefix_width+4.0),92),page,72)
+	header_cursor.name="TerminalHeaderCursor"
+	header_cursor.add_theme_font_size_override("font_size",font_size)
+	header_cursor.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	header_cursor.autowrap_mode=TextServer.AUTOWRAP_OFF
 	header_emblem_slot=Control.new()
 	header_emblem_slot.name="HeaderEmblemSlot"
 	header_emblem_slot.mouse_filter=Control.MOUSE_FILTER_IGNORE
@@ -335,10 +343,10 @@ func _build_terminal_header() -> void:
 	_update_header_caret(0.0)
 func _update_header_caret(delta: float) -> void:
 	header_caret_elapsed=fposmod(header_caret_elapsed+delta,HEADER_CARET_INTERVAL*2.0)
-	if not is_instance_valid(header_title): return
-	var shown: bool=reduced or header_caret_elapsed<HEADER_CARET_INTERVAL
-	var count: int=-1 if shown else header_title.text.length()-1
-	if header_title.visible_characters!=count: header_title.visible_characters=count
+	if not is_instance_valid(header_cursor): return
+	# A separate node avoids glyph clipping and preserves title/emblem layout.
+	# Honor the explicit reduced-motion / clear display safety choice.
+	header_cursor.visible=reduced or clear_display or header_caret_elapsed<HEADER_CARET_INTERVAL
 func _menu() -> void:
 	_label(tr("VIS_BOOT"),Rect2(124,190,1170,80),page,36)
 	_label(tr("VIS_TAGLINE"),Rect2(124,266,1170,62),page,28,DIM)
@@ -346,9 +354,8 @@ func _menu() -> void:
 	resume.disabled = not (campaign.active and campaign_failed) and not pending_sector and not sector_ready and (board == null or board.finished())
 	_button(tr("VIS_NEW_GAME"),Rect2(124,423,640,65),page,func(): _show("modes"))
 	_button(tr("VIS_TUTORIAL"),Rect2(124,501,640,65),page,func(): _show("tutorial"))
-	_button(tr("VIS_HELP"),Rect2(124,579,640,65),page,func(): _show("help"))
-	_button(tr("VIS_SETTINGS"),Rect2(124,657,640,65),page,func(): _show("settings"))
-	var power_button:=_button(tr("VIS_EXIT"),Rect2(124,735,640,65),page,func(): _show("confirm_exit"))
+	_button(tr("VIS_SETTINGS"),Rect2(124,579,640,65),page,func(): _show("settings"))
+	var power_button:=_button(tr("VIS_EXIT"),Rect2(124,657,640,65),page,func(): _show("confirm_exit"))
 	power_button.name="PowerOff"
 	if sessions==0 and not _has_run():
 		_label(tr("GUIDE_MENU_TITLE"),Rect2(820,345,500,64),page,32,AMBER)
@@ -458,6 +465,8 @@ func _tutorial() -> void:
 		tutorial_done = maxi(tutorial_done,step+1)
 		_save_session())
 	tutorial.back.connect(func(): _show("menu"))
+	tutorial.ui_clicked.connect(func(): audio.play_event("menu_click"))
+	tutorial.cell_clicked.connect(func(): audio.play_event("key"))
 	page.add_child(tutorial)
 func _reward_claimed_on_resume() -> bool:
 	# Compact boss sectors use pending_sector for an unfinished encounter.
@@ -656,7 +665,7 @@ func _language() -> void:
 func _help() -> void:
 	_label(tr("VIS_HELP_TEXT"),Rect2(124,215,1170,500),page,34)
 	_button(tr("VIS_BACK"),Rect2(124,790,350,62),page,func(): _show("menu"))
-	_button(tr("PERF_TITLE"),Rect2(510,790,784,62),page,func(): _show("performance"))
+	# No player-facing diagnostics entry; direct QA access is retained.
 func _settings() -> void:
 	_label(tr("VIS_SETTINGS"),Rect2(124,212,1150,60),page,41)
 	var language_button := _button(tr("VIS_LANGUAGE")+": "+("Українська" if is_uk else "English"),Rect2(124,305,300,62),page,_language,22)
@@ -1654,6 +1663,7 @@ func _challenge() -> void:
 	challenge.large_symbols=large_symbols
 	challenge.back.connect(func(): _show("challenges"))
 	challenge.clicked.connect(func(): audio.play_event("key"))
+	challenge.ui_clicked.connect(func(): audio.play_event("menu_click"))
 	challenge.trial_completed.connect(func(id: String):
 		if screen=="challenge" and challenge.model.won() and collection.finish_trial(id): _save_session())
 	active_trial=challenge
@@ -1723,6 +1733,7 @@ func _campaign_boss() -> void:
 	trial.large_symbols=large_symbols
 	trial.back.connect(func(): _show("menu"))
 	trial.clicked.connect(func(): audio.play_event("key"))
+	trial.ui_clicked.connect(func(): audio.play_event("menu_click"))
 	trial.encounter_won.connect(func():
 		if screen!="campaign_boss" or not pending_sector or not trial.model.won(): return
 		if not campaign.advance_phase(sector_number,kind): return
@@ -1831,6 +1842,7 @@ func _campaign_archive() -> void:
 	trial.large_symbols=large_symbols
 	trial.back.connect(func(): _show("campaign_route"))
 	trial.clicked.connect(func(): audio.play_event("key"))
+	trial.ui_clicked.connect(func(): audio.play_event("menu_click"))
 	trial.encounter_won.connect(func():
 		if screen!="campaign_archive" or not trial.model.won() or not campaign.choose_route(sector_number,true): return
 		collection.recover("MEMORY_%02d" % sector_number)
@@ -1891,6 +1903,7 @@ func _rewrite_trial() -> void:
 	trial.large_symbols=large_symbols
 	trial.back.connect(func(): _show("ending_choice"))
 	trial.clicked.connect(func(): audio.play_event("key"))
+	trial.ui_clicked.connect(func(): audio.play_event("menu_click"))
 	trial.encounter_won.connect(func():
 		if screen!="rewrite_trial" or not trial.model.won() or campaign.rewrite_done: return
 		campaign.rewrite_done=true
@@ -1961,6 +1974,7 @@ func _classic() -> void:
 	view.large_symbols=large_symbols
 	view.back.connect(func(): _show("modes"))
 	view.clicked.connect(func(): audio.play_event("key"))
+	view.ui_clicked.connect(func(): audio.play_event("menu_click"))
 	page.add_child(view)
 func _free_complete() -> void:
 	_label(tr("MODE_FREE_COMPLETE"),Rect2(124,215,1170,100),page,42,AMBER)
@@ -2001,7 +2015,7 @@ func _performance() -> void:
 	var panel:=PerformancePanel.new()
 	panel.name="PerformanceReadout"
 	_place(panel,Rect2(124,310,1170,450),page)
-	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("help"))
+	_button(tr("VIS_BACK"),Rect2(124,810,350,60),page,func(): _show("menu"))
 
 func _accessibility() -> void:
 	_label(tr("ACC_TITLE"),Rect2(124,205,1170,68),page,40)
@@ -2037,7 +2051,7 @@ func _accessibility() -> void:
 func back_shortcut() -> bool:
 	if protocol_active or warning_pending or screen=="menu": return false
 	var parent_screen: String={
-		"audio":"settings","accessibility":"settings","text_scale":"accessibility","confirm_run":"profiles","confirm_exit":"menu","performance":"help",
+		"audio":"settings","accessibility":"settings","text_scale":"accessibility","confirm_run":"profiles","confirm_exit":"menu","performance":"menu",
 		"classic":"modes","profiles":"modes","challenge":"challenges",
 		"archive_preview":"archives","gallery_preview":"gallery","archives":"gallery",
 		"campaign_archive":"campaign_route","rewrite_trial":"ending_choice","replace":"shop"

@@ -1,4 +1,7 @@
 # Changelog
+### RC.6 interface cleanup and shared click hotfix
+Use the approved menu MP3 on non-cell buttons, including embedded tutorial/classic/encounter controls, with a dedicated restartable playback voice. Keep gameplay event sounds and audio settings. Remove player-facing briefing and diagnostics entry points while retaining internal QA. Separate header cursor visibility from title text; honor reduced-motion/clear-display settings.
+
 ### RC.6 tutorial navigation hotfix
 Always reopen at lesson 1, Previous/Repeat reset exercises, distinct Finish action, correction to deduction and current shop module, wrong-action guidance and localized navigation. Historical progress retained.
 

@@ -12,6 +12,7 @@ var emblem: BossEmblem
 var emblem_host: Control
 signal back
 signal clicked
+signal ui_clicked
 signal encounter_won
 signal trial_completed(id: String)
 signal immersion_event(id: String)
@@ -52,7 +53,7 @@ func button(value: String, pos: Vector2, extent: Vector2, cb: Callable) -> Butto
 	b.position=pos
 	b.size=extent
 	b.add_theme_font_size_override("font_size",24)
-	b.pressed.connect(func(): clicked.emit(); cb.call())
+	b.pressed.connect(func(): ui_clicked.emit(); cb.call())
 	body.add_child(b)
 	return b
 func restart() -> void:
