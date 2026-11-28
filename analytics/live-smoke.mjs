@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-const pilot=process.env.EXPECT_PILOT==="true";
+const enabled=process.env.EXPECT_INGEST==="true";
 const origin = "https://saperror-analytics.vergil1705200.workers.dev";
 const password = process.env.DASHBOARD_PASSWORD;
 assert.ok(password && password.length >= 32, "Dashboard password missing or too short");
@@ -28,7 +28,10 @@ r = await request("/", {headers:{Authorization:auth}});
 status(r, 200, "authorized dashboard");
 const html=await r.text();
 assert.ok(html.includes("SAPERROR"), "dashboard content");
-if(pilot)assert.ok(/id="pilot-token">[a-f0-9]{64}<\/code>/.test(html),"pilot token available only in private dashboard");
+assert.ok(!html.includes("pilot-token"),"pilot retired");
+assert.ok(html.includes("Win rate"),"dashboard upgrade");
 r = await request("/v2/session", {method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
-status(r,pilot?403:503,pilot?"pilot rejects unauthenticated writes":"ingestion disabled");
+status(r,enabled?400:503,enabled?"invalid payload rejected":"ingestion disabled");
+if(enabled){const retired={schema:2,id:"0".repeat(32),version:"0.9.0-rc.7.pilot",mode:"classic",difficulty:0,seconds:1,wins:0,losses:0,sector:0};r=await request("/v2/session",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(retired)});status(r,403,"retired pilot blocked");}
+r=await request("/api/summary?days=7&version=0.0.0",{headers:{Authorization:auth}});status(r,200,"filtered summary");assert.equal((await r.json()).daily.length,7);
 console.log("Live smoke passed; no sessions written.");

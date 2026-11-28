@@ -27,10 +27,10 @@ jobs:
           package-manager-cache: false
       - name: Test API and database
         run: node --test test/worker.test.mjs
-      - name: Verify pilot-only production configuration
+      - name: Verify opt-in release configuration
         run: |
-          grep -Fx 'INGEST_ENABLED = "pilot"' wrangler.toml
-          grep -Fx 'analytics/pilot_only=true' ../project.godot
+          grep -Fx 'INGEST_ENABLED = "true"' wrangler.toml
+          grep -Fx 'analytics/pilot_only=false' ../project.godot
           grep -Fx 'analytics/endpoint="https://saperror-analytics.vergil1705200.workers.dev"' ../project.godot
       - name: Install Wrangler
         run: npm install --no-save --package-lock=false wrangler@4.169.0
@@ -63,5 +63,5 @@ jobs:
       - name: Verify deployed service and dashboard
         env:
           DASHBOARD_PASSWORD: ${{ secrets.SAPERROR_DASHBOARD_PASSWORD }}
-          EXPECT_PILOT: 'true'
+          EXPECT_INGEST: 'true'
         run: node live-smoke.mjs

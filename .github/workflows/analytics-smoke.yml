@@ -20,5 +20,5 @@ jobs:
         env:
           DASHBOARD_PASSWORD: ${{ secrets.SAPERROR_DASHBOARD_PASSWORD }}
         run: |
-          if grep -Fxq 'INGEST_ENABLED = "pilot"' analytics/wrangler.toml; then export EXPECT_PILOT=true; fi
+          if grep -Fxq 'INGEST_ENABLED = "true"' analytics/wrangler.toml; then export EXPECT_INGEST=true; fi
           node analytics/live-smoke.mjs
