@@ -1230,7 +1230,7 @@ func _protocol_lines(count: int) -> void:
 	for i in range(clampi(count,0,5)):
 		lines.append("> "+tr("K30_"+str(i)))
 	protocol_log.text = "\n\n".join(lines)
-func _analytics_tick(delta: float) -> void:
+func _analytics_tick(_delta: float) -> void:
 	if telemetry==null or not telemetry.enabled() or DisplayServer.get_name()=="headless": return
 	# Menus and minimized/unfocused windows are not active gameplay.
 	var mode: String=""
@@ -1250,9 +1250,11 @@ func _analytics_tick(delta: float) -> void:
 	elif screen=="challenge":
 		mode="lab"
 		if is_instance_valid(active_trial) and active_trial.model.valid: observed=active_trial.model.board()
-	var focused: bool=DisplayServer.window_is_focused() and DisplayServer.window_get_mode()!=DisplayServer.WINDOW_MODE_MINIMIZED
+	# TerminalUI lives in a SubViewport; use the actual native root Window.
+	var main_window: Window=get_tree().root
+	var focused: bool=main_window.has_focus() and main_window.mode!=Window.MODE_MINIMIZED
 	var finished_id: int=observed.get_instance_id() if observed!=null and observed.finished() else 0
-	telemetry.observe(mode,difficulty,stage,delta,focused and finished_id==0,finished_id)
+	telemetry.observe_clock(mode,difficulty,stage,Time.get_ticks_msec(),focused and not mode.is_empty() and finished_id==0,finished_id)
 	if finished_id!=0: telemetry.outcome(finished_id,observed.won())
 func _process(delta: float) -> void:
 	_analytics_tick(delta)

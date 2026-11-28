@@ -40,6 +40,22 @@ foreach ($theme in @('Retro98')) {
     if (!$p.WaitForExit(30000)) { $p.Kill(); throw 'Consent test timed out' }
     if ($p.ExitCode -ne 0 -or !(Test-Path $consentFile) -or (Get-Content $consentFile -Raw) -ne 'v4:deny') { throw 'Consent persistence QA failed' }
     Remove-Item $consentFile -Force
+    if (!$env:GODOT_EXE) { throw 'GODOT_EXE required for consent handoff QA' }
+    $handoffRoot = Join-Path $env:RUNNER_TEMP ('saperror-handoff-' + [Guid]::NewGuid())
+    try {
+      foreach ($choice in @('allow','deny')) {
+        $p = Start-Process -FilePath (Resolve-Path $out).Path -ArgumentList @('--consent-handoff-test',('"' + $handoffRoot + '"'),$choice) -PassThru
+        if (!$p.WaitForExit(30000)) { $p.Kill(); throw 'Installer handoff timed out' }
+        if ($p.ExitCode -ne 0) { throw 'Installer handoff write failed' }
+        $env:SAPERROR_QA_CONSENT_PATH = Join-Path $handoffRoot 'Godot/app_userdata/SAPERROR/analytics_consent.txt'
+        $env:SAPERROR_QA_CONSENT_EXPECT = $choice
+        & $env:GODOT_EXE --headless --path . --script res://tests/installer_consent_test.gd 2>&1 | Tee-Object -Append build/logs/installer-consent-handoff.txt
+        if ($LASTEXITCODE -ne 0) { throw "Godot rejected installer consent: $choice" }
+      }
+    } finally {
+      Remove-Item Env:SAPERROR_QA_CONSENT_PATH,Env:SAPERROR_QA_CONSENT_EXPECT -ErrorAction SilentlyContinue
+      Remove-Item $handoffRoot -Recurse -Force -ErrorAction SilentlyContinue
+    }
   }
   $zipName = 'SAPERROR_v{0}_Setup.zip' -f $Version
   Compress-Archive -Path $out -DestinationPath (Join-Path 'build/dist' $zipName) -Force

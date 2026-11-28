@@ -23,6 +23,10 @@ var last_transport_result: int=-1
 var accepted_seconds: int=0
 var in_flight_session_id: String=""
 var in_flight_seconds: int=0
+var clock_ms: int=-1
+var clock_active: bool=false
+var clock_mode: String=""
+var clock_difficulty: int=-1
 static func valid_endpoint(value: String) -> bool:
 	var pattern:=RegEx.new()
 	pattern.compile("^https://[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]$")
@@ -40,9 +44,12 @@ func _ready() -> void:
 func set_permission(value: bool) -> void:
 	if consent==value: return
 	consent=value
+	reset_clock()
 	if not value:
 		if is_instance_valid(request): request.cancel_request()
 		in_flight=false
+		in_flight_session_id=""
+		in_flight_seconds=0
 		_clear()
 func _clear() -> void:
 	session_id=""
@@ -61,6 +68,25 @@ func _clear() -> void:
 	accepted_seconds=0
 func enabled() -> bool:
 	return consent and not endpoint.is_empty()
+func reset_clock() -> void:
+	clock_ms=-1
+	clock_active=false
+	clock_mode=""
+	clock_difficulty=-1
+# Independent of engine delta and frame rate; exclude suspended and inactive intervals.
+func observe_clock(next_mode: String,next_difficulty: int,next_sector: int,now_ms: int,active: bool,finished_id: int=0) -> void:
+	if not enabled():
+		reset_clock()
+		return
+	var seconds: float=0.0
+	if clock_ms>=0 and now_ms>=clock_ms and now_ms-clock_ms<=10000:
+		seconds=float(now_ms-clock_ms)/1000.0
+	var eligible: bool=active and clock_active and clock_mode==next_mode and clock_difficulty==next_difficulty
+	clock_ms=now_ms
+	clock_active=active
+	clock_mode=next_mode
+	clock_difficulty=next_difficulty
+	observe(next_mode,next_difficulty,next_sector,seconds,eligible,finished_id)
 func observe(next_mode: String,next_difficulty: int,next_sector: int,delta: float,focused: bool=true,finished_id: int=0) -> void:
 	if not enabled(): return
 	if not next_mode.is_empty() and (mode!=next_mode or difficulty!=next_difficulty or active_seconds>=86400.0):
@@ -71,12 +97,14 @@ func observe(next_mode: String,next_difficulty: int,next_sector: int,delta: floa
 		difficulty=clampi(next_difficulty,0,4)
 		last_result_id=finished_id
 	if session_id.is_empty(): return
-	elapsed+=clampf(delta,0.0,1.0)
+	elapsed+=clampf(delta,0.0,10.0)
 	if not next_mode.is_empty() and focused:
-		active_seconds=minf(86400.0,active_seconds+clampf(delta,0.0,1.0))
+		var previous_seconds: int=floori(active_seconds)
+		var previous_sector: int=sector
+		active_seconds=minf(86400.0,active_seconds+clampf(delta,0.0,10.0))
 		sector=maxi(sector,clampi(next_sector,0,10000))
-		dirty=true
-	if elapsed>=(PERIOD if attempted_session else MIN_SEND_INTERVAL): _send()
+		if floori(active_seconds)!=previous_seconds or sector!=previous_sector: dirty=true
+	if elapsed>=(PERIOD if attempted_session else MIN_SEND_INTERVAL) or (next_mode.is_empty() and elapsed>=MIN_SEND_INTERVAL): _send()
 func outcome(instance_id: int,won: bool) -> void:
 	if not enabled() or session_id.is_empty() or instance_id==0 or last_result_id==instance_id: return
 	last_result_id=instance_id

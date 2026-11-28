@@ -1,4 +1,7 @@
 # Changelog
+### RC.8 time and installer handoff
+Use monotonic elapsed time and actual root window focus, not engine delta. Exclude inactive transitions and suspension gaps; avoid resending unchanged seconds. Test 300 measured seconds and installer-written allow/deny through Godot privacy startup. No default opt-in or legacy pilot authorization.
+
 ### RC.8 analytics dashboard hotfix
 Responsive horizontal chart ticks without scrollbar, explicit empty state, initial submission after five seconds and subsequent 15-second updates, threaded transport, retry on immediate errors and local privacy diagnostics for measured/acknowledged time. Isolated five-minute aggregation and UI/client assertions; no production test sessions.
 

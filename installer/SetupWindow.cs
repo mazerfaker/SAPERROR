@@ -17,6 +17,13 @@ internal static class Program {
                 Environment.Exit(File.ReadAllText(args[1]) == "v4:deny" ? 0 : 3);
             } catch { Environment.Exit(4); }
         }
+        if (args.Length == 3 && args[0] == "--consent-handoff-test") {
+            try {
+                if (args[2] != "allow" && args[2] != "deny") Environment.Exit(6);
+                SetupWindow.SaveConsent(SetupWindow.ConsentPath(args[1]), args[2] == "allow");
+                Environment.Exit(0);
+            } catch { Environment.Exit(7); }
+        }
         using (var form = new SetupWindow(false)) {
             if (args.Length == 2 && args[0] == "--snapshot") {
                 if (form.ConsentChecked) Environment.Exit(5);
@@ -164,6 +171,9 @@ internal sealed class SetupWindow : Form {
     void SetBusy(bool value){ busy=value; path.Enabled=!value; browse.Enabled=!value; shortcut.Enabled=!value; language.Enabled=!value; launch.Enabled=!value; consent.Enabled=!value; install.Enabled=!value; cancel.Enabled=!value; }
     // A versioned, local-only preference shared with Godot's default user:// path.
     // No network calls or telemetry are performed by Setup.
+    internal static string ConsentPath(string roamingAppData){
+        return Path.Combine(roamingAppData,"Godot","app_userdata","SAPERROR","analytics_consent.txt");
+    }
     internal static void SaveConsent(string file,bool allowed){
         Directory.CreateDirectory(Path.GetDirectoryName(file));
         string tmp=file+"."+Guid.NewGuid().ToString("N")+".tmp";
@@ -198,7 +208,7 @@ internal sealed class SetupWindow : Form {
             if(code!=0||!File.Exists(Path.Combine(dir,"SAPERROR.exe"))||!File.Exists(Path.Combine(dir,"SAPERROR.pck")))throw new InvalidOperationException("Setup exit code: "+code);
             done=true;SetProgress(100);statusLabel.Text=T("Installation complete. SAPERROR is ready.","Встановлення завершено. SAPERROR готовий.");install.Text=T("Finish","Завершити");
             try {
-                SaveConsent(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"Godot","app_userdata","SAPERROR","analytics_consent.txt"),consent.Checked);
+                SaveConsent(ConsentPath(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)),consent.Checked);
             } catch(Exception) {
                 MessageBox.Show(this,T("Installed, but the privacy preference could not be saved. Review it in Settings > Privacy.","Гру встановлено, але вибір приватності не збережено. Перевірте його в налаштуваннях гри."),Text,MessageBoxButtons.OK,MessageBoxIcon.Warning);
             }
