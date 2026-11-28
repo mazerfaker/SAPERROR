@@ -87,3 +87,6 @@ Alpha.7 LIAR authored boss trial, no intermediate CI. Full combined v0.5 Beta ga
 0.8.0-beta.8 verified CI 46047792977, 30 suites, 686123 assertions, all successful including native gates. 0.9.0-rc.1 feature freeze: first-run content warning, independent lamp toggle, exact upstream engine notices and release checklist; audio rights and manual QA remain blockers. Proposed RC.2 acceptance fixes and RC.3 installer/opt-in analytics preparation. No main merge or public release.
 
 0.9.0-rc.1 verified CI 46051628344 after Node24 action migration, 687947 checks, zero warnings. RC.2 candidate: safer UI navigation, text preference and localization/4000 seed regression. See FINAL_POLISH_RC2.md. Manual acceptance and external audio rights remain open.
+
+
+0.9.0-rc.9: verified Windows CI 46153280062 and Analytics QA 46153280076, including native analytics gate and installer handoff. 1.0.0 private-use preparation approved by owner. Final CI, private artifact delivery, manual acceptance (not performed) and rights clearance for public redistribution remain distinct gates. No public release or tag.

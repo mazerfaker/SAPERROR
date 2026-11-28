@@ -1,4 +1,7 @@
 # Changelog
+## 1.0.0 — Private-use build
+Promote the verified RC9 gameplay and assets unchanged; align project and installer version, include bilingual release notes, require all four final archives and SHA256 manifest, and upload release/QA artifacts only on a private repository. Full CI pending. Manual hardware and real-client analytics acceptance not performed; unresolved redistribution rights prohibit public release. No tag, main merge or public release.
+
 ### RC.9 native release validation
 Add a mandatory real-window analytics clock and offline regression in Windows CI. Verify active elapsed time against monotonic time, menu exclusion, resumption and revocation using the actual game scene with network transport removed. Record RC8 CI evidence and two identified Pixabay source pages; public redistribution and physical hardware acceptance remain unconfirmed. No gameplay or audio changes.
 

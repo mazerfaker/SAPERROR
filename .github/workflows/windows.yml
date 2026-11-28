@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 45
     env:
       GODOT_VERSION: '4.7.2-stable'
-      GAME_VERSION: '0.9.0-rc.9'
+      GAME_VERSION: '1.0.0'
     steps:
       - name: Windows prerequisites
         shell: pwsh
@@ -268,6 +268,7 @@ jobs:
           Copy-Item PRIVACY.md build/windows/PRIVACY.md
           Copy-Item docs/FINAL_BETA_QA.md build/windows/FINAL_BETA_QA.md
           Copy-Item docs/RELEASE_CANDIDATE.md build/windows/RELEASE_CANDIDATE.md
+          Copy-Item docs/RELEASE_NOTES_100.md build/windows/RELEASE_NOTES.md
           Copy-Item -Recurse licenses build/windows/licenses
           if ($env:SAPERROR_ICON_READY -eq 'true') { Copy-Item assets/icon/SAPERROR.ico build/windows/SAPERROR.ico }
           Compress-Archive -Path build/windows/* -DestinationPath "build/dist/SAPERROR_v${env:GAME_VERSION}_Windows_x64.zip"
@@ -281,7 +282,7 @@ jobs:
           # Inspect actual ZIP contents, not only the existence of output paths.
           Add-Type -AssemblyName System.IO.Compression.FileSystem
           $expected = @{
-            "SAPERROR_v${env:GAME_VERSION}_Windows_x64.zip" = @('SAPERROR.exe','SAPERROR.pck','README.md','LICENSES.md','PRIVACY.md','FINAL_BETA_QA.md','SAPERROR.ico','licenses/godot/LICENSE.txt','licenses/godot/COPYRIGHT.txt','RELEASE_CANDIDATE.md')
+            "SAPERROR_v${env:GAME_VERSION}_Windows_x64.zip" = @('SAPERROR.exe','SAPERROR.pck','README.md','LICENSES.md','PRIVACY.md','FINAL_BETA_QA.md','SAPERROR.ico','licenses/godot/LICENSE.txt','licenses/godot/COPYRIGHT.txt','RELEASE_CANDIDATE.md','RELEASE_NOTES.md')
             "SAPERROR_v${env:GAME_VERSION}_Source.zip" = @('project.godot','export_presets.cfg','docs/SAPERROR_GDD.md','assets/art/terminal_original.png','assets/live/config.json','assets/live/assets/base.png','assets/live/assets/paper_patch_overlay.png','assets/live/assets/audio/01_Old_Ballast(3).wav','assets/audio/finntastico-old-computer-click-152513.mp3','assets/audio/dragon-studio-glitch-effect-1-397982.mp3','assets/narrative/bosses/watcher.svg','assets/narrative/bosses/liar.svg','assets/narrative/bosses/loop.svg','assets/narrative/bosses/admin.svg','assets/narrative/acts/boot.svg','assets/narrative/acts/corruption.svg','assets/narrative/acts/echo.svg','assets/narrative/acts/admin.svg','assets/narrative/endings/shutdown.svg','assets/narrative/endings/containment.svg','assets/narrative/endings/rewrite.svg')
           }
           $expected["SAPERROR_v${env:GAME_VERSION}_Patch.zip"] = @('changes.patch','patch-base.txt')
@@ -301,21 +302,39 @@ jobs:
         shell: pwsh
         run: |
           if (!(Test-Path 'installer/setup_art.png') -or !(Test-Path 'installer/setup_icon.ico')) {
-            'Installer prototypes awaiting approved artwork or icon upload; portable build unaffected.' | Out-File build/logs/installer-status.txt
-            Write-Warning 'Add installer/setup_art.png and installer/setup_icon.ico to enable the Retro98 Setup.exe build.'
+            throw 'Version 1.0.0 requires approved installer artwork and icon.'
           } else {
             & ./installer/build.ps1 -Version $env:GAME_VERSION -Smoke
           }
+      - name: Verify final archives and write SHA256 manifest
+        shell: pwsh
+        run: |
+          $names = @('Windows_x64','Source','Patch','Setup')
+          $manifest = foreach ($name in $names) {
+            $path = "build/dist/SAPERROR_v${env:GAME_VERSION}_${name}.zip"
+            if (!(Test-Path $path) -or (Get-Item $path).Length -le 0) { throw "Missing final archive: $path" }
+            $hash = (Get-FileHash $path -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $(Split-Path $path -Leaf)"
+          }
+          $manifest | Set-Content -Encoding ascii build/dist/SHA256SUMS.txt
+          Get-Content build/dist/SHA256SUMS.txt
+      - name: Private artifact policy
+        if: github.event.repository.private != true
+        shell: pwsh
+        run: |
+          Write-Warning 'Repository is public. Private-use 1.0.0 packages and QA artifacts will not be uploaded. Change repository visibility to private and rerun to obtain them.'
       - name: Upload build ZIPs
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2 (Node.js 24)
-        if: success()
+        if: success() && github.event.repository.private == true
         with:
           name: SAPERROR-packages
-          path: build/dist/*.zip
+          path: |
+            build/dist/*.zip
+            build/dist/SHA256SUMS.txt
           if-no-files-found: error
       - name: Upload QA logs
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2 (Node.js 24)
-        if: always()
+        if: always() && github.event.repository.private == true
         with:
           name: SAPERROR-QA-logs
           path: build/logs/

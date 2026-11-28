@@ -1,5 +1,5 @@
 #ifndef GameVersion
-#define GameVersion "0.9.0-rc.6"
+#define GameVersion "1.0.0"
 #endif
 [Setup]
 AppId={{811D39AE-C8D6-4A8A-A231-87C98EF3F457}

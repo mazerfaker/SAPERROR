@@ -14,3 +14,6 @@ Matching public listings found for the supplied filenames (not a byte-for-byte d
 - Finntastico, Old Computer Click, Pixabay asset 152513: https://pixabay.com/sound-effects/film-special-effects-old-computer-click-152513/ (published 2023-06-05).
 - DRAGON-STUDIO, Glitch Effect - 1, Pixabay asset 397982: https://pixabay.com/sound-effects/film-special-effects-glitch-effect-1-397982/ (published 2025-09-02).
 Both listings state Pixabay Content License. See https://pixabay.com/service/license-summary/ and https://pixabay.com/service/terms/. Integrated use in a creative game and standalone redistribution are different; the license restricts standalone redistribution. Preserve download/license evidence and verify original files against the listings before clearance. Do not distribute the unmodified audio as standalone assets or publish the raw source/patch bundle without reviewing permission. The Old Ballast WAV source and rights remain unknown. This record is not legal clearance. No audio replaced.
+
+## 1.0.0 private-use build
+The owner intends noncommercial personal use. All original audio retained. This does not grant redistribution permission; the unresolved Old Ballast WAV and source-asset redistribution restrictions remain open. Do not publish packages or source archives. Private artifact uploads only; repository visibility is not changed by the workflow.
