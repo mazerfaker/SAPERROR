@@ -257,6 +257,7 @@ func _panel(rect: Rect2) -> Panel:
 	return p
 func _show(next: String) -> void:
 	if protocol_active or (warning_pending and next!="warning"): return
+	if next=="game" and economy.choice_mode and _shop_available(): next="shop"
 	if next=="game" and campaign.active and campaign.compact and sector_ready and board==null and not pending_sector and not campaign.boss_pending(sector_number).is_empty():
 		# Entry only; do not invent a win or reward before the encounter is solved.
 		sector_ready=false
@@ -395,9 +396,9 @@ func _profiles() -> void:
 		var label: String = tr("VIS_PROFILE_"+Profiles.IDS[i].to_upper())+"  //  %d×%d  ·  %d  ·  HP %d" % [Profiles.SIZES[i],Profiles.SIZES[i],Profiles.MINES[i],Profiles.HP[i]]
 		if i==0 and campaign_selected: label=tr("GUIDE_RECOMMENDED")+"  //  6×6 · 4 "+tr("GUIDE_MINES")+" · 5 HP"
 		var choice:=_button(label,Rect2(124,350+i*100,1170,74),page,_request_profile.bind(i,campaign_selected,finite_selected),32)
-		choice.tooltip_text="%d CR | %s %d | %s %d" % [Economy.START_CREDITS[i],tr("VIS_STOCK"),Economy.START_STOCK[i],tr("VIS_HINT"),Tools.HINT_LIMITS[i]]
+		choice.tooltip_text="%s %d | %s %d" % [tr("VIS_STOCK"),Economy.START_STOCK[i],tr("VIS_HINT"),Tools.HINT_LIMITS[i]]
 	_button(tr("VIS_BACK"),Rect2(124,803,350,57),page,func(): _show("menu"))
-func _start_profile(next_profile: int, story: bool = false, finite: bool = false) -> void:
+func _start_profile(next_profile: int, story: bool = false, finite: bool = false, reward_mode: bool = false) -> void:
 	if protocol_active: return
 	campaign=Campaign.new()
 	campaign.active=story
@@ -415,6 +416,8 @@ func _start_profile(next_profile: int, story: bool = false, finite: bool = false
 	economy.reset(profile)
 	economy.streamlined=campaign.active and campaign.streamlined
 	economy.compact=campaign.active and campaign.compact
+	economy.choice_mode=reward_mode
+	if reward_mode: economy.credits=0
 	run_hp = Profiles.HP[profile]
 	sector_start_hp = run_hp
 	protected_hits = 0
@@ -1059,8 +1062,10 @@ func _after_action(sound: String = "") -> void:
 	_save_session()
 func _refresh() -> void:
 	if is_instance_valid(next_button):
-		next_button.text = tr("CAM_RETRY") if campaign.active and campaign_failed else tr("CAM_ROUTE") if pending_sector and campaign.archive_pending(sector_number) else tr("CAM_BOSS") if pending_sector and not campaign.boss_pending(sector_number).is_empty() else tr("VIS_SHOP" if pending_sector or _shop_available() else "CORE_NEW")
-	if is_instance_valid(credit_label): credit_label.text = "CR %d" % economy.credits
+		next_button.text = tr("CAM_RETRY") if campaign.active and campaign_failed else tr("CAM_ROUTE") if pending_sector and campaign.archive_pending(sector_number) else tr("CAM_BOSS") if pending_sector and not campaign.boss_pending(sector_number).is_empty() else tr(("RC7_REWARD_TITLE" if economy.choice_mode else "VIS_SHOP") if pending_sector or _shop_available() else "CORE_NEW")
+	if is_instance_valid(credit_label):
+		credit_label.visible=not economy.choice_mode or not economy.owned.is_empty()
+		credit_label.text=tr("MOD_"+economy.owned[0]) if economy.choice_mode and not economy.owned.is_empty() else ("" if economy.choice_mode else "CR %d" % economy.credits)
 	var max_hp: int = _max_hp()
 	var hp: int = run_hp if board == null else board.hp
 	integrity.text = tr("CORE_HP")+"\n%d / %d" % [hp,max_hp]
@@ -1080,7 +1085,7 @@ func _refresh() -> void:
 		status.text += " // PARASITE #%d [%s]" % [parasite.cell+1,"LOCK" if parasite.blocked() else str(parasite.remaining())]
 	if board!=null and board.has_portal() and not protocol_active and not board.finished() and inspect_result.is_empty():
 		status.text += " // PORTAL %s [%d-%d]" % [_on_off(board.portal_enabled),board.portal_pair.x+1,board.portal_pair.y+1]
-	if pending_sector and last_reward>0: status.text += "  +%d CR" % last_reward
+	if not economy.choice_mode and pending_sector and last_reward>0: status.text += "  +%d CR" % last_reward
 	status.add_theme_font_size_override("font_size",Access.fit_font(theme.default_font,status.text,31,text_scale,Vector2(1250,46),false))
 	status.tooltip_text=status.text
 	status.add_theme_color_override("font_color",Access.readable(RED if message_key == "CORE_LOSS" else (AMBER if message_key in ["CORE_HIT","CORE_FAIL","CORE_SEED_BAD"] else GREEN),high_contrast))
@@ -1470,10 +1475,11 @@ func _refresh_marks() -> void:
 			if marks[i].get_theme_stylebox("panel")!=style: marks[i].add_theme_stylebox_override("panel",style)
 
 func _hint_limit() -> int:
-	return Tools.HINT_LIMITS[profile]+(1 if campaign.active and campaign.compact and profile==1 else 0)+(1 if economy.owned.has("ASSISTANT") else 0)
+	return Tools.HINT_LIMITS[profile]+(1 if campaign.active and campaign.compact and profile==1 else 0)+((2 if economy.choice_mode else 1) if economy.owned.has("ASSISTANT") else 0)
 func _rewind_limit() -> int:
 	return Tools.REWIND_LIMITS[profile]+(1 if economy.owned.has("CHRONOMANCER") else 0)
 func _shop_available() -> bool:
+	if economy.choice_mode: return sector_number>1 and sector_ready and board==null and not protocol_active and economy.chosen_reward.is_empty()
 	return sector_number>1 and sector_ready and board==null and not protocol_active and (not campaign.active or not campaign.compact or sector_number in [2,4,7,8])
 func _lock_shop_offer(button: Button, unaffordable: bool) -> void:
 	button.disabled=unaffordable or economy.shop_locked()
@@ -1483,6 +1489,9 @@ func _lock_shop_offer(button: Button, unaffordable: bool) -> void:
 		button.add_theme_stylebox_override("disabled",_style(Color("171b18"),grey.darkened(0.45)))
 		button.tooltip_text=tr("SHOP_FULL")
 func _shop() -> void:
+	if economy.choice_mode and sector_number>1 and sector_ready and board==null and not protocol_active:
+		_reward_shop()
+		return
 	if not _shop_available():
 		_show("game")
 		return
@@ -1513,6 +1522,35 @@ func _shop() -> void:
 	if economy.shop_locked(): _label(tr("SHOP_FULL"),Rect2(124,316,1160,24),page,18,DIM)
 	_button(tr("GUIDE_SHOP_NEXT" if campaign.active and profile==0 else "VIS_NEXT_SECTOR"),Rect2(124,836,570,64),page,func(): _show("game"),28)
 	_button(tr("VIS_BACK"),Rect2(714,836,570,64),page,func(): _show("menu"),28)
+func _reward_shop() -> void:
+	economy.prepare_rewards(active_seed,run_hp<_max_hp())
+	_label(tr("RC7_REWARD_TITLE")+" // %02d" % sector_number,Rect2(124,185,1170,65),page,40)
+	var selected: String=economy.chosen_reward
+	_label(tr("RC7_REWARD_CHOOSE" if selected.is_empty() else "RC7_REWARD_LOCKED"),Rect2(124,260,1170,60),page,28,AMBER)
+	for i in range(economy.reward_choices.size()):
+		var id: String=economy.reward_choices[i]
+		var y: int=340+i*145
+		var name_text: String=tr("RC7_REPAIR" if id=="REPAIR" else "MOD_"+id)
+		var b:=_button(("✓ " if selected==id else "")+name_text,Rect2(124,y,510,112),page,_claim_reward.bind(id),30)
+		b.name="Reward_"+id
+		b.disabled=not selected.is_empty()
+		if b.disabled: b.add_theme_color_override("font_disabled_color",AMBER if selected==id else Color("737973"))
+		_label(tr("RC7_REWARD_"+id),Rect2(654,y,630,112),page,27,DIM if not selected.is_empty() and selected!=id else GREEN)
+	var onward:=_button(tr("GUIDE_SHOP_NEXT"),Rect2(124,836,570,64),page,func(): _show("game"),28)
+	onward.name="RewardContinue"
+	onward.disabled=selected.is_empty()
+	_button(tr("VIS_BACK"),Rect2(714,836,570,64),page,func(): _show("menu"),28)
+func _claim_reward(id: String) -> void:
+	if screen!="shop" or not _shop_available() or not economy.choice_mode: return
+	if id=="REPAIR" and run_hp>=_max_hp(): return
+	if not economy.claim_reward(id): return
+	if id=="REPAIR": run_hp=mini(_max_hp(),run_hp+1)
+	sector_start_hp=run_hp
+	_reset_tools()
+	audio.play_event("repair" if id=="REPAIR" else "module")
+	if campaign.active and int(act_checkpoint.get("sector",0))==sector_number: _capture_checkpoint()
+	_save_session()
+	_show("shop")
 func _simple_shop() -> void:
 	_label(tr("GUIDE_SHOP")+" // %02d" % sector_number,Rect2(124,185,1160,65),page,40)
 	_label("%d CR  |  %s %d/%d  |  %s %d/%d" % [economy.credits,tr("SIMPLE_HEALTH"),run_hp,_max_hp(),tr("VIS_MODULES"),economy.owned.size(),economy.slot_limit()],Rect2(124,256,1170,60),page,27,AMBER)
@@ -1832,16 +1870,16 @@ func _capture_checkpoint() -> void:
 func _retry_checkpoint() -> void:
 	if not campaign.active or not campaign_failed: return
 	if profile==3 or act_checkpoint.is_empty():
-		_start_profile(profile,true)
+		_start_profile(profile,true,false,economy.choice_mode)
 		return
 	var target: int=int(act_checkpoint.get("sector",0))
 	var saved := Campaign.new()
 	if target<1 or target>10 or (profile!=0 and target not in [1,4,7,10]) or target>sector_number or int(act_checkpoint.get("profile",-1))!=profile or not saved.restore(act_checkpoint.get("campaign",{}),target):
-		_start_profile(profile,true)
+		_start_profile(profile,true,false,economy.choice_mode)
 		return
 	var data: Variant=act_checkpoint.get("economy",{})
 	if not data is Dictionary:
-		_start_profile(profile,true)
+		_start_profile(profile,true,false,economy.choice_mode)
 		return
 	campaign=saved
 	sector_number=target
@@ -1873,7 +1911,7 @@ func _campaign_recovery() -> void:
 func _campaign_route() -> void:
 	if not pending_sector or not campaign.archive_pending(sector_number): return
 	_label(tr("CAM_ROUTE"),Rect2(124,215,1170,80),page,42,AMBER)
-	var route_dialogue:=_label(tr("NARR_ARCHIVE_%02d" % sector_number)+"\n\n"+tr("COMPACT_ROUTE_DESC" if campaign.compact else "CAM_ROUTE_DESC"),Rect2(124,310,1170,220),page,30)
+	var route_dialogue:=_label(tr("NARR_ARCHIVE_%02d" % sector_number)+"\n\n"+tr("RC7_ARCHIVE_DESC" if economy.choice_mode else ("COMPACT_ROUTE_DESC" if campaign.compact else "CAM_ROUTE_DESC")),Rect2(124,310,1170,220),page,30)
 	_animate_transmission(route_dialogue)
 	_button(tr("COMPACT_READ" if campaign.compact else "CAM_ARCHIVE"),Rect2(124,575,1170,80),page,func(): _show("campaign_archive"))
 	_button(tr("COMPACT_SKIP" if campaign.compact else "CAM_SKIP"),Rect2(124,680,1170,80),page,func():
@@ -2053,7 +2091,7 @@ func _classic() -> void:
 	page.add_child(view)
 func _free_complete() -> void:
 	_label(tr("MODE_FREE_COMPLETE"),Rect2(124,215,1170,100),page,42,AMBER)
-	_label(tr("MODE_FREE_RESULT")+"\nCR %d / HP %d" % [economy.credits,run_hp],Rect2(124,350,1170,300),page,32)
+	_label(tr("MODE_FREE_RESULT")+("\nHP %d" % run_hp if economy.choice_mode else "\nCR %d / HP %d" % [economy.credits,run_hp]),Rect2(124,350,1170,300),page,32)
 	_button(tr("VIS_BACK"),Rect2(124,810,570,60),page,func(): _show("menu"))
 
 func _update_music() -> void:
@@ -2165,7 +2203,7 @@ func _has_run() -> bool:
 	return sector_ready or pending_sector or (campaign.active and campaign_failed) or (board!=null and not board.finished())
 func _request_profile(next_profile: int,story: bool,finite: bool) -> void:
 	if not _has_run():
-		_start_profile(next_profile,story,finite)
+		_start_profile(next_profile,story,finite,true)
 		return
 	requested_profile=next_profile
 	requested_campaign=story
@@ -2176,7 +2214,7 @@ func _confirm_run() -> void:
 	_label(tr("POLISH_REPLACE_BODY"),Rect2(124,365,1170,200),page,32)
 	var cancel:=_button(tr("POLISH_CANCEL"),Rect2(124,630,1170,72),page,func(): _show("profiles"))
 	cancel.name="ConfirmCancel"
-	var confirm:=_button(tr("POLISH_REPLACE_CONFIRM"),Rect2(124,730,1170,72),page,func(): _start_profile(requested_profile,requested_campaign,requested_finite))
+	var confirm:=_button(tr("POLISH_REPLACE_CONFIRM"),Rect2(124,730,1170,72),page,func(): _start_profile(requested_profile,requested_campaign,requested_finite,true))
 	confirm.name="ConfirmAction"
 func _power_off() -> void:
 	if screen!="menu" or warning_pending or protocol_active: return

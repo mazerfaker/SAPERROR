@@ -1,4 +1,7 @@
 # Changelog
+### RC.7 gameplay rework — reward draft
+New player-started runs replace purchases with one of three free temporary boosts per incoming sector. Credits, prices and credit rewards are hidden/disabled. Choice persists through saves and checkpoint retries; legacy runs retain their prior rules. Repair only offered when injured. New draft regression tests.
+
 ### RC.6 selected Retro98 setup and privacy preference
 Package only the approved Retro98 installer as SAPERROR_Setup.exe. Polish classic controls and layout, retain original art/icon, add unchecked voluntary analytics choice, persisted local versioned preference and in-game Privacy settings. No telemetry transmission or endpoint in this build. Tests verify default opt-out, explicit allow/deny, revocation and unknown version handling.
 

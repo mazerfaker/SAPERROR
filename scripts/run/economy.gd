@@ -8,6 +8,11 @@ const BOSS_REWARD := 24
 const SIMPLE_MODULES := ["ASSISTANT","CHRONOMANCER","SECOND_LIFE","THIRD_EYE","STABILIZER","ARCHIVIST"]
 var streamlined: bool=false
 var compact: bool=false
+# RC7 new runs use one temporary, free reward per incoming sector.
+const REWARD_POOL: Array[String]=["ASSISTANT","SECOND_LIFE","STABILIZER","REPAIR"]
+var choice_mode: bool=false
+var reward_choices: Array[String]=[]
+var chosen_reward: String=""
 const COMPACT_REPAIR_COST := [15,20,30,30]
 const COMPACT_SHOP_ORDER := {2:["ASSISTANT","SECOND_LIFE"],4:["STABILIZER","CHRONOMANCER"],7:["THIRD_EYE","ARCHIVIST"],8:["ARCHIVIST","SECOND_LIFE"]}
 const MAX_CREDITS := 1000000
@@ -40,11 +45,30 @@ func slot_limit() -> int:
 	return MAX_MODULES
 func shop_locked() -> bool:
 	return owned.size()>=slot_limit()
+func prepare_rewards(seed_value: int,can_repair: bool) -> void:
+	if not choice_mode or offer_sector<=1 or not reward_choices.is_empty(): return
+	var pool: Array[String]=REWARD_POOL.duplicate()
+	if not can_repair: pool.erase("REPAIR")
+	var rng:=RandomNumberGenerator.new()
+	rng.seed=hash("%d:%d:RC7" % [seed_value,offer_sector])
+	while reward_choices.size()<3 and not pool.is_empty():
+		var i: int=rng.randi_range(0,pool.size()-1)
+		reward_choices.append(pool[i])
+		pool.remove_at(i)
+func claim_reward(id: String) -> bool:
+	if not choice_mode or offer_sector<=1 or not chosen_reward.is_empty() or not reward_choices.has(id): return false
+	chosen_reward=id
+	owned.clear()
+	if id!="REPAIR": owned.append(id)
+	return true
 func capacity() -> int:
 	return 4+(2 if owned.has("CAPACITOR") else 0)
 func reset(profile: int) -> void:
 	streamlined=false
 	compact=false
+	choice_mode=false
+	reward_choices.clear()
+	chosen_reward=""
 	difficulty=clampi(profile,0,3)
 	credits=START_CREDITS[difficulty]
 	stock=START_STOCK[difficulty]
@@ -56,6 +80,12 @@ func reset(profile: int) -> void:
 	begin_sector(1)
 func begin_sector(sector: int) -> void:
 	offer_sector = maxi(1,sector)
+	if choice_mode:
+		owned.clear()
+		reward_choices.clear()
+		chosen_reward=""
+		credits=0
+		shield_stock=0
 	rerolls = 0
 	safe_count = 0
 	xray_awards = 0
@@ -75,6 +105,9 @@ func add_stock(n: int) -> void:
 	stock = mini(capacity(),stock+maxi(0,n))
 func reward(sector: int, opened: int, hits: int) -> int:
 	if sector<=rewarded_sector or sector!=offer_sector: return 0
+	if choice_mode:
+		rewarded_sector=sector
+		return 0
 	var amount: int = 12+maxi(0,opened)/8+(6 if hits==0 else 0)
 	if owned.has("PROFIT"):
 		# At one HP the nominal -1 HP penalty cannot apply. Reduce the bonus.
@@ -85,6 +118,9 @@ func reward(sector: int, opened: int, hits: int) -> int:
 func boss_reward(sector: int) -> int:
 	# Fixed reward for the complete encounter; phases have independent HP.
 	if not compact or sector<=rewarded_sector or sector!=offer_sector: return 0
+	if choice_mode:
+		rewarded_sector=sector
+		return 0
 	_gain(BOSS_REWARD)
 	rewarded_sector=sector
 	return BOSS_REWARD
@@ -141,20 +177,20 @@ func price(id: String) -> int:
 	var i: int = MODULES.find(id)
 	return PRICES[i] if i>=0 else MAX_CREDITS+1
 func buy(id: String) -> bool:
-	if shop_locked() or not offers().has(id) or credits<price(id): return false
+	if choice_mode or shop_locked() or not offers().has(id) or credits<price(id): return false
 	_spend(price(id))
 	owned.append(id)
 	if id=="CAPACITOR": add_stock(1)
 	return true
 func buy_charge() -> bool:
-	if shop_locked() or streamlined or stock>=capacity() or credits<12: return false
+	if choice_mode or shop_locked() or streamlined or stock>=capacity() or credits<12: return false
 	_spend(12)
 	add_stock(1)
 	return true
 func reroll_price() -> int:
 	return 8+4*rerolls
 func reroll() -> bool:
-	if shop_locked() or streamlined or rerolls>=100 or credits<reroll_price(): return false
+	if choice_mode or shop_locked() or streamlined or rerolls>=100 or credits<reroll_price(): return false
 	_spend(reroll_price())
 	rerolls += 1
 	return true
@@ -179,29 +215,44 @@ func restore_move(data: Dictionary) -> void:
 	spent = maxi(0,int(data.get("spent",spent)))
 func snapshot() -> Dictionary:
 	var data := move_state()
-	data.merge({"credits":credits,"owned":owned.duplicate(),"sector":offer_sector,"rewarded":rewarded_sector,"rerolls":rerolls})
+	data.merge({"credits":credits,"owned":owned.duplicate(),"sector":offer_sector,"rewarded":rewarded_sector,"rerolls":rerolls,"choice_mode":choice_mode,"reward_choices":reward_choices.duplicate(),"chosen_reward":chosen_reward})
 	return data
 func restore(data: Dictionary, sector: int, pending: bool) -> void:
+	choice_mode=data.get("choice_mode",false)==true
+	begin_sector(sector)
 	credits = clampi(int(data.get("credits",START_CREDITS[difficulty])),0,MAX_CREDITS)
 	owned.clear()
 	var items: Variant = data.get("owned",[])
 	if items is Array:
 		for id in items:
 			if id is String and MODULES.has(id) and not owned.has(id) and owned.size()<LEGACY_MAX_MODULES: owned.append(id)
-	begin_sector(sector)
 	rewarded_sector = clampi(int(data.get("rewarded",sector if pending else sector-1)),0,sector)
 	if pending: rewarded_sector = sector
 	else: rewarded_sector = mini(rewarded_sector,sector-1)
 	if int(data.get("sector",0))==sector:
 		rerolls = clampi(int(data.get("rerolls",0)),0,100)
 		restore_move(data)
+	if choice_mode:
+		credits=0
+		earned=0
+		spent=0
+		owned.clear()
+		var saved: Variant=data.get("reward_choices",[])
+		if saved is Array and int(data.get("sector",0))==sector:
+			for id in saved:
+				if id is String and REWARD_POOL.has(id) and not reward_choices.has(id) and reward_choices.size()<3: reward_choices.append(id)
+			if reward_choices.size()!=3: reward_choices.clear()
+			var selected: Variant=data.get("chosen_reward","")
+			if selected is String and reward_choices.has(selected):
+				chosen_reward=selected
+				if selected!="REPAIR": owned.append(selected)
 
 func repair(hp: int, maximum: int) -> int:
-	if hp<1 or hp>=maximum or credits<repair_price(): return hp
+	if choice_mode or hp<1 or hp>=maximum or credits<repair_price(): return hp
 	_spend(repair_price())
 	return hp+1
 func buy_shield() -> bool:
-	if shop_locked() or streamlined or credits<18 or shield_stock>=1 or shield_armed: return false
+	if choice_mode or shop_locked() or streamlined or credits<18 or shield_stock>=1 or shield_armed: return false
 	_spend(18)
 	shield_stock = 1
 	return true
@@ -224,6 +275,7 @@ func consume_protection() -> String:
 		return "FUSE"
 	return ""
 func _gain(amount: int) -> void:
+	if choice_mode: return
 	var old: int = credits
 	credits = mini(MAX_CREDITS,credits+maxi(0,amount))
 	earned += credits-old
@@ -243,6 +295,7 @@ func use_analyzer() -> bool:
 
 # Caller grants once per recorded optional archive; no repeatable reward.
 func archive_reward() -> int:
+	if choice_mode: return 0
 	var value: int=8+(5 if owned.has("ARCHIVIST") else 0)
 	_gain(value)
 	return value

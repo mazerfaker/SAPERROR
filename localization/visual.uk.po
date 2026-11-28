@@ -1244,3 +1244,30 @@ msgstr "Вибір зберігається на цьому пристрої. Й
 
 msgid "PRIVACY_SAVE_ERROR"
 msgstr "Не вдалося зберегти вибір. Спробуй ще раз."
+
+msgid "RC7_REWARD_TITLE"
+msgstr "Обери підсилення"
+
+msgid "RC7_REWARD_CHOOSE"
+msgstr "Обери лише одне з трьох. Без кредитів і цін."
+
+msgid "RC7_REWARD_LOCKED"
+msgstr "Підсилення отримано. Інші варіанти заблоковано."
+
+msgid "RC7_REPAIR"
+msgstr "Відновлення"
+
+msgid "RC7_REWARD_REPAIR"
+msgstr "Відновлює одну одиницю здоров’я."
+
+msgid "RC7_REWARD_ASSISTANT"
+msgstr "Дві додаткові підказки на наступний сектор."
+
+msgid "RC7_REWARD_SECOND_LIFE"
+msgstr "Перша міна наступного сектора не забирає здоров’я."
+
+msgid "RC7_REWARD_STABILIZER"
+msgstr "Захист від аномалій у наступному секторі."
+
+msgid "RC7_ARCHIVE_DESC"
+msgstr "Збережи необов’язковий запис, щоб відкрити інші кінцівки, або продовжуй. Без додаткової головоломки."

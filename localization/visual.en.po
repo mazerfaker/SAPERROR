@@ -1244,3 +1244,30 @@ msgstr "Your choice is stored on this device. You can turn it off at any time; g
 
 msgid "PRIVACY_SAVE_ERROR"
 msgstr "Could not save your choice. Please try again."
+
+msgid "RC7_REWARD_TITLE"
+msgstr "Choose a boost"
+
+msgid "RC7_REWARD_CHOOSE"
+msgstr "Choose exactly one of three. No credits or prices."
+
+msgid "RC7_REWARD_LOCKED"
+msgstr "Boost selected. The other choices are locked."
+
+msgid "RC7_REPAIR"
+msgstr "Recovery"
+
+msgid "RC7_REWARD_REPAIR"
+msgstr "Restore one health point now."
+
+msgid "RC7_REWARD_ASSISTANT"
+msgstr "Two extra hints for the next sector."
+
+msgid "RC7_REWARD_SECOND_LIFE"
+msgstr "The first mine hit in the next sector costs no health."
+
+msgid "RC7_REWARD_STABILIZER"
+msgstr "Protection from anomalies in the next sector."
+
+msgid "RC7_ARCHIVE_DESC"
+msgstr "Keep the optional record to unlock more endings, or continue. No extra puzzle."
