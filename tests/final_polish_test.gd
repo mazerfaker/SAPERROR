@@ -131,10 +131,13 @@ func run() -> void:
 		ui.theme=ui._terminal_theme()
 		ui._start_challenge("LIAR")
 		var slot: Control=ui.header_emblem_slot
-		check(slot.position.x+slot.size.x<=850.0 and slot.position.y+slot.size.y<153.0,"emblem fits before version and divider")
+		check(is_equal_approx(slot.get_rect().get_center().x,ui.page.size.x*0.5) and is_equal_approx(slot.position.y,44.0),"emblem centered across entire header and raised")
+		check(ui.header_cursor.get_rect().end.x<=slot.position.x and slot.get_rect().end.x<=850.0 and slot.get_rect().end.y<153.0,"emblem clear of title, version and divider")
 		check(slot.get_child_count()==1,"single header emblem")
 		if slot.get_child_count()==1:
-			check(slot.get_child(0).size==Vector2(110,88),"native aspect header emblem")
+			var icon:=slot.get_child(0) as Control
+			check(icon.size==Vector2(110,88),"native aspect header emblem")
+			check(icon.get_global_rect().get_center().is_equal_approx(slot.get_global_rect().get_center()),"actual emblem centered in slot")
 		var view:=ui.page.get_child(ui.page.get_child_count()-1) as ChallengeUI
 		check(is_instance_valid(view),"challenge view exists")
 		if is_instance_valid(view):

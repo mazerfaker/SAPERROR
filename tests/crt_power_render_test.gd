@@ -78,6 +78,10 @@ func run() -> void:
 	game._set_effects(0.0,true,false,false,0.0,false)
 	for mode in ["normal","reduced","clear"]:
 		await check_cursor(game,mode)
+	game.ui._start_challenge("WATCHER")
+	var emblem_slot: Control=game.ui.header_emblem_slot
+	check(absf(emblem_slot.get_rect().get_center().x-713.0)<0.1 and emblem_slot.position.y==44.0,"boss emblem centered on CRT header")
+	await capture(vp,"boss_header")
 	game.ui._show("menu")
 	# Use the real menu and actual top-level composition, not an isolated shader fixture.
 	var ready: Image=await capture(vp,"ready")

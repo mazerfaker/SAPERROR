@@ -321,10 +321,10 @@ func _show(next: String) -> void:
 		var cancel:=page.find_child("ConfirmCancel",true,false) as Button
 		if is_instance_valid(cancel): cancel.grab_focus()
 func _build_terminal_header() -> void:
-	header_title=_label("SAPERROR",Rect2(88,52,620,92),page,72)
+	header_title=_label("SAPERROR",Rect2(88,52,550,92),page,72)
 	header_title.name="TerminalHeaderTitle"
 	header_title.mouse_filter=Control.MOUSE_FILTER_IGNORE
-	var font_size: int=Access.fit_font(theme.default_font,"SAPERROR ▌",72,text_scale,Vector2(620,92),true)
+	var font_size: int=Access.fit_font(theme.default_font,"SAPERROR ▌",72,text_scale,Vector2(550,92),false)
 	header_title.add_theme_font_size_override("font_size",font_size)
 	var prefix_width: float=theme.default_font.get_string_size("SAPERROR ",HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x
 	var title_width: float=theme.default_font.get_string_size("SAPERROR ▌",HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x
@@ -336,8 +336,9 @@ func _build_terminal_header() -> void:
 	header_emblem_slot=Control.new()
 	header_emblem_slot.name="HeaderEmblemSlot"
 	header_emblem_slot.mouse_filter=Control.MOUSE_FILTER_IGNORE
-	var slot_x: float=88.0+title_width+20.0
-	_place(header_emblem_slot,Rect2(slot_x,54,110,88),page)
+	# Center on the entire CRT raster, independent of title width or locale.
+	var slot_x: float=(page.size.x-110.0)*0.5
+	_place(header_emblem_slot,Rect2(slot_x,44,110,88),page)
 	_update_header_caret(0.0)
 func _update_header_caret(delta: float) -> void:
 	header_caret_elapsed=fposmod(header_caret_elapsed+delta,HEADER_CARET_INTERVAL*2.0)

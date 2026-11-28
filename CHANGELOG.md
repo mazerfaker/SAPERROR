@@ -1,4 +1,7 @@
 # Changelog
+### RC.6 boss header alignment
+Center all mounted boss emblems on the CRT raster midpoint (x=713), raise the slot 10 raster pixels, preserve the existing 110×88 area and aspect ratio. Reserve title space and verify actual emblem geometry across text scales. Native QA captures the boss header.
+
 ### RC.6 visible cursor correction
 Header cursor blinks independently of CRT filter and accessibility preferences; reduced-motion/clear-display use a gentle local fade, initial safety notice remains static. Native raster samples check actual cursor contrast and stable title in all three modes. Also align Final Polish fixture with the permanent three-module shop limit.
 
