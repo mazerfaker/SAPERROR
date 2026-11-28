@@ -1211,3 +1211,21 @@ msgstr "DIAGONAL counts diagonal neighbors only. Continue to the next lesson."
 
 msgid "SHOP_FULL"
 msgstr "3 modules installed. Purchases closed; repairs remain available."
+
+msgid "VIS_RESOLUTION"
+msgstr "Resolution"
+
+msgid "VIS_DESKTOP_NATIVE"
+msgstr "Desktop"
+
+msgid "VIS_NATIVE_FULLSCREEN"
+msgstr "Fullscreen (desktop resolution)"
+
+msgid "VIS_RESOLUTION_HELP"
+msgstr "Choose a window size. Fullscreen uses the current desktop resolution."
+
+msgid "VIS_RESOLUTION_NOTE"
+msgstr "Aspect ratio and mouse accuracy are preserved."
+
+msgid "VIS_RESOLUTION_UNAVAILABLE"
+msgstr "This window size does not fit the current display."

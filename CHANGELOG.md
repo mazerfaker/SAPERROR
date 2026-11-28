@@ -1,4 +1,7 @@
 # Changelog
+### RC.6 display settings and audio cleanup
+Remove Music Preview / Stop while retaining music volume and SFX test. Add localized resolution submenu with 12 window sizes, native desktop fullscreen, safe work-area limits, persisted size/mode and F11 synchronization. Preserve fixed CRT raster and aspect ratio. Add persistence and geometry regression checks.
+
 ### RC.6 fixed-raster CRT mask and LIAR cleanup
 Power transitions reveal and cover the stationary CRT raster through a separate foreground mask; never scale the main menu. Shorten the complete startup and shutdown timelines by one third, retaining blank opening, caret, full DOS transcript and final black frames. Remove the dark horizontal stripe from the central LIAR exclamation mark. Add a native pixel-position regression test. Resolve installer compiler inputs to absolute Windows paths after CS1504.
 

@@ -55,6 +55,7 @@ func run() -> void:
 	ui.tutorial.next_button.pressed.emit()
 	check(ui.audio.ui_click_requests==before_clicks+1,"tutorial next uses shared sound")
 	ui._show("audio")
+	check(ui.page.find_child("MusicPreview",true,false)==null,"music preview removed")
 	var master:=ui.page.find_child("AudioSlider_master",true,false) as HSlider
 	check(is_instance_valid(master),"real master slider")
 	if is_instance_valid(master):

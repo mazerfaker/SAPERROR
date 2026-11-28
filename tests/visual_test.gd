@@ -1,5 +1,7 @@
 extends SceneTree
 const Geometry = preload("res://scripts/ui/crt_geometry.gd")
+const UI=preload("res://scripts/ui/terminal_ui.gd")
+const Store=preload("res://scripts/save/session_store.gd")
 const ART := "res://assets/art/terminal_original.png"
 var failures: int = 0
 var checks: int = 0
@@ -51,6 +53,33 @@ func run() -> void:
 		check(interior.g<0.25,"dark cursor interior")
 		check(game.CUSTOM_CURSOR_SHAPES.has(Input.CURSOR_ARROW) and game.CUSTOM_CURSOR_SHAPES.has(Input.CURSOR_POINTING_HAND) and game.CUSTOM_CURSOR_SHAPES.has(Input.CURSOR_IBEAM),"shared themed cursor for normal interface shapes")
 		game.ui._show("settings")
+		var entry:=game.ui.page.find_child("ResolutionSetting",true,false) as Button
+		check(is_instance_valid(entry),"resolution settings entry")
+		if is_instance_valid(entry): entry.pressed.emit()
+		check(game.ui.screen=="resolution","resolution submenu")
+		for preset in UI.WINDOW_RESOLUTIONS:
+			var b:=game.ui.page.find_child("Resolution_%dx%d" % [preset.x,preset.y],true,false) as Button
+			check(is_instance_valid(b) and not b.disabled,"supported headless preset "+str(preset))
+		var path: String="user://resolution_qa_%d.cfg" % OS.get_process_id()
+		game.ui.session_path=path
+		var hd:=game.ui.page.find_child("Resolution_1600x900",true,false) as Button
+		if is_instance_valid(hd): hd.pressed.emit()
+		check(game.ui.window_resolution==Vector2i(1600,900) and not game.ui.window_fullscreen,"select preset switches to windowed")
+		var saved: ConfigFile=Store.load_config(path)
+		check(saved.get_value("settings","window_resolution",Vector2i.ZERO)==Vector2i(1600,900) and not bool(saved.get_value("settings","window_fullscreen",true)),"resolution saved")
+		var restored:=UI.new()
+		restored.session_path=path
+		restored.size=Vector2(Geometry.RASTER)
+		root.add_child(restored)
+		check(restored.window_resolution==Vector2i(1600,900) and not restored.window_fullscreen,"resolution restored on startup")
+		restored.queue_free()
+		var full:=game.ui.page.find_child("NativeFullscreen",true,false) as Button
+		if is_instance_valid(full): full.pressed.emit()
+		check(game.ui.window_fullscreen and game.ui.window_resolution==Vector2i(1600,900),"fullscreen preserves window choice")
+		check(game.ui.back_shortcut() and game.ui.screen=="settings","resolution back navigation")
+		check(UI.fit_window_resolution(Vector2i(3840,2160),Vector2i(1920,1080))==Vector2i(1920,1080),"oversized resolution safely fits")
+		for suffix in ["",".bak",".tmp",".bak.tmp"]: DirAccess.remove_absolute(ProjectSettings.globalize_path(path+suffix))
+		game.ui.session_path=Store.PATH
 		var original_position: Vector2 = game.display.position
 		var original_size: Vector2 = game.display.size
 		var original_page: Vector2 = game.ui.page.size
@@ -77,5 +106,7 @@ func run() -> void:
 	for lang in ["uk","en"]:
 		TranslationServer.set_locale(lang)
 		check(TranslationServer.translate("VIS_SETTINGS") != "VIS_SETTINGS","visual locale loaded")
+		for key in ["VIS_RESOLUTION","VIS_DESKTOP_NATIVE","VIS_NATIVE_FULLSCREEN","VIS_RESOLUTION_HELP","VIS_RESOLUTION_NOTE","VIS_RESOLUTION_UNAVAILABLE"]:
+			check(TranslationServer.translate(key)!=key,"resolution translation "+lang+" "+key)
 	print("VISUAL_QA checks=",checks," failures=",failures)
 	quit(0 if failures == 0 else 1)

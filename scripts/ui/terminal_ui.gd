@@ -46,6 +46,11 @@ signal effects_changed(amount: float, glass: bool, reduced: bool, flicker: bool,
 signal protocol_triggered
 signal fault_triggered
 signal fullscreen_requested
+signal resolution_requested
+const WINDOW_RESOLUTIONS: Array[Vector2i]=[Vector2i(960,540),Vector2i(1024,576),Vector2i(1024,768),Vector2i(1280,720),Vector2i(1280,800),Vector2i(1366,768),Vector2i(1600,900),Vector2i(1920,1080),Vector2i(1920,1200),Vector2i(2560,1080),Vector2i(2560,1440),Vector2i(3840,2160)]
+const DEFAULT_WINDOW_RESOLUTION:=Vector2i(1280,720)
+var window_resolution: Vector2i=DEFAULT_WINDOW_RESOLUTION
+var window_fullscreen: bool=true
 signal shutdown_requested
 signal warning_accepted
 signal outcome_triggered(won: bool)
@@ -286,6 +291,7 @@ func _show(next: String) -> void:
 	if screen == "warning": _content_warning()
 	elif screen == "game": _game()
 	elif screen == "settings": _settings()
+	elif screen == "resolution": _resolution_settings()
 	elif screen == "help": _help()
 	elif screen == "performance": _performance()
 	elif screen == "audio": _audio_settings()
@@ -484,6 +490,9 @@ func _load_session() -> void:
 		cfg=report["config"]
 		save_recovered=report["source"] in ["backup","staged"]
 		save_failed=report["source"]=="invalid"
+	var saved_resolution: Variant=cfg.get_value("settings","window_resolution",DEFAULT_WINDOW_RESOLUTION)
+	window_resolution=saved_resolution if saved_resolution is Vector2i and WINDOW_RESOLUTIONS.has(saved_resolution) else DEFAULT_WINDOW_RESOLUTION
+	window_fullscreen=bool(cfg.get_value("settings","window_fullscreen",_fullscreen_active()))
 	is_uk = bool(cfg.get_value("settings","uk",false))
 	high_contrast=bool(cfg.get_value("settings","contrast",false))
 	large_symbols=bool(cfg.get_value("settings","large_symbols",false))
@@ -570,6 +579,8 @@ func _load_session() -> void:
 func _save_session() -> void:
 	if warning_pending: return
 	if DisplayServer.get_name() == "headless" and session_path==Store.PATH: return
+	cfg.set_value("settings","window_resolution",window_resolution)
+	cfg.set_value("settings","window_fullscreen",window_fullscreen)
 	cfg.set_value("settings","uk",is_uk)
 	cfg.set_value("settings","contrast",high_contrast)
 	cfg.set_value("settings","large_symbols",large_symbols)
@@ -681,7 +692,9 @@ func _settings() -> void:
 	_label(tr("VIS_SETTINGS"),Rect2(124,212,1150,60),page,41)
 	var language_button := _button(tr("VIS_LANGUAGE")+": "+("Українська" if is_uk else "English"),Rect2(124,305,300,62),page,_language,22)
 	language_button.name = "LanguageSetting"
-	_button(tr("VIS_FULLSCREEN")+": "+_on_off(_fullscreen_active()),Rect2(444,305,720,62),page,func(): fullscreen_requested.emit(); _show("settings"))
+	_button(tr("VIS_FULLSCREEN")+": "+_on_off(window_fullscreen),Rect2(444,305,350,62),page,func(): fullscreen_requested.emit(); _show("settings"),22)
+	var resolution_button:=_button(tr("VIS_RESOLUTION")+": "+(tr("VIS_DESKTOP_NATIVE") if window_fullscreen else resolution_name(window_resolution)),Rect2(814,305,350,62),page,func(): _show("resolution"),22)
+	resolution_button.name="ResolutionSetting"
 	var crt_readout := _label(tr("VIS_CRT")+": "+str(roundi(amount*100))+"%",Rect2(124,382,1040,35),page,28)
 	var crt_slider := HSlider.new()
 	crt_slider.min_value = 0.0
@@ -701,6 +714,48 @@ func _settings() -> void:
 	_button(tr("VIS_AUDIO"),Rect2(510,803,310,57),page,func(): _show("audio"))
 	_button(tr("ACC_TITLE"),Rect2(840,803,324,57),page,func(): _show("accessibility"),22)
 	_button(tr("VIS_BACK"),Rect2(124,803,350,57),page,func(): _show("menu"))
+static func resolution_name(value: Vector2i) -> String:
+	return "%d × %d" % [value.x,value.y]
+static func fit_window_resolution(requested: Vector2i, available: Vector2i) -> Vector2i:
+	var factor: float=minf(1.0,minf(float(maxi(1,available.x))/maxi(1,requested.x),float(maxi(1,available.y))/maxi(1,requested.y)))
+	return Vector2i(maxi(1,floori(requested.x*factor)),maxi(1,floori(requested.y*factor)))
+func available_window_size() -> Vector2i:
+	if DisplayServer.get_name()=="headless": return Vector2i(7680,4320)
+	var usable: Rect2i=DisplayServer.screen_get_usable_rect(DisplayServer.window_get_current_screen())
+	return Vector2i(maxi(1,usable.size.x-24),maxi(1,usable.size.y-56))
+func _select_resolution(value: Vector2i) -> void:
+	if not WINDOW_RESOLUTIONS.has(value) or fit_window_resolution(value,available_window_size())!=value: return
+	window_resolution=value
+	window_fullscreen=false
+	resolution_requested.emit()
+	_save_session()
+	_show("resolution")
+func _resolution_settings() -> void:
+	_label(tr("VIS_RESOLUTION"),Rect2(124,212,1150,60),page,41)
+	var native_size: Vector2i=Vector2i.ZERO if DisplayServer.get_name()=="headless" else DisplayServer.screen_get_size(DisplayServer.window_get_current_screen())
+	var native_text: String=tr("VIS_NATIVE_FULLSCREEN")
+	if native_size!=Vector2i.ZERO: native_text+=" — "+resolution_name(native_size)
+	var full:=_button(("✓ " if window_fullscreen else "")+native_text,Rect2(124,290,1040,62),page,func():
+		window_fullscreen=true
+		resolution_requested.emit()
+		_save_session()
+		_show("resolution"),26)
+	full.name="NativeFullscreen"
+	_label(tr("VIS_RESOLUTION_HELP"),Rect2(124,365,1040,70),page,24,DIM)
+	var available: Vector2i=available_window_size()
+	for i in range(WINDOW_RESOLUTIONS.size()):
+		var value: Vector2i=WINDOW_RESOLUTIONS[i]
+		var col: int=i%3
+		var row: int=floori(i/3.0)
+		var selected: bool=not window_fullscreen and window_resolution==value
+		var b:=_button(("✓ " if selected else "")+resolution_name(value),Rect2(124+col*350,444+row*70,340,58),page,func(): _select_resolution(value),27)
+		b.name="Resolution_%dx%d" % [value.x,value.y]
+		if fit_window_resolution(value,available)!=value:
+			b.disabled=true
+			b.tooltip_text=tr("VIS_RESOLUTION_UNAVAILABLE")
+			b.add_theme_color_override("font_disabled_color",Color("737973"))
+	_label(tr("VIS_RESOLUTION_NOTE"),Rect2(124,732,1040,62),page,23,DIM)
+	_button(tr("VIS_BACK"),Rect2(124,810,350,57),page,func(): _show("settings"))
 func _audio_settings() -> void:
 	_label(tr("VIS_AUDIO"),Rect2(124,212,1150,60),page,41)
 	_button(tr("VIS_SOUND")+": "+_on_off(audio.enabled),Rect2(124,300,1040,62),page,func(): audio.set_levels(audio.sfx_level,audio.hum_level,not audio.enabled); _save_session(); _show("audio"))
@@ -708,10 +763,7 @@ func _audio_settings() -> void:
 	_audio_slider(tr("VIS_SFX"),audio.sfx_level,465,"sfx")
 	_audio_slider(tr("VIS_HUM"),audio.hum_level,552,"hum")
 	_audio_slider(tr("VIS_MUSIC"),audio.music_level,639,"music")
-	_button(tr("VIS_AUDIO_TEST"),Rect2(124,730,500,55),page,func(): audio.play_event("reveal"))
-	var preview:=_button(tr("VIS_MUSIC_TEST"),Rect2(644,730,520,55),page,func():
-		audio.select_music("" if audio.music.requested=="act_boot" else "act_boot"))
-	preview.name="MusicPreview"
+	_button(tr("VIS_AUDIO_TEST"),Rect2(124,730,1040,55),page,func(): audio.play_event("reveal"))
 	_button(tr("VIS_BACK"),Rect2(124,810,350,57),page,func(): _show("settings"))
 func _audio_slider(caption: String, value: float, y: float, channel: String) -> void:
 	var readout := _label(caption+": "+str(roundi(value*100))+"%",Rect2(124,y,1040,42),page,28)
@@ -2052,7 +2104,7 @@ func _accessibility() -> void:
 func back_shortcut() -> bool:
 	if protocol_active or warning_pending or screen=="menu": return false
 	var parent_screen: String={
-		"audio":"settings","accessibility":"settings","text_scale":"accessibility","confirm_run":"profiles","performance":"menu",
+		"audio":"settings","resolution":"settings","accessibility":"settings","text_scale":"accessibility","confirm_run":"profiles","performance":"menu",
 		"classic":"modes","profiles":"modes","challenge":"challenges",
 		"archive_preview":"archives","gallery_preview":"gallery","archives":"gallery",
 		"campaign_archive":"campaign_route","rewrite_trial":"ending_choice"

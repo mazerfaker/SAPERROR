@@ -123,6 +123,7 @@ func _ready() -> void:
 	ui.connect("effects_changed", _set_effects)
 	ui.connect("fault_triggered", _on_fault)
 	ui.connect("fullscreen_requested", _toggle_fullscreen)
+	ui.connect("resolution_requested", _apply_window_settings)
 	ui.connect("shutdown_requested", _shutdown)
 	ui.connect("warning_accepted", _after_warning)
 	ui.connect("outcome_triggered", _on_outcome)
@@ -132,6 +133,7 @@ func _ready() -> void:
 	var quiet: bool=ui.clear_display or ui.warning_pending
 	_set_effects(0.0 if quiet else ui.amount, ui.glass and not ui.warning_pending, ui.reduced or ui.warning_pending, ui.flicker and not quiet, 0.0 if quiet else ui.global_amount, ui.glitches and not quiet)
 	if is_instance_valid(live): live.set_lamp_enabled(ui.lamp_animation and not ui.warning_pending)
+	if ui.cfg.has_section_key("settings","window_fullscreen"): _apply_window_settings()
 	_start_power_on()
 	if DisplayServer.get_name() != "headless": display.grab_focus()
 	_apply_lifecycle()
@@ -263,11 +265,20 @@ func _process(delta: float) -> void:
 	outcome = move_toward(outcome,0.0,delta*0.85)
 	_set_crt("fault",fault if not reduced_motion else 0.0)
 	_set_crt("outcome",outcome*outcome_sign if not reduced_motion else 0.0)
+func _apply_window_settings() -> void:
+	if DisplayServer.get_name()=="headless" or get_viewport()!=get_tree().root: return
+	if ui.window_fullscreen:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+	else:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+		var usable: Rect2i=DisplayServer.screen_get_usable_rect(DisplayServer.window_get_current_screen())
+		var target: Vector2i=ui.fit_window_resolution(ui.window_resolution,ui.available_window_size())
+		DisplayServer.window_set_size(target)
+		DisplayServer.window_set_position(usable.position+Vector2i(Vector2(usable.size-target)*0.5))
 func _toggle_fullscreen() -> void:
-	if DisplayServer.get_name() == "headless": return
-	var mode: int = DisplayServer.window_get_mode()
-	var fullscreen: bool = mode == DisplayServer.WINDOW_MODE_FULLSCREEN or mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
-	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if fullscreen else DisplayServer.WINDOW_MODE_FULLSCREEN)
+	ui.window_fullscreen=not ui.window_fullscreen
+	_apply_window_settings()
+	ui._save_session()
 # Capture secret physical keys at the root input stage, before GUI focus
 # or the manually forwarded SubViewport can consume them. Feed exactly once.
 func _input(event: InputEvent) -> void:
@@ -284,6 +295,7 @@ func _input(event: InputEvent) -> void:
 	if event.pressed and not event.echo:
 		if event.keycode==KEY_F11:
 			_toggle_fullscreen()
+			if ui.screen in ["settings","resolution"]: ui._show(ui.screen)
 			get_viewport().set_input_as_handled()
 			return
 		if event.keycode==KEY_ESCAPE and not (raster.gui_get_focus_owner() is LineEdit) and ui.back_shortcut():

@@ -1211,3 +1211,21 @@ msgstr "DIAGONAL враховує лише діагональних сусіді
 
 msgid "SHOP_FULL"
 msgstr "Ліміт 3 модулі. Покупки закрито; лікування доступне."
+
+msgid "VIS_RESOLUTION"
+msgstr "Роздільна здатність"
+
+msgid "VIS_DESKTOP_NATIVE"
+msgstr "Монітор"
+
+msgid "VIS_NATIVE_FULLSCREEN"
+msgstr "На весь екран (роздільна здатність монітора)"
+
+msgid "VIS_RESOLUTION_HELP"
+msgstr "Обери розмір вікна. Повноекранний режим використовує роздільну здатність монітора."
+
+msgid "VIS_RESOLUTION_NOTE"
+msgstr "Пропорції екрана й точність миші збережено."
+
+msgid "VIS_RESOLUTION_UNAVAILABLE"
+msgstr "Цей розмір вікна не поміщається на поточному дисплеї."
