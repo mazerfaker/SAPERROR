@@ -452,7 +452,8 @@ func _tutorial() -> void:
 	tutorial.theme = theme
 	tutorial.high_contrast=high_contrast
 	tutorial.large_symbols=large_symbols
-	tutorial.start_at = mini(tutorial_done,8)
+	tutorial.start_at = 0
+	tutorial.text_scale = text_scale
 	tutorial.completed.connect(func(step: int):
 		tutorial_done = maxi(tutorial_done,step+1)
 		_save_session())

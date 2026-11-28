@@ -189,10 +189,10 @@ msgid "TUT_TITLE_2"
 msgstr "Flag"
 
 msgid "TUT_TITLE_3"
-msgstr "Deduction"
+msgstr "Deduction: find the mine"
 
 msgid "TUT_TITLE_4"
-msgstr "Chord and flood"
+msgstr "Open neighbors"
 
 msgid "TUT_HINT_0_0"
 msgstr "Left-click the marked cell #2."
@@ -207,10 +207,10 @@ msgid "TUT_HINT_2_1"
 msgstr "Remove the same flag."
 
 msgid "TUT_HINT_3_0"
-msgstr "Two clues of 1 share neighbors. For this exercise flag cell #1 as a mine."
+msgstr "Cell #2 shows 1. All its neighbors except #1 are open and safe. Flag #1 with right-click or F: it must be the mine."
 
 msgid "TUT_HINT_4_0"
-msgstr "Mine #1 is flagged. Middle-click or Space on open cell #5 to reveal neighbors."
+msgstr "Mine #1 is flagged. Middle-click or press Space on open cell #5: when the number of flags matches the clue, the other neighbors open."
 
 msgid "TUT_HINT_4_1"
 msgstr "Left-click cell #9 to check safe expansion."
@@ -264,7 +264,7 @@ msgid "TUT_TITLE_5"
 msgstr "Damage and rewind"
 
 msgid "TUT_TITLE_6"
-msgstr "Cartridges"
+msgstr "Clue rules (advanced)"
 
 msgid "TUT_HINT_5_0"
 msgstr "Reveal the marked mine. This training board will lose 1 HP."
@@ -273,10 +273,10 @@ msgid "TUT_HINT_5_1"
 msgstr "Press Rewind to restore the state before damage."
 
 msgid "TUT_HINT_6_0"
-msgstr "The center clue is 3. Press CLASSIC to read orthogonal neighbors."
+msgstr "CLASSIC counts all eight neighbors. Click CLASSIC to switch to CROSS (only up, down, left and right)."
 
 msgid "TUT_HINT_6_1"
-msgstr "CROSS shows 2. Switch to DIAGONAL to see 1."
+msgstr "CROSS shows 2. Switch to DIAGONAL to see 1. DIAGONAL is an advanced rule outside the compact campaign."
 
 msgid "VIS_SHOP"
 msgstr "Shop"
@@ -361,7 +361,7 @@ msgid "TUT_TITLE_7"
 msgstr "Shop and modules"
 
 msgid "TUT_HINT_7_0"
-msgstr "Training store: buy Capacitor for 28 CR. Check scanner capacity and balance. Real progress is unchanged."
+msgstr "Buy Assistant for 30 CR to gain one extra free hint per sector. This practice shop does not affect your real game."
 
 msgid "MOD_RESONANCE"
 msgstr "Resonance"
@@ -430,7 +430,7 @@ msgid "TUT_HINT_8_0"
 msgstr "The highlighted clue is hidden. Open Journal: the system has retained the actual value."
 
 msgid "TUT_HINT_8_1"
-msgstr "Journal: cell #2, CLASSIC = 1. Press Cleanse to restore the clue."
+msgstr "Journal: cell #2, CLASSIC = %d. Press Cleanse to restore the clue."
 
 msgid "VIS_LANGUAGE"
 msgstr "Language"
@@ -1118,3 +1118,15 @@ msgstr "At least one reserve charge is available at the start of each sector."
 
 msgid "BALANCE_MINES"
 msgstr "Marked mines / total:"
+
+msgid "TUT_PREVIOUS"
+msgstr "Previous"
+
+msgid "TUT_FINISH"
+msgstr "Finish"
+
+msgid "TUT_MENU"
+msgstr "Menu"
+
+msgid "TUT_TRY_MARKED"
+msgstr "Try the highlighted cell or the indicated action."

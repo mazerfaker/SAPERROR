@@ -2,6 +2,10 @@ extends Control
 const Access=preload("res://scripts/ui/accessibility.gd")
 var high_contrast: bool=false
 var large_symbols: bool=false
+var text_scale: float=1.0
+var previous_button: Button
+var skip_button: Button
+var invalid_action: bool=false
 const Board = preload("res://scripts/board/state.gd")
 const Rules = preload("res://scripts/board/rules.gd")
 const Tools = preload("res://scripts/board/onboarding_tools.gd")
@@ -32,7 +36,7 @@ func _label(value: String, p: Vector2, extent: Vector2, font_size: int) -> Label
 	l.position = p
 	l.size = extent
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	l.add_theme_font_size_override("font_size",font_size)
+	l.add_theme_font_size_override("font_size",Access.fit_font(get_theme_default_font(),value,font_size,text_scale,extent,true))
 	body.add_child(l)
 	return l
 func _button(value: String, p: Vector2, extent: Vector2, action: Callable) -> Button:
@@ -41,6 +45,7 @@ func _button(value: String, p: Vector2, extent: Vector2, action: Callable) -> Bu
 	b.position = p
 	b.size = extent
 	b.pressed.connect(action)
+	b.add_theme_font_size_override("font_size",Access.fit_font(get_theme_default_font(),value,26,text_scale,extent-Vector2(20,12),false))
 	body.add_child(b)
 	return b
 func _build() -> void:
@@ -52,6 +57,8 @@ func _build() -> void:
 	add_child(body)
 	phase = 0
 	solved = false
+	invalid_action=false
+	practice_label=null
 	phantom = Phantom.new()
 	var mask := PackedByteArray()
 	mask.resize(16)
@@ -74,7 +81,9 @@ func _build() -> void:
 	if step==8:
 		board.reveal(1)
 		phantom.trigger(board,1)
-	if step == 3: board.reveal(2)
+	if step == 3:
+		# Clue #2 has five neighbors; all except #1 are visibly safe.
+		for neighbor in [2,4,5,6]: board.reveal(neighbor)
 	if step == 4:
 		board.reveal(4)
 		board.flag(0)
@@ -83,9 +92,11 @@ func _build() -> void:
 	hint = _label("",Vector2(550,158),Vector2(700,360),33)
 	tool_button = null
 	if step>=5:
-		tool_button = _button(tr("VIS_REWIND") if step==5 else ("CLASSIC" if step==6 else (tr("MOD_CAPACITOR")+" / 28 CR" if step==7 else tr("VIS_JOURNAL"))),Vector2(550,530),Vector2(700,64),_lesson_tool)
+		tool_button = _button(tr("VIS_REWIND") if step==5 else ("CLASSIC" if step==6 else (tr("MOD_ASSISTANT")+" / 30 CR" if step==7 else tr("VIS_JOURNAL"))),Vector2(550,530),Vector2(700,64),_lesson_tool)
 	if step==7:
 		practice.reset(1)
+		practice.streamlined=true
+		practice.compact=true
 		practice.reward(1,54,0)
 		practice.begin_sector(2)
 		practice_label = _label("",Vector2(45,185),Vector2(470,300),32)
@@ -106,12 +117,20 @@ func _build() -> void:
 		b.gui_input.connect(_cell_input.bind(i))
 		grid.add_child(b)
 		tiles.append(b)
-	_button(tr("TUT_REPEAT"),Vector2(0,620),Vector2(270,64),_build)
-	_button(tr("TUT_SKIP"),Vector2(285,620),Vector2(270,64),_next)
-	next_button = _button(tr("TUT_NEXT"),Vector2(570,620),Vector2(320,64),_next)
-	_button(tr("VIS_BACK"),Vector2(905,620),Vector2(350,64),func(): back.emit())
+	previous_button = _button(tr("TUT_PREVIOUS"),Vector2(0,620),Vector2(246,64),_previous)
+	previous_button.name="LessonPrevious"
+	previous_button.disabled=step==0
+	var repeat:=_button(tr("TUT_REPEAT"),Vector2(255,620),Vector2(246,64),_build)
+	repeat.name="LessonRepeat"
+	skip_button = _button(tr("TUT_SKIP"),Vector2(510,620),Vector2(246,64),_next)
+	skip_button.name="LessonSkip"
+	next_button = _button(tr("TUT_FINISH" if step==8 else "TUT_NEXT"),Vector2(765,620),Vector2(246,64),_next)
+	next_button.name="LessonNext"
+	var menu:=_button(tr("TUT_MENU"),Vector2(1020,620),Vector2(246,64),func(): back.emit())
+	menu.name="LessonMenu"
 	_refresh()
-	if not Access.focus_tiles(tiles): Access.focus_first(body)
+	if step in [7,8] and is_instance_valid(tool_button): tool_button.grab_focus()
+	elif not Access.focus_tiles(tiles): Access.focus_first(body)
 func _cell_input(event: InputEvent, i: int) -> void:
 	if Access.grid_key(event,tiles,i,4): return
 	if event is InputEventMouseButton and event.pressed:
@@ -130,6 +149,11 @@ func _cell_input(event: InputEvent, i: int) -> void:
 			_action(i,"chord")
 func _action(i: int, kind: String) -> void:
 	if solved: return
+	if i<0 or i>=tiles.size(): return
+	var old_phase: int=phase
+	var old_opened: int=board.opened
+	var old_hp: int=board.hp
+	var old_cells: PackedInt32Array=board.cells.duplicate()
 	match step:
 		0:
 			if i == 1 and kind == "reveal":
@@ -159,8 +183,13 @@ func _action(i: int, kind: String) -> void:
 			if phase==0 and i==0 and kind=="reveal":
 				board.reveal(i)
 				if board.hp==2: phase=1
+	invalid_action=not solved and phase==old_phase and board.opened==old_opened and board.hp==old_hp and board.cells==old_cells
 	if solved: completed.emit(step)
 	_refresh()
+func _previous() -> void:
+	if step<=0: return
+	step-=1
+	_build()
 func _next() -> void:
 	if step >= 8:
 		back.emit()
@@ -170,19 +199,25 @@ func _next() -> void:
 func _refresh() -> void:
 	var key: String = "TUT_HINT_"+str(step)+"_"+str(phase)
 	hint.text = tr("TUT_COMPLETE") if solved else tr(key)
+	if step==8 and phase==1 and not solved: hint.text=tr(key) % phantom.value
+	if invalid_action and not solved: hint.text+="\n\n"+tr("TUT_TRY_MARKED")
+	hint.add_theme_font_size_override("font_size",Access.fit_font(get_theme_default_font(),hint.text,33,text_scale,Vector2(700,360),true))
 	next_button.disabled = not solved
+	skip_button.disabled=solved
 	if is_instance_valid(tool_button):
 		tool_button.disabled = solved or (step==5 and phase==0)
 		if step==6: tool_button.text = Tools.NAMES[board.rule]
 		if step==8: tool_button.text = tr("VIS_JOURNAL") if phase==0 else tr("VIS_CLEANSE")
 		if step==7:
-			practice_label.text = "CR %d\n%s %d/%d\n%s %d/4" % [practice.credits,tr("VIS_STOCK"),practice.stock,practice.capacity(),tr("VIS_MODULES"),practice.owned.size()]
+			practice_label.text = "CR %d\n%s %d\n%s %d/3" % [practice.credits,tr("SIMPLE_HINT"),2+(1 if practice.owned.has("ASSISTANT") else 0),tr("VIS_MODULES"),practice.owned.size()]
+			practice_label.add_theme_font_size_override("font_size",Access.fit_font(get_theme_default_font(),practice_label.text,32,text_scale,Vector2(470,300),true))
+		if step==7 and solved: tool_button.text=tr("MOD_ASSISTANT")+" ✓"
 	for i in range(tiles.size()):
 		var state: int = board.cells[i]
 		var b: Button = tiles[i]
 		b.text = str(board.clue(i,board.rule)) if state == Board.Cell.OPEN else ("⚑" if state == Board.Cell.FLAG else ("×" if state==Board.Cell.NEUTRALIZED else "·"))
 		if step==8 and phantom.hidden(i,board.rule): b.text = "?"
-		var marked: bool = (step==8 and i==1) or (step==0 and i==1) or (step==1 and (i==1 or Rules.neighbors(4,4,1).has(i))) or (step==2 and i==0) or (step==3 and i in [0,1,2]) or (step==4 and i==(4 if phase==0 else 8))
+		var marked: bool = (step==8 and i==1) or (step==0 and i==1) or (step==1 and (i==1 or Rules.neighbors(4,4,1).has(i))) or (step==2 and i==0) or (step==3 and (i==1 or Rules.neighbors(4,4,1).has(i))) or (step==4 and i==(4 if phase==0 else 8))
 		marked = marked or (step==5 and i==0) or (step==6 and (i==5 or Rules.neighbors(4,4,5,board.rule).has(i)))
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color("081a11") if state == Board.Cell.OPEN else Color("183b27")
@@ -194,6 +229,7 @@ func _refresh() -> void:
 
 func _lesson_tool() -> void:
 	if solved: return
+	invalid_action=false
 	if step==5 and phase==1:
 		solved = Tools.restore_action(board,prior) and board.hp==3 and board.cells[0]==Board.Cell.CLOSED
 	elif step==6:
@@ -201,7 +237,7 @@ func _lesson_tool() -> void:
 		phase += 1
 		if phase>=2: solved = board.clue(5,Rules.Rule.DIAGONAL)==1
 	elif step==7:
-		solved = practice.buy("CAPACITOR") and practice.capacity()==6 and practice.credits==47
+		solved = practice.buy("ASSISTANT") and practice.owned.has("ASSISTANT") and practice.credits==45
 	elif step==8:
 		if phase==0 and phantom.active() and phantom.value==board.clue(1,board.rule): phase=1
 		elif phase==1: solved = phantom.clear_zone() and not phantom.active()
