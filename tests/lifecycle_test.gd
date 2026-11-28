@@ -80,6 +80,7 @@ func run() -> void:
 		check(is_instance_valid(game.ui.boot_overlay) and not game.ui.page.visible and game.ui.boot_log.visible,"boot overlay exclusively visible")
 		game.ui.update_boot(1.0,true)
 		check(game.ui.boot_log.text==game.ui.DOS_BOOT_TRANSCRIPT,"approved DOS transcript typed completely")
+		check(game.ui.DOS_BOOT_TRANSCRIPT.contains("SHARE v7.10 (Revision 10.18.6002)") and not game.ui.DOS_BOOT_TRANSCRIPT.contains("Revision 4.11.1492"),"approved revision")
 		check(game.ui.boot_log.text.contains("Loading profile: Vergil") and game.ui.boot_log.text.contains("KONAMI resident extension detected."),"both approved Easter eggs")
 		check(game.ui.boot_log.text.ends_with("C:\\>_"),"authentic DOS prompt")
 		check(game.ui.boot_log.get_minimum_size().x<=1207.0 and game.ui.boot_log.get_minimum_size().y<=823.0,"complete transcript fits screen")

@@ -72,7 +72,7 @@ const RED := Color("f18b7d")
 var boot_overlay: Control
 var boot_log: Label
 # Approved DOS startup transcript; intentionally unchanged between languages.
-const DOS_BOOT_TRANSCRIPT: String="IDE/ATAPI CD-ROM Device Driver  Version 2.14   10:48:22 02/17/98\nCD-ROM drive #0 found on 1F0h port slave device, v1.04\n\nKiller v1.0 Copyright 1995 Vincent Penquerc’h. All Rights Reserved.\nKiller installed in memory.\nDOSKEY installed.\nDOSLFN 0.32o: high loaded consuming 11840 bytes.\nMSCDEX Version 2.25\nCopyright (C) Microsoft Corp. 1986-1995. All rights reserved.\n        Drive D: = Driver IDE-CD unit 0\nSHARE v7.10 (Revision 4.11.1492)\nCopyright (C) 1989-2003 Datalight, Inc.\n\ninstalled.\n\nCuteMouse v1.9.1 [DOS]\nInstalled at PS/2 port\n\nLocking volumes...\nLoading profile: Vergil\nKONAMI resident extension detected.\n\nNow you are in MS-DOS 7.10 prompt. Type 'HELP' for help.\n\nC:\\>_"
+const DOS_BOOT_TRANSCRIPT: String="IDE/ATAPI CD-ROM Device Driver  Version 2.14   10:48:22 02/17/98\nCD-ROM drive #0 found on 1F0h port slave device, v1.04\n\nKiller v1.0 Copyright 1995 Vincent Penquerc’h. All Rights Reserved.\nKiller installed in memory.\nDOSKEY installed.\nDOSLFN 0.32o: high loaded consuming 11840 bytes.\nMSCDEX Version 2.25\nCopyright (C) Microsoft Corp. 1986-1995. All rights reserved.\n        Drive D: = Driver IDE-CD unit 0\nSHARE v7.10 (Revision 10.18.6002)\nCopyright (C) 1989-2003 Datalight, Inc.\n\ninstalled.\n\nCuteMouse v1.9.1 [DOS]\nInstalled at PS/2 port\n\nLocking volumes...\nLoading profile: Vergil\nKONAMI resident extension detected.\n\nNow you are in MS-DOS 7.10 prompt. Type 'HELP' for help.\n\nC:\\>_"
 var outcome_banner: Control
 var audio: TerminalAudio
 var board: Board
