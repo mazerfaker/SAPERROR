@@ -201,7 +201,7 @@ func _next() -> void:
 	_build()
 func _refresh() -> void:
 	var key: String = "TUT_HINT_"+str(step)+"_"+str(phase)
-	hint.text = tr("TUT_COMPLETE") if solved else tr(key)
+	hint.text = tr("TUT_RULE_DONE" if step==6 else "TUT_COMPLETE") if solved else tr(key)
 	if step==8 and phase==1 and not solved: hint.text=tr(key) % phantom.value
 	if invalid_action and not solved: hint.text+="\n\n"+tr("TUT_TRY_MARKED")
 	hint.add_theme_font_size_override("font_size",Access.fit_font(get_theme_default_font(),hint.text,33,text_scale,Vector2(700,360),true))
@@ -209,7 +209,9 @@ func _refresh() -> void:
 	skip_button.disabled=solved
 	if is_instance_valid(tool_button):
 		tool_button.disabled = solved or (step==5 and phase==0)
-		if step==6: tool_button.text = Tools.NAMES[board.rule]
+		if step==6:
+			tool_button.text=Tools.NAMES[Rules.Rule.DIAGONAL] if solved else tr("TUT_SWITCH_RULE") % Tools.NAMES[mini(board.rule+1,Rules.Rule.DIAGONAL)]
+			tool_button.add_theme_font_size_override("font_size",Access.fit_font(get_theme_default_font(),tool_button.text,26,text_scale,Vector2(680,52),false))
 		if step==8: tool_button.text = tr("VIS_JOURNAL") if phase==0 else tr("VIS_CLEANSE")
 		if step==7:
 			practice_label.text = "CR %d\n%s %d\n%s %d/3" % [practice.credits,tr("SIMPLE_HINT"),2+(1 if practice.owned.has("ASSISTANT") else 0),tr("VIS_MODULES"),practice.owned.size()]

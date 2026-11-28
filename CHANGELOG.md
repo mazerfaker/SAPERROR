@@ -1,4 +1,7 @@
 # Changelog
+### RC.6 visible CRT power and tutorial correction
+Dedicated final CRT power mask independent of all grading and filter settings; visible 2.4s boot, 1.10s shutdown with black-frame hold. Reduced motion uses gentle fade, no beam. Native screenshot/pixel acceptance gate. Tutorial action label names the next rule and final DIAGONAL state.
+
 ### RC.6 power lifecycle hotfix
 Direct autosave and power-off, no confirmation screen. CRT startup and shutdown independent of filter strength; first normal startup after safety acknowledgement. Preserve reduced-motion and clear-display exceptions.
 

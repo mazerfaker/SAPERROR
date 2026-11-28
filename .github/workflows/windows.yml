@@ -188,6 +188,14 @@ jobs:
             "LIVE_RENDER UNCONFIRMED: $_ ; manual GPU/audio QA required" | Tee-Object -FilePath build/logs/live-render-status.txt
             Write-Warning 'Native render or audio validation unavailable/failed. Do not treat package as visually accepted.'
           }
+      - name: Native CRT power framebuffer QA
+        shell: pwsh
+        run: |
+          $log = Join-Path $PWD 'build/logs/crt-power.txt'
+          $args = @('--path','.', '--windowed','--resolution','1280x720','--script','res://tests/crt_power_render_test.gd','--log-file', $log)
+          $proc = Start-Process -FilePath $env:GODOT_EXE -ArgumentList $args -PassThru
+          if (!$proc.WaitForExit(70000)) { $proc.Kill(); throw 'CRT framebuffer QA timed out' }
+          if ($proc.ExitCode -ne 0 -or !(Test-Path $log) -or !(Select-String -Path $log -Pattern 'CRT_POWER_QA failures=0' -Quiet)) { throw 'CRT framebuffer QA did not pass' }
       - name: Native long-run loop smoke
         shell: pwsh
         run: |

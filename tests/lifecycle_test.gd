@@ -28,7 +28,7 @@ func run() -> void:
 	life.advance(1.0)
 	check(life.phase == Life.Phase.OFF and life.power()==0.0 and not life.accepts_input(),"power off")
 	check(Life.animation_allowed(false,false,false),"normal power animation independent of CRT strength")
-	check(not Life.animation_allowed(false,true,false) and not Life.animation_allowed(false,false,true) and not Life.animation_allowed(true,false,false),"accessibility and headless bypass")
+	check(Life.animation_allowed(false,true,false) and Life.animation_allowed(false,false,true) and not Life.animation_allowed(true,false,false),"gentle fade in accessibility modes; headless bypass")
 	var skip := Life.new()
 	skip.skip_boot()
 	check(skip.accepts_input() and skip.power()==1.0,"skip boot")
@@ -47,7 +47,7 @@ func run() -> void:
 	if scene != null:
 		var game = scene.instantiate()
 		root.add_child(game)
-		check(game.lifecycle.accepts_input(),"headless scene ready")
+		check(game.lifecycle.accepts_input() and not game.power_layer.visible,"headless scene ready")
 		game._set_effects(0.45,true,false,false,0.0,true)
 		game._on_immersion("WATCHER")
 		check(game.immersion_pulse>0.0 and game.immersion_id=="WATCHER","anomaly pulse triggered")

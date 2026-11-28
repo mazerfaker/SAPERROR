@@ -5,6 +5,7 @@ const CRT = preload("res://assets/shaders/crt.gdshader")
 const Grade = preload("res://assets/shaders/scene_grade.gdshader")
 const Lifecycle = preload("res://scripts/ui/crt_lifecycle.gd")
 const Immersion = preload("res://scripts/ui/immersion.gd")
+const PowerMask = preload("res://assets/shaders/crt_power.gdshader")
 const ART_PATH := "res://assets/art/terminal_original.png"
 const LiveEnvironment = preload("res://scripts/environment/live_environment.gd")
 var live: LiveEnvironment
@@ -15,6 +16,10 @@ var raster: SubViewport
 var crt_material: ShaderMaterial
 var grade_material: ShaderMaterial
 var grade_layer: ColorRect
+var power_layer: ColorRect
+var power_material: ShaderMaterial
+var power_first_frame: bool=false
+var power_dark_frames: int=0
 var crt_values: Dictionary={}
 var crt_parameter_writes: int=0
 var ui: TerminalUI
@@ -98,6 +103,19 @@ func _ready() -> void:
 	grade_material.set_shader_parameter("contour",Geometry.mask_points())
 	post.material = grade_material
 	add_child(post)
+	# Last canvas layer, above all monitor post-processing; never affects the room.
+	power_layer=ColorRect.new()
+	power_layer.name="CRTPowerMask"
+	power_layer.position=Geometry.SCREEN.position
+	power_layer.size=Geometry.SCREEN.size
+	power_layer.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	power_material=ShaderMaterial.new()
+	power_material.shader=PowerMask
+	power_material.set_shader_parameter("contour",Geometry.mask_points())
+	power_layer.material=power_material
+	power_layer.z_index=50
+	power_layer.hide()
+	add_child(power_layer)
 	ui.connect("effects_changed", _set_effects)
 	ui.connect("fault_triggered", _on_fault)
 	ui.connect("fullscreen_requested", _toggle_fullscreen)
@@ -114,14 +132,17 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless": display.grab_focus()
 	_apply_lifecycle()
 func _power_animation_allowed() -> bool:
-	return Lifecycle.animation_allowed(DisplayServer.get_name()=="headless",ui.reduced,ui.clear_display)
+	return DisplayServer.get_name()!="headless"
 func _start_power_on() -> void:
 	# Keep the first-launch safety notice ahead of the animation.
 	if ui.warning_pending or not _power_animation_allowed():
 		lifecycle.skip_boot()
 	else:
 		lifecycle.begin_boot()
-		ui.begin_boot()
+		power_first_frame=true
+		power_dark_frames=0
+		# Keep BIOS only in normal motion; gentle fade reveals menu in reduced motion.
+		if not ui.reduced and not ui.clear_display: ui.begin_boot()
 	_apply_lifecycle()
 func _after_warning() -> void:
 	if not _power_animation_allowed(): return
@@ -163,10 +184,26 @@ func _on_outcome(won: bool) -> void:
 	outcome = 1.0
 	outcome_sign = 1.0 if won else -1.0
 func _apply_lifecycle() -> void:
-	_set_crt("power",lifecycle.power())
-	_set_crt("beam",lifecycle.beam())
+	# The original CRT shader stays neutral; a dedicated top layer owns power transitions.
+	_set_crt("power",1.0)
+	_set_crt("beam",1.0)
+	if not is_instance_valid(power_layer): return
+	var gentle: bool=ui.reduced or ui.clear_display
+	var active: bool=lifecycle.phase!=Lifecycle.Phase.READY
+	power_layer.visible=active
+	if not active: return
+	var level: float=lifecycle.power()
+	var aperture: float=lifecycle.beam()
+	if gentle:
+		aperture=1.0
+		if lifecycle.phase==Lifecycle.Phase.BOOT: level=smoothstep(0.0,1.0,lifecycle.progress())
+		elif lifecycle.phase==Lifecycle.Phase.SHUTDOWN: level=1.0-smoothstep(0.0,1.0,lifecycle.progress())
+	power_material.set_shader_parameter("screen_power",level)
+	power_material.set_shader_parameter("screen_beam",aperture)
+	power_material.set_shader_parameter("line_strength",0.0 if gentle else (1.0-aperture)*level)
 func _finish_boot() -> void:
 	lifecycle.skip_boot()
+	power_first_frame=false
 	ui.end_boot()
 	_apply_lifecycle()
 func _shutdown() -> void:
@@ -176,6 +213,9 @@ func _shutdown() -> void:
 		get_tree().quit()
 		return
 	lifecycle.begin_shutdown()
+	power_first_frame=true
+	power_dark_frames=0
+	_apply_lifecycle()
 	ui.audio.play_event("shutdown")
 func _process(delta: float) -> void:
 	if crt_material == null: return
@@ -183,7 +223,13 @@ func _process(delta: float) -> void:
 		live.set_lamp_enabled(ui.lamp_animation and not ui.warning_pending)
 		live.set_audio_settings(ui.audio.effective_sfx(),ui.audio.enabled)
 	var previous: int = lifecycle.phase
-	lifecycle.advance(delta)
+	# Do not let a long loading/render stall skip the entire visible transition.
+	if power_first_frame:
+		power_first_frame=false
+	elif lifecycle.phase in [Lifecycle.Phase.BOOT,Lifecycle.Phase.SHUTDOWN]:
+		lifecycle.advance(minf(delta,0.05))
+	else:
+		lifecycle.advance(delta)
 	if lifecycle.phase == Lifecycle.Phase.BOOT:
 		ui.update_boot(lifecycle.progress())
 	elif previous == Lifecycle.Phase.BOOT:
@@ -192,7 +238,9 @@ func _process(delta: float) -> void:
 		ui.audio.fade_hum(1.0-lifecycle.progress())
 		ui.audio.fade_music(1.0-lifecycle.progress())
 	elif lifecycle.phase == Lifecycle.Phase.OFF:
-		get_tree().quit()
+		# Present at least two black frames before destroying the window.
+		power_dark_frames+=1
+		if power_dark_frames>=3: get_tree().quit()
 	_apply_lifecycle()
 	fault = move_toward(fault,0.0,delta*1.7)
 	if glitches_enabled and not reduced_motion and effects > 0.0 and lifecycle.accepts_input():

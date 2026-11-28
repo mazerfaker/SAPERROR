@@ -273,10 +273,10 @@ msgid "TUT_HINT_5_1"
 msgstr "Press Rewind to restore the state before damage."
 
 msgid "TUT_HINT_6_0"
-msgstr "CLASSIC counts all eight neighbors. Click CLASSIC to switch to CROSS (only up, down, left and right)."
+msgstr "CLASSIC counts all eight neighbors. Press Switch to CROSS to count only side neighbors."
 
 msgid "TUT_HINT_6_1"
-msgstr "CROSS shows 2. Switch to DIAGONAL to see 1. DIAGONAL is an advanced rule outside the compact campaign."
+msgstr "CROSS shows 2. Press Switch to DIAGONAL to see 1. DIAGONAL is an advanced rule outside the compact campaign."
 
 msgid "VIS_SHOP"
 msgstr "Shop"
@@ -1202,3 +1202,9 @@ msgstr "The cell marked ✓ is safe."
 
 msgid "CH_REWRITE_GOAL"
 msgstr "Open all safe cells to unlock the final choice."
+
+msgid "TUT_SWITCH_RULE"
+msgstr "Switch to %s"
+
+msgid "TUT_RULE_DONE"
+msgstr "DIAGONAL counts diagonal neighbors only. Continue to the next lesson."
