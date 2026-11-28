@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 45
     env:
       GODOT_VERSION: '4.7.2-stable'
-      GAME_VERSION: '0.9.0-rc.8'
+      GAME_VERSION: '0.9.0-rc.9'
     steps:
       - name: Windows prerequisites
         shell: pwsh
@@ -192,6 +192,14 @@ jobs:
             "LIVE_RENDER UNCONFIRMED: $_ ; manual GPU/audio QA required" | Tee-Object -FilePath build/logs/live-render-status.txt
             Write-Warning 'Native render or audio validation unavailable/failed. Do not treat package as visually accepted.'
           }
+      - name: Native analytics clock and offline gameplay QA
+        shell: pwsh
+        run: |
+          $log = Join-Path $PWD 'build/logs/native-analytics.txt'
+          $args = @('--path','.', '--windowed','--resolution','1280x720','--script','res://tests/native_analytics_test.gd','--log-file', $log)
+          $proc = Start-Process -FilePath $env:GODOT_EXE -ArgumentList $args -PassThru
+          if (!$proc.WaitForExit(90000)) { $proc.Kill(); throw 'Native analytics QA timed out' }
+          if ($proc.ExitCode -ne 0 -or !(Test-Path $log) -or !(Select-String -Path $log -Pattern 'NATIVE_ANALYTICS_QA.*failures=0' -Quiet)) { throw 'Native analytics QA failed' }
       - name: Native CRT power framebuffer QA
         shell: pwsh
         run: |

@@ -1,4 +1,7 @@
 # Changelog
+### RC.9 native release validation
+Add a mandatory real-window analytics clock and offline regression in Windows CI. Verify active elapsed time against monotonic time, menu exclusion, resumption and revocation using the actual game scene with network transport removed. Record RC8 CI evidence and two identified Pixabay source pages; public redistribution and physical hardware acceptance remain unconfirmed. No gameplay or audio changes.
+
 ### RC.8 time and installer handoff
 Use monotonic elapsed time and actual root window focus, not engine delta. Exclude inactive transitions and suspension gaps; avoid resending unchanged seconds. Test 300 measured seconds and installer-written allow/deny through Godot privacy startup. No default opt-in or legacy pilot authorization.
 

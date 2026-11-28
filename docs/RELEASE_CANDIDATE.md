@@ -23,3 +23,6 @@ Baseline RC.7 commit 64abdbfc6ccb1e59deb9fb2f71f4b05cc2aca9ca. Analytics unit, i
 - [ ] Review clean install/upgrade/uninstall, both locales, accessibility and physical display/audio performance.
 - [ ] Obtain documented redistribution rights for all external audio identified in LICENSES.md, including the ballast recording; review source-package rights.
 - [ ] Obtain explicit public release approval. CI is not manual acceptance. No public release or main merge in RC.8.
+
+## RC.9 — automated native release validation
+RC8 c4194f5: Windows run 46152288064, analytics run 46152288079; passed. Server commit b011257: D1 run 46152115391, deploy run 46152115476; passed. Installer handoff allow and deny passed. Owner opted to skip their own manual test; record this as not performed, not as passed. RC9 adds a required native game-window active clock and offline gameplay check (20 seconds real elapsed, menu exclusion, resume, revoke; transport removed before consent; no production writes). Full physical hardware and actual end-to-end real-client delivery remain unverified. Private candidate only; no public release until remaining redistribution and release authorization gates are resolved.

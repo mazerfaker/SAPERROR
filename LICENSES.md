@@ -8,3 +8,9 @@ Original approved terminal, live composition, icon and narrative assets: project
 - assets/audio/dragon-studio-glitch-effect-1-397982.mp3 — SHA256 760b72bdaad71f83350e2ef3a9d037daf58f44855a05a6cce25d990f1ffb888a
 - assets/live/assets/audio/01_Old_Ballast(3).wav — exact file checked by assets/live/approved-sha256.json.
 Filenames are not evidence of license terms. Obtain source links and license/provenance records, and confirm permission for game distribution (including source ZIP). No claim of cleared rights; do not publish v1.0 until verified. Existing files remain unchanged.
+
+## RC.9 source research — 2026-11-28
+Matching public listings found for the supplied filenames (not a byte-for-byte download comparison):
+- Finntastico, Old Computer Click, Pixabay asset 152513: https://pixabay.com/sound-effects/film-special-effects-old-computer-click-152513/ (published 2023-06-05).
+- DRAGON-STUDIO, Glitch Effect - 1, Pixabay asset 397982: https://pixabay.com/sound-effects/film-special-effects-glitch-effect-1-397982/ (published 2025-09-02).
+Both listings state Pixabay Content License. See https://pixabay.com/service/license-summary/ and https://pixabay.com/service/terms/. Integrated use in a creative game and standalone redistribution are different; the license restricts standalone redistribution. Preserve download/license evidence and verify original files against the listings before clearance. Do not distribute the unmodified audio as standalone assets or publish the raw source/patch bundle without reviewing permission. The Old Ballast WAV source and rights remain unknown. This record is not legal clearance. No audio replaced.
