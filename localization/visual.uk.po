@@ -24,7 +24,7 @@ msgid "VIS_SETTINGS"
 msgstr "Налаштування"
 
 msgid "VIS_EXIT"
-msgstr "Вимкнути / Вихід"
+msgstr "Вимкнути"
 
 msgid "VIS_CORE_ONLY"
 msgstr "ВІЗУАЛЬНА АЛЬФА\nCLASSIC / 8 × 8\nКампанія ще недоступна"

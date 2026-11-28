@@ -24,7 +24,7 @@ msgid "VIS_SETTINGS"
 msgstr "Settings"
 
 msgid "VIS_EXIT"
-msgstr "Power off / Exit"
+msgstr "Power Off"
 
 msgid "VIS_CORE_ONLY"
 msgstr "VISUAL ALPHA\nCLASSIC / 8 × 8\nCampaign not yet available"

@@ -348,7 +348,8 @@ func _menu() -> void:
 	_button(tr("VIS_TUTORIAL"),Rect2(124,501,640,65),page,func(): _show("tutorial"))
 	_button(tr("VIS_HELP"),Rect2(124,579,640,65),page,func(): _show("help"))
 	_button(tr("VIS_SETTINGS"),Rect2(124,657,640,65),page,func(): _show("settings"))
-	_button("power off",Rect2(124,735,640,65),page,func(): _show("confirm_exit"))
+	var power_button:=_button(tr("VIS_EXIT"),Rect2(124,735,640,65),page,func(): _show("confirm_exit"))
+	power_button.name="PowerOff"
 	if sessions==0 and not _has_run():
 		_label(tr("GUIDE_MENU_TITLE"),Rect2(820,345,500,64),page,32,AMBER)
 		_label(tr("GUIDE_MENU_BODY"),Rect2(820,423,500,260),page,29)
