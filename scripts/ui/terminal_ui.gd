@@ -71,10 +71,8 @@ const AMBER := Color("f0c37b")
 const RED := Color("f18b7d")
 var boot_overlay: Control
 var boot_log: Label
-var boot_meter: ColorRect
-var boot_percent: Label
-var boot_track: ColorRect
-var boot_skip: Label
+# Approved DOS startup transcript; intentionally unchanged between languages.
+const DOS_BOOT_TRANSCRIPT: String="IDE/ATAPI CD-ROM Device Driver  Version 2.14   10:48:22 02/17/98\nCD-ROM drive #0 found on 1F0h port slave device, v1.04\n\nKiller v1.0 Copyright 1995 Vincent Penquerc’h. All Rights Reserved.\nKiller installed in memory.\nDOSKEY installed.\nDOSLFN 0.32o: high loaded consuming 11840 bytes.\nMSCDEX Version 2.25\nCopyright (C) Microsoft Corp. 1986-1995. All rights reserved.\n        Drive D: = Driver IDE-CD unit 0\nSHARE v7.10 (Revision 4.11.1492)\nCopyright (C) 1989-2003 Datalight, Inc.\n\ninstalled.\n\nCuteMouse v1.9.1 [DOS]\nInstalled at PS/2 port\n\nLocking volumes...\nLoading profile: Vergil\nKONAMI resident extension detected.\n\nNow you are in MS-DOS 7.10 prompt. Type 'HELP' for help.\n\nC:\\>_"
 var outcome_banner: Control
 var audio: TerminalAudio
 var board: Board
@@ -622,35 +620,27 @@ func begin_boot() -> void:
 	(boot_overlay as ColorRect).color=Color("081710")
 	boot_overlay.size=size
 	add_child(boot_overlay)
-	# One continuous terminal transcript: no static heading during power-on.
-	boot_log=_label("",Rect2(110,110,1206,480),boot_overlay,36)
+	var extent:=Vector2(1206,822)
+	boot_log=_label("",Rect2(Vector2(110,65),extent),boot_overlay,25)
 	boot_log.name="BIOSConsole"
-	boot_track=ColorRect.new()
-	boot_track.color=Color("193b24")
-	_place(boot_track,Rect2(110,680,1206,18),boot_overlay)
-	boot_meter=ColorRect.new()
-	boot_meter.color=GREEN
-	_place(boot_meter,Rect2(0,0,0,18),boot_track)
-	boot_percent=_label("00%",Rect2(110,715,1206,64),boot_overlay,38)
-	boot_skip=_label(tr("VIS_SKIP_BOOT"),Rect2(110,805,1206,60),boot_overlay,28,DIM)
+	boot_log.autowrap_mode=TextServer.AUTOWRAP_OFF
+	# Fit the complete 24-line transcript before typing so layout never jumps.
+	var point: int=maxi(12,roundi(25*text_scale))
+	var font: Font=theme.default_font
+	while point>12:
+		var measured: Vector2=font.get_multiline_string_size(DOS_BOOT_TRANSCRIPT,HORIZONTAL_ALIGNMENT_LEFT,-1,point)
+		if measured.x<=extent.x and measured.y+4.0*DOS_BOOT_TRANSCRIPT.count("\n")<=extent.y: break
+		point-=1
+	boot_log.add_theme_font_size_override("font_size",point)
 	update_boot(0.0,false)
 func update_boot(progress: float, aperture_open: bool=true) -> void:
 	if not is_instance_valid(boot_overlay): return
-	# No glyphs, bar, percent or cursor until the entire aperture is open.
 	boot_log.visible=aperture_open
-	boot_track.visible=aperture_open and progress>=0.32
-	boot_percent.visible=boot_track.visible
-	boot_skip.visible=boot_track.visible
 	if not aperture_open:
 		boot_log.text=""
 		return
-	var transcript: String="SAPERROR // BIOS\n\n> "+tr("VIS_BOOT_CRT")+"\n> "+tr("VIS_BOOT_CORE")+"\n> "+tr("VIS_BOOT_AUDIO")+"\n> "+tr("VIS_BOOT_READY")
-	var typed: int=floori(transcript.length()*clampf((progress-0.055)/0.84,0.0,1.0))
-	# Show the input caret first; then append characters in order, including line breaks.
-	boot_log.text=transcript.substr(0,typed)+"|"
-	var load_progress: float=clampf((progress-0.32)/0.68,0.0,1.0)
-	boot_meter.size.x=1206.0*load_progress
-	boot_percent.text="%02d%%" % floori(load_progress*100.0+0.0001)
+	var typed: int=floori(DOS_BOOT_TRANSCRIPT.length()*clampf((progress-0.055)/0.84,0.0,1.0))
+	boot_log.text=DOS_BOOT_TRANSCRIPT if typed>=DOS_BOOT_TRANSCRIPT.length() else DOS_BOOT_TRANSCRIPT.substr(0,typed)+"|"
 func end_boot() -> void:
 	if is_instance_valid(boot_overlay):
 		remove_child(boot_overlay)

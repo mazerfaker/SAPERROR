@@ -2,8 +2,8 @@ extends RefCounted
 enum Phase { BOOT, READY, SHUTDOWN, OFF }
 const BOOT_LINE_TIME: float=0.16
 const BOOT_OPEN_TIME: float=0.90
-const BIOS_TIME: float=2.80
-const BIOS_HOLD: float=0.30
+const BIOS_TIME: float=5.00
+const BIOS_HOLD: float=0.50
 const BOOT_TIME: float=BOOT_OPEN_TIME+BIOS_TIME+BIOS_HOLD
 const SHUTDOWN_CLOSE_TIME: float=0.85
 const SHUTDOWN_LINE_HOLD: float=0.16

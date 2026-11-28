@@ -1,4 +1,7 @@
 # Changelog
+### RC.6 DOS startup transcript
+Use the approved screenshot-inspired MS-DOS 7.10 startup transcript verbatim with Vergil and KONAMI lines. English console text in both locales. Remove progress bar and static BIOS heading; begin with | after the CRT fully opens, type the transcript for five seconds, hold C:\\>_ for 0.5 seconds, then show menu. Shutdown unchanged.
+
 ### RC.6 BIOS terminal typing
 Keep the aperture animation free of all text and progress elements. On full opening, show only the input caret, then type the localized BIOS transcript character by character. Meter appears later, complete transcript and 100% hold before menu. BIOS duration 2.8 seconds. Shutdown unchanged.
 
