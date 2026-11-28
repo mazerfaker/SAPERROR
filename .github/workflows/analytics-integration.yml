@@ -1,0 +1,34 @@
+name: Analytics D1 Integration
+on:
+  push:
+    branches: [visual-foundation]
+    paths: ['analytics/**', '.github/workflows/analytics-integration.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: analytics
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - run: npm install --no-save --package-lock=false wrangler@4.169.0
+      - name: Test actual Workers runtime and isolated local D1
+        env:
+          CI: 'true'
+          WRANGLER_SEND_METRICS: 'false'
+        run: |
+          npx --no-install wrangler d1 migrations apply DB --local --persist-to .wrangler/integration
+          npx --no-install wrangler dev --local --ip 127.0.0.1 --port 8787 --persist-to .wrangler/integration --var INGEST_ENABLED:true --var DASHBOARD_PASSWORD:synthetic-local-test-password-not-production > /tmp/saperror-worker.log 2>&1 &
+          worker_pid=$!
+          trap 'kill "$worker_pid" 2>/dev/null || true; cat /tmp/saperror-worker.log' EXIT
+          node test/integration.mjs
