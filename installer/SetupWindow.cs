@@ -12,9 +12,9 @@ internal static class Program {
         if (args.Length == 2 && args[0] == "--consent-test") {
             try {
                 SetupWindow.SaveConsent(args[1], true);
-                if (File.ReadAllText(args[1]) != "v3:allow") Environment.Exit(2);
+                if (File.ReadAllText(args[1]) != "v4:allow") Environment.Exit(2);
                 SetupWindow.SaveConsent(args[1], false);
-                Environment.Exit(File.ReadAllText(args[1]) == "v3:deny" ? 0 : 3);
+                Environment.Exit(File.ReadAllText(args[1]) == "v4:deny" ? 0 : 3);
             } catch { Environment.Exit(4); }
         }
         using (var form = new SetupWindow(false)) {
@@ -168,7 +168,7 @@ internal sealed class SetupWindow : Form {
         Directory.CreateDirectory(Path.GetDirectoryName(file));
         string tmp=file+"."+Guid.NewGuid().ToString("N")+".tmp";
         try {
-            File.WriteAllText(tmp,allowed?"v3:allow":"v3:deny",new System.Text.UTF8Encoding(false));
+            File.WriteAllText(tmp,allowed?"v4:allow":"v4:deny",new System.Text.UTF8Encoding(false));
             if(File.Exists(file)) File.Replace(tmp,file,null);
             else File.Move(tmp,file);
         } finally { if(File.Exists(tmp)) File.Delete(tmp); }

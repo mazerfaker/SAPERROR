@@ -1,1 +1,1 @@
-Deploy controlled pilot only: HMAC token from authenticated dashboard, explicit client v3 consent, pilot version restricted, no public release. Verify live unauthorized writes rejected.
+Deploy opt-in analytics, upgraded dashboard and retired pilot. Owner explicitly approved after real pilot. v4 consent required. Validate before distribution.

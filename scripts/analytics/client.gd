@@ -3,8 +3,6 @@ extends Node
 const PERIOD: float=60.0
 const MIN_SEND_INTERVAL: float=5.0
 var endpoint: String=""
-var pilot_token: String=""
-var pilot_version: String=""
 var consent: bool=false
 var request: HTTPRequest
 var session_id: String=""
@@ -25,12 +23,6 @@ static func valid_endpoint(value: String) -> bool:
 	return pattern.search(value)!=null
 func configure(value: String) -> void:
 	endpoint=value if valid_endpoint(value) else ""
-func configure_pilot(value: String,token: String,version: String) -> void:
-	var pattern:=RegEx.new()
-	pattern.compile("^[a-f0-9]{64}$")
-	pilot_token=token if token.length()==64 and pattern.search(token)!=null else ""
-	pilot_version=version if not pilot_token.is_empty() else ""
-	configure(value if not pilot_token.is_empty() and not pilot_version.is_empty() else "")
 func _ready() -> void:
 	request=HTTPRequest.new()
 	request.timeout=8.0
@@ -83,7 +75,7 @@ func outcome(instance_id: int,won: bool) -> void:
 	if elapsed>=MIN_SEND_INTERVAL: _send()
 func snapshot() -> Dictionary:
 	if not enabled() or session_id.is_empty(): return {}
-	return {"schema":2,"id":session_id,"version":pilot_version if not pilot_version.is_empty() else str(ProjectSettings.get_setting("application/config/version","0.0.0")),"mode":mode,"difficulty":difficulty,"seconds":floori(active_seconds),"wins":wins,"losses":losses,"sector":sector}
+	return {"schema":2,"id":session_id,"version":str(ProjectSettings.get_setting("application/config/version","0.0.0")),"mode":mode,"difficulty":difficulty,"seconds":floori(active_seconds),"wins":wins,"losses":losses,"sector":sector}
 func _send() -> void:
 	# Headless QA never touches the network. Failures are discarded, never queued on disk.
 	if not enabled() or not dirty or session_id.is_empty() or not is_instance_valid(request) or in_flight or DisplayServer.get_name()=="headless": return
@@ -91,12 +83,13 @@ func _send() -> void:
 	if body.is_empty() or (active_seconds<1.0 and wins+losses==0): return
 	elapsed=0.0
 	var headers:=PackedStringArray(["Content-Type: application/json"])
-	if not pilot_token.is_empty(): headers.append("X-SAPERROR-Pilot: "+pilot_token)
 	var result: Error=request.request(endpoint+"/v2/session",headers,HTTPClient.METHOD_POST,JSON.stringify(body))
 	network_attempts+=1
 	if result==OK:
 		in_flight=true
 		dirty=false
+func _exit_tree() -> void:
+	set_permission(false)
 func _completed(result: int,code: int,_headers: PackedStringArray,_body: PackedByteArray) -> void:
 	in_flight=false
 	if enabled() and (result!=HTTPRequest.RESULT_SUCCESS or code!=204): dirty=true

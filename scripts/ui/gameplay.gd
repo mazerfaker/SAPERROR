@@ -7,7 +7,9 @@ const Lifecycle = preload("res://scripts/ui/crt_lifecycle.gd")
 const Immersion = preload("res://scripts/ui/immersion.gd")
 const PowerMask = preload("res://assets/shaders/crt_power.gdshader")
 const ART_PATH := "res://assets/art/terminal_original.png"
-const MOUSE_CURSOR = preload("res://assets/ui/mouse_cursor_glitch_plus.png")
+const MOUSE_CURSOR_PATH := "res://assets/ui/mouse_cursor_glitch_plus.png"
+var mouse_cursor_texture: Texture2D
+var mouse_cursor_installed: bool=false
 const MOUSE_HOTSPOT := Vector2(8,2)
 const CUSTOM_CURSOR_SHAPES := [Input.CURSOR_ARROW,Input.CURSOR_POINTING_HAND,Input.CURSOR_IBEAM,Input.CURSOR_CROSS,Input.CURSOR_HELP,Input.CURSOR_FORBIDDEN]
 const LiveEnvironment = preload("res://scripts/environment/live_environment.gd")
@@ -141,9 +143,19 @@ func _power_animation_allowed() -> bool:
 	return DisplayServer.get_name()!="headless"
 func _install_mouse_cursor() -> void:
 	if DisplayServer.get_name()=="headless": return
-	# Hardware cursor: no frame latency, no extra draw node, and no change to CRT hit mapping.
+	mouse_cursor_texture=load(MOUSE_CURSOR_PATH) as Texture2D
+	if mouse_cursor_texture==null: return
 	for shape in CUSTOM_CURSOR_SHAPES:
-		Input.set_custom_mouse_cursor(MOUSE_CURSOR,shape,MOUSE_HOTSPOT)
+		Input.set_custom_mouse_cursor(mouse_cursor_texture,shape,MOUSE_HOTSPOT)
+	mouse_cursor_installed=true
+func _release_mouse_cursor() -> void:
+	if mouse_cursor_installed:
+		for shape in CUSTOM_CURSOR_SHAPES:
+			Input.set_custom_mouse_cursor(null,shape)
+		mouse_cursor_installed=false
+	mouse_cursor_texture=null
+func _exit_tree() -> void:
+	_release_mouse_cursor()
 func _start_power_on() -> void:
 	# Keep the first-launch safety notice ahead of the animation.
 	if ui.warning_pending or not _power_animation_allowed():
@@ -248,7 +260,9 @@ func _process(delta: float) -> void:
 	elif lifecycle.phase == Lifecycle.Phase.OFF:
 		# Present at least two black frames before destroying the window.
 		power_dark_frames+=1
-		if power_dark_frames>=3: get_tree().quit()
+		if power_dark_frames>=3:
+			_release_mouse_cursor()
+			get_tree().quit()
 	_apply_lifecycle()
 	fault = move_toward(fault,0.0,delta*1.7)
 	if glitches_enabled and not reduced_motion and effects > 0.0 and lifecycle.accepts_input():
@@ -304,6 +318,8 @@ func _input(event: InputEvent) -> void:
 	raster.push_input(event.duplicate(),true)
 	get_viewport().set_input_as_handled()
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		_release_mouse_cursor()
 	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT and is_instance_valid(ui):
 		ui.protocol.reset_input()
 func _crt_input(event: InputEvent) -> void:

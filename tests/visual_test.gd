@@ -45,7 +45,7 @@ func run() -> void:
 	if scene != null:
 		var game = scene.instantiate()
 		root.add_child(game)
-		var cursor: Texture2D=game.MOUSE_CURSOR
+		var cursor: Texture2D=load(game.MOUSE_CURSOR_PATH) as Texture2D
 		var pointer: Image=cursor.get_image()
 		check(cursor.get_size()==Vector2(40,40),"custom mouse pointer native dimensions")
 		check(game.MOUSE_HOTSPOT==Vector2(8,2) and pointer.get_pixel(8,2).a>0.5,"mouse hotspot on arrow tip")
@@ -68,7 +68,7 @@ func run() -> void:
 		check(Consent.write_choice(true,privacy_path) and Consent.allowed(privacy_path),"explicit opt in persisted again")
 		var invalid:=FileAccess.open(privacy_path,FileAccess.WRITE)
 		if invalid!=null:
-			invalid.store_string("v2:allow")
+			invalid.store_string("v3:allow")
 			invalid.close()
 		check(not Consent.allowed(privacy_path),"previous consent version defaults off")
 		for suffix in ["",".tmp"]: DirAccess.remove_absolute(ProjectSettings.globalize_path(privacy_path+suffix))
