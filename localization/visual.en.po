@@ -1271,3 +1271,54 @@ msgstr "Protection from anomalies in the next sector."
 
 msgid "RC7_ARCHIVE_DESC"
 msgstr "Keep the optional record to unlock more endings, or continue. No extra puzzle."
+
+msgid "RC7_BOSS_TITLE"
+msgstr "Encounter"
+
+msgid "RC7_BOSS_WATCHER"
+msgstr "Open safe cells as in normal Minesweeper. WATCHER briefly hides some opened numbers every four moves."
+
+msgid "RC7_BOSS_LIAR"
+msgstr "LIAR temporarily changes some visible numbers. Amber ! means unreliable; wait two moves or restore the signal."
+
+msgid "RC7_BOSS_LOOP"
+msgstr "LOOP closes two previously opened safe cells once. Reopen the marked cells. Mines never move."
+
+msgid "RC7_BOSS_ADMIN"
+msgstr "One 12 × 12 field. Three phases: WATCHER, LIAR, LOOP. All mines remain fixed."
+
+msgid "RC7_PHASE"
+msgstr "Phase %d/3 — %s"
+
+msgid "RC7_RESTORE_SIGNAL"
+msgstr "Restore signal"
+
+msgid "RC7_SIGNAL_HELP"
+msgstr "Unreliable clues are marked !. Restore the signal if you need the true numbers."
+
+msgid "RC7_SIGNAL_RESTORED"
+msgstr "Signal restored."
+
+msgid "RC7_WATCHER_EVENT"
+msgstr "WATCHER hid visible clues."
+
+msgid "RC7_LIAR_EVENT"
+msgstr "LIAR corrupted marked clues."
+
+msgid "RC7_LOOP_EVENT"
+msgstr "LOOP reopened the task: marked cells are safe."
+
+msgid "RC7_LOOP_SAFE"
+msgstr "Previously opened safe cell."
+
+msgid "RC7_PHASE_CHANGED"
+msgstr "ADMIN changed the active anomaly."
+
+msgid "RC7_SHIELD_USED"
+msgstr "Second life absorbed a mine hit."
+
+msgid "RC7_STABILIZED"
+msgstr "Stabilizer blocked the anomaly."
+
+msgid "RC7_ADMIN_INTRO"
+msgstr "ADMIN: One final field. Twelve by twelve. I will change the signal as you progress. The mines will stay where they are.\n\nECHO: Clear the field. Then choose for yourself."

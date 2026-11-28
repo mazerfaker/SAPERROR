@@ -1,4 +1,7 @@
 # Changelog
+### RC.7 story boss rework
+New campaigns use one certified CLASSIC board per boss: 8×8 WATCHER, LIAR, LOOP; 12×12 ADMIN with three progress-dependent anomaly phases. Visible unreliable clues are temporary and can be restored; LOOP marks previously opened safe tiles; mines never move. Free temporary reward applies to boss encounter, health carried forward. Original authored trials and old saves preserved. RC7 regression covers new route, draft and public-solver boss completion across all difficulties.
+
 ### RC.7 gameplay rework — reward draft
 New player-started runs replace purchases with one of three free temporary boosts per incoming sector. Credits, prices and credit rewards are hidden/disabled. Choice persists through saves and checkpoint retries; legacy runs retain their prior rules. Repair only offered when injured. New draft regression tests.
 

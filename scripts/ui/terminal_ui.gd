@@ -289,7 +289,7 @@ func _show(next: String) -> void:
 	inspect_marks.clear()
 	hover_cell = -1
 	_build_terminal_header()
-	var version := _label("0.9.0-rc6",Rect2(850,82,486,48),page,24,DIM)
+	var version := _label("0.9.0-rc7",Rect2(850,82,486,48),page,24,DIM)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var line := ColorRect.new()
 	line.color = DIM
@@ -404,6 +404,7 @@ func _start_profile(next_profile: int, story: bool = false, finite: bool = false
 	campaign.active=story
 	campaign.streamlined=story
 	campaign.compact=story
+	campaign.reworked=story and reward_mode
 	finite_run=finite and not story
 	finite_selected=false
 	campaign_selected=false
@@ -1832,9 +1833,14 @@ func _campaign_boss() -> void:
 	trial.kind=kind
 	trial.boss_identity=id
 	trial.guided_encounter=campaign.compact
+	trial.reworked_encounter=campaign.reworked
 	trial.campaign_encounter=true
-	trial.encounter_hp=Profiles.HP[profile]
-	if id=="LOOP": trial.encounter_title="LOOP // %d/2" % (campaign.loop_phase+1)
+	trial.encounter_hp=run_hp if campaign.reworked else Profiles.HP[profile]
+	trial.encounter_profile=profile
+	trial.encounter_seed=active_seed
+	trial.reward_id=economy.chosen_reward if campaign.reworked else ""
+	if campaign.reworked: trial.encounter_title=id
+	elif id=="LOOP": trial.encounter_title="LOOP // %d/2" % (campaign.loop_phase+1)
 	elif id=="ADMIN": trial.encounter_title="ADMIN // %d/3" % (campaign.admin_phase+1)
 	trial.position=Vector2(80,180)
 	trial.size=Vector2(1266,710)
@@ -1848,6 +1854,7 @@ func _campaign_boss() -> void:
 	trial.encounter_won.connect(func():
 		if screen!="campaign_boss" or not pending_sector or not trial.model.won(): return
 		if not campaign.advance_phase(sector_number,kind): return
+		if campaign.reworked: run_hp=trial.model.board().hp
 		if campaign.compact and campaign.cleared.has(sector_number):
 			# Fixed reward after the complete encounter; no misleading last-phase clean bonus.
 			last_reward=economy.boss_reward(sector_number)
@@ -1971,7 +1978,7 @@ func _campaign_archive() -> void:
 func _admin_intro() -> void:
 	if not campaign.active or not pending_sector or campaign.boss_pending(sector_number)!="ADMIN": return
 	_label("ADMIN // ROOT ACCESS",Rect2(124,215,1170,90),page,48,RED)
-	var admin_dialogue:=_label(tr("CAM_ADMIN_INTRO"),Rect2(124,330,1170,350),page,32)
+	var admin_dialogue:=_label(tr("RC7_ADMIN_INTRO" if campaign.reworked else "CAM_ADMIN_INTRO"),Rect2(124,330,1170,350),page,32)
 	_animate_transmission(admin_dialogue)
 	var emblem:=BossEmblem.new()
 	emblem.boss_id="ADMIN"

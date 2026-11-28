@@ -1271,3 +1271,54 @@ msgstr "Захист від аномалій у наступному секто�
 
 msgid "RC7_ARCHIVE_DESC"
 msgstr "Збережи необов’язковий запис, щоб відкрити інші кінцівки, або продовжуй. Без додаткової головоломки."
+
+msgid "RC7_BOSS_TITLE"
+msgstr "Зустріч"
+
+msgid "RC7_BOSS_WATCHER"
+msgstr "Відкривай безпечні клітинки як у звичайному сапері. WATCHER тимчасово приховує кілька чисел кожні чотири ходи."
+
+msgid "RC7_BOSS_LIAR"
+msgstr "LIAR тимчасово спотворює числа. Бурштиновий ! означає недостовірне число; зачекай два ходи або віднови сигнал."
+
+msgid "RC7_BOSS_LOOP"
+msgstr "LOOP один раз закриває дві раніше відкриті безпечні клітинки. Відкрий позначені клітинки знову. Міни не рухаються."
+
+msgid "RC7_BOSS_ADMIN"
+msgstr "Одне поле 12 × 12. Три фази: WATCHER, LIAR, LOOP. Усі міни залишаються на місці."
+
+msgid "RC7_PHASE"
+msgstr "Фаза %d/3 — %s"
+
+msgid "RC7_RESTORE_SIGNAL"
+msgstr "Відновити сигнал"
+
+msgid "RC7_SIGNAL_HELP"
+msgstr "Недостовірні числа позначені !. Віднови сигнал, якщо потрібні справжні числа."
+
+msgid "RC7_SIGNAL_RESTORED"
+msgstr "Сигнал відновлено."
+
+msgid "RC7_WATCHER_EVENT"
+msgstr "WATCHER приховав відкриті числа."
+
+msgid "RC7_LIAR_EVENT"
+msgstr "LIAR спотворив позначені числа."
+
+msgid "RC7_LOOP_EVENT"
+msgstr "LOOP закрив клітинки: позначені клітинки безпечні."
+
+msgid "RC7_LOOP_SAFE"
+msgstr "Раніше відкрита безпечна клітинка."
+
+msgid "RC7_PHASE_CHANGED"
+msgstr "ADMIN змінив активну аномалію."
+
+msgid "RC7_SHIELD_USED"
+msgstr "Друге життя поглинуло удар міни."
+
+msgid "RC7_STABILIZED"
+msgstr "Стабілізатор заблокував аномалію."
+
+msgid "RC7_ADMIN_INTRO"
+msgstr "ADMIN: Одне останнє поле. Дванадцять на дванадцять. Я змінюватиму сигнал у міру проходження. Міни залишаться на місці.\n\nECHO: Очисти поле. А потім обирай сам."

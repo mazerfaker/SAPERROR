@@ -40,6 +40,16 @@ var magnet_committed: bool = false
 var instability_triggered: bool = false
 var scan_used: bool = false
 var scan_cell: int = -1
+var reworked: bool=false
+var rework_phase: int=0
+var corruption: Dictionary={}
+var corruption_until: int=0
+var reopened: Dictionary={}
+var initial_open: PackedInt32Array
+var boost: String=""
+var shield_used: bool=false
+var stabilized: bool=false
+var hints_remaining: int=0
 func make_mask(mines: Array) -> PackedByteArray:
 	var mask := PackedByteArray()
 	mask.resize(SIZE*SIZE)
@@ -55,6 +65,7 @@ func add_board(mines: Array) -> bool:
 	certificates.append(proof)
 	return not b.finished()
 func start(next_kind: String, integrity: int=3) -> bool:
+	reworked=false
 	kind = next_kind
 	starting_hp=clampi(integrity,1,5)
 	boards.clear()
@@ -112,10 +123,162 @@ func start(next_kind: String, integrity: int=3) -> bool:
 		checksum_values.assign([truth[0]+truth[1],truth[1]+truth[2],truth[0]+truth[2]])
 	valid=true
 	return true
+# New story encounters are certified CLASSIC boards, not authored sensor puzzles.
+func start_reworked(next_kind: String, integrity: int, profile: int, seed_value: int, reward_id: String) -> bool:
+	reworked=true
+	kind=next_kind
+	starting_hp=clampi(integrity,1,5)
+	boards.clear()
+	certificates.clear()
+	active_layer=0
+	actions=0
+	valid=false
+	notice=""
+	rework_phase=0
+	corruption.clear()
+	corruption_until=0
+	reopened.clear()
+	loop_done=false
+	boost=reward_id
+	shield_used=false
+	stabilized=false
+	hints_remaining=2 if boost=="ASSISTANT" else 0
+	scan_cell=-1
+	if kind not in ["WATCHER","LIAR","LOOP","ADMIN"]: return false
+	var side: int=12 if kind=="ADMIN" else 8
+	var density: int=int(([18,22,26,28] if kind=="ADMIN" else [8,10,12,14])[clampi(profile,0,3)])
+	var first: int=side*(side/2)+side/2
+	var safe: Array[int]=Rules.neighbors(side,side,first,Rules.Rule.CLASSIC)
+	safe.append(first)
+	var allowed: Array[int]=[]
+	for i in range(side*side):
+		if not safe.has(i): allowed.append(i)
+	var rng:=RandomNumberGenerator.new()
+	rng.seed=hash("%s:%d:%d" % [kind,seed_value,profile])
+	var rules: Array[int]=[Rules.Rule.CLASSIC]
+	for attempt in range(64):
+		var pool: Array[int]=allowed.duplicate()
+		var mask:=PackedByteArray()
+		mask.resize(side*side)
+		for j in range(density):
+			var k: int=rng.randi_range(j,pool.size()-1)
+			var swap: int=pool[j]
+			pool[j]=pool[k]
+			pool[k]=swap
+			mask[pool[j]]=1
+		var candidate:=Board.new(side,side,mask,starting_hp)
+		candidate.reveal(first)
+		if candidate.finished() or candidate.opened>(side*side-density)*0.55: continue
+		var proof: Dictionary=Validator.certify(side,side,mask,first,rules)
+		if proof.is_empty(): continue
+		boards.append(candidate)
+		certificates.append(proof)
+		initial_open=candidate.cells.duplicate()
+		valid=true
+		return true
+	# Bounded certified fallback: edge bands with an isolated interior mine.
+	for offset in range(side):
+		var mask:=PackedByteArray()
+		mask.resize(side*side)
+		var count: int=0
+		for step in range(side*side):
+			var i: int=posmod(step+offset,side*side)
+			if safe.has(i) or i==0 or count>=density-1: continue
+			mask[i]=1
+			count+=1
+		var last: int=side*(side-2)+side-2
+		if safe.has(last) or mask[last]!=0 or count!=density-1: continue
+		mask[last]=1
+		var candidate:=Board.new(side,side,mask,starting_hp)
+		candidate.reveal(first)
+		if candidate.finished(): continue
+		var proof: Dictionary=Validator.certify(side,side,mask,first,rules)
+		if proof.is_empty(): continue
+		boards.append(candidate)
+		certificates.append(proof)
+		initial_open=candidate.cells.duplicate()
+		valid=true
+		return true
+	return false
+func effect_kind() -> String:
+	return ["WATCHER","LIAR","LOOP"][rework_phase] if kind=="ADMIN" else kind
+func restore_signal() -> bool:
+	if not reworked or corruption.is_empty() or done(): return false
+	corruption.clear()
+	notice="RC7_SIGNAL_RESTORED"
+	return true
+func reward_hint() -> bool:
+	if not reworked or not valid or done() or hints_remaining<=0: return false
+	var proof: Dictionary=Tools.safe_hint(board().observation([Rules.Rule.CLASSIC]))
+	if proof.is_empty(): return false
+	scan_cell=int(proof["cell"])
+	hints_remaining-=1
+	notice="CH_SCAN_FOUND"
+	return true
+func display_clue(index: int) -> String:
+	var number: int=board().clue(index,board().rule)
+	if reworked and corruption.get(index,"")=="LIAR": return str((number+1)%9)+"!"
+	return str(number)
+func _rework_act(index: int, flag: bool, chord: bool) -> bool:
+	var b: Board=board()
+	if chord and corruption.has(index): return false
+	var before: PackedInt32Array=b.cells.duplicate()
+	var before_hits: int=b.hits
+	if flag: b.flag(index)
+	elif chord: b.chord(index)
+	else: b.reveal(index)
+	if before==b.cells: return false
+	if b.hits>before_hits and boost=="SECOND_LIFE" and not shield_used:
+		shield_used=true
+		b.hp+=1
+		notice="RC7_SHIELD_USED"
+	else: notice=""
+	if flag: return true
+	actions+=1
+	scan_cell=-1
+	for cell in reopened.keys():
+		if b.cells[cell]==Board.Cell.OPEN: reopened.erase(cell)
+	if b.finished():
+		corruption.clear()
+		return true
+	if actions>=corruption_until: corruption.clear()
+	if kind=="ADMIN":
+		var fraction: float=float(b.opened)/maxi(1,b.cells.size()-b.mine_total)
+		var next_phase: int=mini(2,floori(fraction*3.0))
+		if next_phase>rework_phase:
+			rework_phase=next_phase
+			corruption.clear()
+			notice="RC7_PHASE_CHANGED"
+	var effect: String=effect_kind()
+	if actions%4!=0 or (effect=="LOOP" and loop_done): return true
+	if boost=="STABILIZER" and not stabilized:
+		stabilized=true
+		notice="RC7_STABILIZED"
+		return true
+	if effect=="LOOP":
+		for i in range(b.cells.size()-1,-1,-1):
+			if reopened.size()>=2: break
+			if b.cells[i]==Board.Cell.OPEN and initial_open[i]!=Board.Cell.OPEN:
+				b.cells[i]=Board.Cell.CLOSED
+				b.opened-=1
+				reopened[i]=true
+		loop_done=not reopened.is_empty()
+		if loop_done: notice="RC7_LOOP_EVENT"
+	else:
+		corruption.clear()
+		# Only already visible clues are affected; the true board and mine map never change.
+		for offset in range(b.cells.size()):
+			var i: int=posmod(offset+actions*7,b.cells.size())
+			if b.cells[i]==Board.Cell.OPEN and b.clue(i,b.rule)>0:
+				corruption[i]=effect
+				if corruption.size()>=3: break
+		corruption_until=actions+2
+		if not corruption.is_empty(): notice="RC7_"+effect+"_EVENT"
+	return true
 func board() -> Board:
 	return boards[active_layer]
 func won() -> bool:
-	if not valid or (kind=="LIAR" and not liar_solved): return false
+	if not valid or (not reworked and kind=="LIAR" and not liar_solved): return false
 	for b in boards:
 		if not b.won(): return false
 	return true
@@ -127,7 +290,8 @@ func lost() -> bool:
 func done() -> bool:
 	return won() or lost()
 func act(index: int, flag: bool = false, chord: bool = false) -> bool:
-	if not valid or done() or board().finished() or index<0 or index>=SIZE*SIZE: return false
+	if not valid or done() or board().finished() or index<0 or index>=board().cells.size(): return false
+	if reworked: return _rework_act(index,flag,chord)
 	if kind=="MAGNET" and not magnet_committed: return false
 	var b: Board = board()
 	var before: PackedInt32Array = b.cells.duplicate()
@@ -152,7 +316,8 @@ func act(index: int, flag: bool = false, chord: bool = false) -> bool:
 func protocol_complete() -> bool:
 	if not valid or lost(): return false
 	if kind=="MAGNET" and not magnet_committed and not commit_magnet(): return false
-	if kind=="LIAR" and not liar_solved and not submit_sensor(liar_bad): return false
+	if not reworked and kind=="LIAR" and not liar_solved and not submit_sensor(liar_bad): return false
+	if reworked: corruption.clear()
 	if kind in ["LOOP","LOOP_B"]: loop_done=true
 	var override:=Protocol.new()
 	for b in boards:
@@ -222,6 +387,7 @@ func submit_sensor(index: int) -> bool:
 func toggle_journal() -> void:
 	if kind=="WATCHER": journal_open=not journal_open
 func marker(index: int) -> String:
+	if reworked: return str(corruption.get(index,""))
 	if kind=="MIMIC" and index in MIMIC_ZONE and board().cells[index]==Board.Cell.CLOSED: return "MIMIC"
 	if kind=="NULL" and index in NULL_ZONE: return "NULL"
 	if kind=="MAGNET" and index in [MAGNET_SWAP.x,MAGNET_SWAP.y]: return "MAGNET"
@@ -238,9 +404,15 @@ func marker(index: int) -> String:
 	if kind=="ADMIN_LINK" and index in [0,24]: return "PORTAL"
 	return "LOOP" if kind in ["LOOP","LOOP_B"] and not loop_done and index in loop_zone else ""
 func hidden(index: int) -> bool:
+	if reworked: return corruption.get(index,"")=="WATCHER"
 	return kind=="WATCHER" and watcher_closed and watcher_log.has(index)
 # Visible labels refer to public evidence, not hidden mine data.
 func badge(index: int) -> String:
+	if reworked:
+		if index==scan_cell: return "✓"
+		if corruption.has(index): return "!"
+		if reopened.has(index): return "↺"
+		return ""
 	if kind=="ADMIN_LINK" and index in [0,24]: return "P"
 	if kind=="MAGNET" and index in [MAGNET_SWAP.x,MAGNET_SWAP.y]: return "M"
 	if kind=="WATCHER":
@@ -261,6 +433,11 @@ func badge(index: int) -> String:
 		if kind in ["LOOP","LOOP_B"]: return "L"
 	return ""
 func cell_description(index: int) -> String:
+	if reworked:
+		if corruption.has(index): return tr("RC7_SIGNAL_HELP")
+		if reopened.has(index): return tr("RC7_LOOP_SAFE")
+		if index==scan_cell: return tr("CH_SCAN_FOUND")
+		return ""
 	var tag: String=badge(index)
 	if kind=="ADMIN_LINK" and tag=="P": return tr("PORTAL_EXPLAIN_ON" if board().portal_enabled else "PORTAL_EXPLAIN_OFF")
 	if kind=="MAGNET" and tag=="M": return tr("CH_MAGNET_COMMITTED" if magnet_committed else "CH_MAGNET_WARNING")
@@ -275,6 +452,9 @@ func cell_description(index: int) -> String:
 		if kind in ["LOOP","LOOP_B"]: return tr("CH_LOOP_COUNT")+" "+str(maxi(0,3-actions))
 	return ""
 func details() -> String:
+	if reworked:
+		var prefix: String=tr("RC7_PHASE") % [rework_phase+1,effect_kind()]+"\n" if kind=="ADMIN" else ""
+		return prefix+tr("RC7_BOSS_"+effect_kind())
 	if kind=="MIMIC": return tr("CH_MIMIC_STATUS")
 	if kind=="NULL": return tr("CH_NULL_STATUS")+"\n"+(tr("CH_SCAN_HIGHLIGHT") if scan_cell>=0 else tr("CH_SCAN_SPENT" if scan_used else "CH_SCAN_READY"))
 	if kind=="INSTABILITY": return tr("CH_RULE_CLASSIC" if board().rule==Rules.Rule.CLASSIC else "CH_RULE_CROSS")+"\n"+(tr("CH_INST_SWITCH") if instability_triggered else tr("CH_INST_COUNT")+" "+str(maxi(0,3-actions)))
